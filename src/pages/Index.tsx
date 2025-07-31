@@ -172,6 +172,17 @@ const Index = () => {
                   audioAnalysis={audioAnalysis}
                   separatedAudio={separatedAudio}
                 />
+                
+                {/* Audio Output Status */}
+                <div className="bg-studio-surface/30 p-3 rounded-lg border border-neon-blue/30">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-neon-green rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium">Audio Output Ready</span>
+                  </div>
+                  <p className="text-xs text-studio-text-secondary mt-1">
+                    All samples will play through your selected audio device (AirPods/speakers)
+                  </p>
+                </div>
               </div>
             </div>
 
