@@ -188,76 +188,46 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
       const fileName = `${sampleId}.${fileExt}`;
       const filePath = `audio/${fileName}`;
 
-      console.log('☁️ Starting Supabase upload:', file.name, 'Size:', (file.size / (1024 * 1024)).toFixed(1), 'MB');
+      console.log('☁️ Step 1: Starting Supabase upload:', file.name);
 
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // Upload to Supabase Storage with timeout
+      const uploadPromise = supabase.storage
         .from('audio-uploads')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
         });
 
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Storage upload timeout')), 30000)
+      );
+
+      const { data: uploadData, error: uploadError } = await Promise.race([
+        uploadPromise,
+        timeoutPromise
+      ]) as any;
+
       if (uploadError) {
-        console.error('❌ Supabase upload error:', uploadError);
+        console.error('❌ Storage upload error:', uploadError);
         throw uploadError;
       }
 
-      console.log('✅ File uploaded to Supabase storage:', uploadData.path);
+      console.log('✅ Step 2: File uploaded to storage:', uploadData.path);
 
-      // Get public URL
+      // Get public URL (this should be fast)
       const { data: { publicUrl } } = supabase.storage
         .from('audio-uploads')
         .getPublicUrl(filePath);
 
-      console.log('✅ Public URL obtained:', publicUrl);
+      console.log('✅ Step 3: Public URL obtained:', publicUrl);
 
-      // Extract metadata first (lightweight)
-      let metadata;
-      try {
-        metadata = await extractAudioMetadata(file);
-        console.log('✅ Metadata extracted:', metadata);
-      } catch (metadataError) {
-        console.log('⚠️ Metadata extraction failed, using defaults:', metadataError);
-        metadata = { duration: 0 };
-      }
-
-      // Save metadata to database with error handling
-      try {
-        const { data: dbData, error: dbError } = await supabase
-          .from('audio_samples')
-          .insert({
-            id: sampleId,
-            filename: file.name,
-            file_size: file.size,
-            file_type: file.type,
-            storage_path: filePath,
-            public_url: publicUrl,
-            duration: metadata.duration || 0,
-            bpm: metadata.analysis?.tempo || null,
-            key: metadata.analysis?.key || null,
-            upload_status: 'completed'
-          })
-          .select()
-          .single();
-
-        if (dbError) {
-          console.error('❌ Database save error:', dbError);
-          console.log('ℹ️ Continuing with file URL despite DB error');
-          // Don't throw here - file is uploaded successfully, just DB tracking failed
-        } else {
-          console.log('✅ Metadata saved to database:', dbData);
-        }
-      } catch (dbError) {
-        console.error('❌ Database operation failed:', dbError);
-        console.log('ℹ️ File uploaded successfully, DB tracking failed');
-        // Continue anyway - the file is uploaded
-      }
+      // Skip metadata extraction and DB insertion for now to identify the bottleneck
+      console.log('ℹ️ Skipping metadata extraction and DB insertion for debugging');
 
       return publicUrl;
 
     } catch (error) {
-      console.error('❌ Cloud upload failed:', error);
+      console.error('❌ uploadToSupabase failed at step:', error.message);
       throw error;
     }
   };
