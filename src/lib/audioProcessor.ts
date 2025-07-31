@@ -90,6 +90,12 @@ export class AudioProcessor {
     
     // Verify the created audio is valid
     console.log(`🎵 Created audio blob: ${url.substring(0, 50)}... (${blob.size} bytes)`);
+    
+    // Additional validation for reverse audio
+    if (blob.size === 0) {
+      throw new Error('Generated audio blob is empty');
+    }
+    
     return url;
   }
 

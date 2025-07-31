@@ -390,9 +390,20 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
       // Process result
       if (result) {
         if (result.success && result.processedAudioUrl) {
-          // Create enhanced processing history
-          const processedSample = {
-            ...latestSample,
+          // Validate the processed audio URL
+          if (!result.processedAudioUrl || result.processedAudioUrl.trim() === '') {
+            throw new Error('Processed audio URL is empty - processing may have failed');
+          }
+
+          // Validate URL format
+          try {
+            new URL(result.processedAudioUrl);
+          } catch (urlError) {
+            throw new Error('Processed audio URL has invalid format');
+          }
+
+          // Create enhanced processing history with only the updates needed
+          const updates = {
             audioUrl: result.processedAudioUrl,
             name: `${latestSample.name.replace(' (Processed)', '').replace(/\s*\(\d+\s*BPM\)/, '')} (Processed)`,
             tags: [...(latestSample.tags || []), 'processed'],
@@ -407,10 +418,18 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             ]
           };
           
-          onUpdateSample?.(latestSample.id, processedSample);
+          console.log('🎵 AI Chat: Updating sample with processed audio:', {
+            sampleId: latestSample.id,
+            effect: processingDescription,
+            oldUrl: latestSample.audioUrl?.substring(0, 50),
+            newUrl: result.processedAudioUrl?.substring(0, 50),
+            urlValid: !!result.processedAudioUrl
+          });
           
-          const historyText = processedSample.processHistory?.length > 1 
-            ? `\n📜 **Processing History**: ${processedSample.processHistory.map(h => h.effect).join(' → ')}`
+          onUpdateSample?.(latestSample.id, updates);
+          
+          const historyText = updates.processHistory?.length > 1 
+            ? `\n📜 **Processing History**: ${updates.processHistory.map(h => h.effect).join(' → ')}`
             : '';
           
           addAssistantMessage(
