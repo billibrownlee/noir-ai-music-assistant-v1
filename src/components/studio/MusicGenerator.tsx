@@ -47,9 +47,10 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
   const [musicEngine] = useState(() => new MusicGenerationEngine());
 
   const musicStyles = [
-    { value: 'electronic', label: 'Electronic/EDM', description: 'Synthesizers, digital beats, modern sounds' },
     { value: 'hip-hop', label: 'Hip-Hop/Trap', description: '808s, hard drums, urban vibes' },
+    { value: 'rnb', label: 'R&B/Soul', description: 'Smooth vocals, rich harmonies, soulful rhythms' },
     { value: 'pop', label: 'Pop', description: 'Catchy melodies, mainstream appeal' },
+    { value: 'electronic', label: 'Electronic/EDM', description: 'Synthesizers, digital beats, modern sounds' },
     { value: 'rock', label: 'Rock', description: 'Guitars, drums, energetic rhythms' },
     { value: 'jazz', label: 'Jazz', description: 'Complex harmonies, improvisation' },
     { value: 'classical', label: 'Classical', description: 'Orchestral instruments, formal structure' },
@@ -87,6 +88,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
       const keyDefaults = {
         'electronic': 'C minor',
         'hip-hop': 'F minor', 
+        'rnb': 'Bb major',
         'pop': 'C major',
         'rock': 'A minor',
         'jazz': 'Bb major',
@@ -102,6 +104,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
       const bpmRanges = {
         'electronic': { min: 120, max: 140 },
         'hip-hop': { min: 70, max: 100 },
+        'rnb': { min: 70, max: 110 },
         'pop': { min: 100, max: 130 },
         'rock': { min: 110, max: 150 },
         'jazz': { min: 80, max: 120 },

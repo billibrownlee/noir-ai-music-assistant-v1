@@ -50,6 +50,9 @@ export class MusicGenerationEngine {
       case 'hip-hop':
         audioData = this.generateHipHop(duration, bpm, rootFreq, isMinor);
         break;
+      case 'rnb':
+        audioData = this.generateRnB(duration, bpm, rootFreq, isMinor);
+        break;
       case 'ambient':
         audioData = this.generateAmbient(duration, bpm, rootFreq, isMinor);
         break;
@@ -185,6 +188,35 @@ export class MusicGenerationEngine {
     // Bass guitar
     const bassTrack = this.generateRockBass(duration, beatDuration, rootFreq, isMinor);
     tracks.push(bassTrack);
+
+    return this.synthesizer.combineWaves(tracks);
+  }
+
+  private generateRnB(duration: number, bpm: number, rootFreq: number, isMinor: boolean): Float32Array {
+    console.log('🎤 Generating R&B music');
+    
+    const beatDuration = 60 / bpm;
+    const tracks: Float32Array[] = [];
+
+    // Smooth kick pattern
+    const kickTrack = this.generateRnBKick(duration, beatDuration);
+    tracks.push(kickTrack);
+
+    // Snare with ghost notes
+    const snareTrack = this.generateRnBSnare(duration, beatDuration);
+    tracks.push(snareTrack);
+
+    // Smooth bass line
+    const bassTrack = this.generateRnBBass(duration, beatDuration, rootFreq, isMinor);
+    tracks.push(bassTrack);
+
+    // Soulful chord progression
+    const chordTrack = this.generateRnBChords(duration, beatDuration, rootFreq, isMinor);
+    tracks.push(chordTrack);
+
+    // Melodic lead
+    const melodyTrack = this.generateRnBMelody(duration, beatDuration, rootFreq, isMinor);
+    tracks.push(melodyTrack);
 
     return this.synthesizer.combineWaves(tracks);
   }
@@ -440,10 +472,127 @@ export class MusicGenerationEngine {
     return this.synthesizer.combineWaves([kick, hihat]);
   }
 
+  // R&B specific generators
+  private generateRnBKick(duration: number, beatDuration: number): Float32Array {
+    const samples = Math.floor(this.synthesizer['sampleRate'] * duration);
+    const kick = new Float32Array(samples);
+    
+    const beatSamples = Math.floor(this.synthesizer['sampleRate'] * beatDuration);
+    
+    for (let beat = 0; beat * beatSamples < samples; beat++) {
+      if (beat % 4 === 0) { // Kick on beat 1 mainly, sometimes 3
+        const startSample = beat * beatSamples;
+        const kickSound = this.synthesizer.generateSineWave(70, 0.15, 0.6); // Warmer kick
+        const kickEnv = this.synthesizer.applyEnvelope(kickSound, 0.02, 0.1, 0.4, 0.08);
+        
+        for (let i = 0; i < kickEnv.length && startSample + i < samples; i++) {
+          kick[startSample + i] += kickEnv[i];
+        }
+      }
+    }
+    
+    return kick;
+  }
+
+  private generateRnBSnare(duration: number, beatDuration: number): Float32Array {
+    const samples = Math.floor(this.synthesizer['sampleRate'] * duration);
+    const snare = new Float32Array(samples);
+    
+    const beatSamples = Math.floor(this.synthesizer['sampleRate'] * beatDuration);
+    
+    for (let beat = 0; beat * beatSamples < samples; beat++) {
+      if (beat % 4 === 1 || beat % 4 === 3) { // Snare on 2 and 4
+        const startSample = beat * beatSamples;
+        const snareSound = this.synthesizer.generateNoise(0.08, 0.3);
+        const snareEnv = this.synthesizer.applyEnvelope(snareSound, 0.005, 0.03, 0.15, 0.02);
+        
+        for (let i = 0; i < snareEnv.length && startSample + i < samples; i++) {
+          snare[startSample + i] += snareEnv[i];
+        }
+      }
+    }
+    
+    return snare;
+  }
+
+  private generateRnBBass(duration: number, beatDuration: number, rootFreq: number, isMinor: boolean): Float32Array {
+    const samples = Math.floor(this.synthesizer['sampleRate'] * duration);
+    const bass = new Float32Array(samples);
+    
+    const beatSamples = Math.floor(this.synthesizer['sampleRate'] * beatDuration);
+    const bassFreq = rootFreq * 0.5;
+    
+    // R&B style bass pattern with more sophisticated movement
+    const pattern = isMinor ? [0, 2, 3, 5, 3, 2] : [0, 2, 4, 5, 4, 2];
+    const scale = isMinor ? SCALES.minor : SCALES.major;
+    
+    for (let beat = 0; beat * beatSamples < samples; beat++) {
+      const scaleIndex = pattern[beat % pattern.length];
+      const noteFreq = bassFreq * Math.pow(2, scale[scaleIndex] / 12);
+      
+      const startSample = beat * beatSamples;
+      const noteLength = beatDuration * 0.9;
+      const bassNote = this.synthesizer.generateSineWave(noteFreq, noteLength, 0.3); // Smoother sine bass
+      const bassEnv = this.synthesizer.applyEnvelope(bassNote, 0.02, 0.15, 0.8, 0.15);
+      
+      for (let i = 0; i < bassEnv.length && startSample + i < samples; i++) {
+        bass[startSample + i] += bassEnv[i];
+      }
+    }
+    
+    return bass;
+  }
+
+  private generateRnBChords(duration: number, beatDuration: number, rootFreq: number, isMinor: boolean): Float32Array {
+    const tracks: Float32Array[] = [];
+    
+    // R&B chord progressions with extensions (7ths, 9ths)
+    const chordTones = isMinor ? [0, 3, 7, 10] : [0, 4, 7, 11]; // Add 7th
+    
+    for (const tone of chordTones) {
+      const freq = rootFreq * Math.pow(2, tone / 12);
+      const chord = this.synthesizer.generateSineWave(freq, duration, 0.06);
+      const chordEnv = this.synthesizer.applyEnvelope(chord, 0.5, 0.3, 0.9, 1);
+      const chordReverb = this.synthesizer.addReverb(chordEnv, 0.4, 0.3);
+      tracks.push(chordReverb);
+    }
+    
+    return this.synthesizer.combineWaves(tracks);
+  }
+
+  private generateRnBMelody(duration: number, beatDuration: number, rootFreq: number, isMinor: boolean): Float32Array {
+    const samples = Math.floor(this.synthesizer['sampleRate'] * duration);
+    const melody = new Float32Array(samples);
+    
+    const scale = isMinor ? SCALES.minor : SCALES.major;
+    // Soulful melody with bends and blue notes
+    const melodyPattern = [0, 2, 3, 5, 7, 5, 3, 2, 0, 2, 4, 5];
+    
+    const noteDuration = beatDuration * 1.5;
+    const noteSamples = Math.floor(this.synthesizer['sampleRate'] * noteDuration);
+    
+    for (let note = 0; note * noteSamples < samples; note++) {
+      const scaleIndex = melodyPattern[note % melodyPattern.length];
+      const noteFreq = rootFreq * Math.pow(2, scale[scaleIndex] / 12);
+      
+      const startSample = note * noteSamples;
+      const melodyNote = this.synthesizer.generateSineWave(noteFreq, noteDuration * 0.8, 0.12);
+      const melodyEnv = this.synthesizer.applyEnvelope(melodyNote, 0.1, 0.3, 0.7, 0.4);
+      const melodyReverb = this.synthesizer.addReverb(melodyEnv, 0.5, 0.4);
+      
+      for (let i = 0; i < melodyReverb.length && startSample + i < samples; i++) {
+        melody[startSample + i] += melodyReverb[i];
+      }
+    }
+    
+    return melody;
+  }
+
   private getStructureForStyle(style: string): string[] {
     const structures: Record<string, string[]> = {
       'electronic': ['Intro', 'Build', 'Drop', 'Break', 'Drop', 'Outro'],
       'hip-hop': ['Intro', 'Verse', 'Hook', 'Verse', 'Hook', 'Outro'],
+      'rnb': ['Intro', 'Verse', 'Chorus', 'Verse', 'Chorus', 'Bridge', 'Chorus'],
       'ambient': ['Atmosphere', 'Development', 'Climax', 'Resolution'],
       'rock': ['Intro', 'Verse', 'Chorus', 'Verse', 'Chorus', 'Solo', 'Chorus'],
       'jazz': ['Head', 'Solo 1', 'Solo 2', 'Head Out'],
