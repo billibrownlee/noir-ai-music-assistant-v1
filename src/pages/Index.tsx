@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AudioOutputSelector } from "@/components/ui/audio-output-selector";
 import StudioHeader from "@/components/studio/StudioHeader";
 import PromptBuilder from "@/components/studio/PromptBuilder";
@@ -134,43 +135,66 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-studio">
+    <div className="min-h-screen bg-studio-bg">
       <StudioHeader />
       
-      <main className="container mx-auto px-6 py-8">
-        <div className="space-y-8">
-          {/* Step-by-Step Music Production Workflow */}
-          <MusicProductionWorkflow />
+      <div className="container mx-auto px-4 py-6">
+        {/* Main Studio Interface with Tabs */}
+        <Tabs defaultValue="upload" className="w-full space-y-6">
+          <TabsList className="grid w-full grid-cols-6 bg-studio-surface/50 backdrop-blur-sm">
+            <TabsTrigger value="upload" className="flex items-center gap-2">
+              📤 Upload & Library
+            </TabsTrigger>
+            <TabsTrigger value="generate" className="flex items-center gap-2">
+              🎵 Generate
+            </TabsTrigger>
+            <TabsTrigger value="record" className="flex items-center gap-2">
+              🎙️ Record
+            </TabsTrigger>
+            <TabsTrigger value="mix" className="flex items-center gap-2">
+              🎛️ Mix
+            </TabsTrigger>
+            <TabsTrigger value="master" className="flex items-center gap-2">
+              🎚️ Master
+            </TabsTrigger>
+            <TabsTrigger value="workflow" className="flex items-center gap-2">
+              ⚡ Workflow
+            </TabsTrigger>
+          </TabsList>
 
-          {/* Original Production Tools - Secondary */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-            <div className="space-y-8">
-              <PromptBuilder onGenerate={handleGenerate} />
-              <AudioUpload 
-                onSamplesUploaded={(samples) => {
-                  console.log('Uploaded samples:', samples);
-                  setUploadedSamples(samples);
-                  // Pass the latest sample's analysis to Lando
-                  const latestSample = samples[samples.length - 1];
-                  if (latestSample && latestSample.analysis) {
-                    setAudioAnalysis(latestSample.analysis);
-                  }
-                }}
-                onAudioSeparated={(separated) => setSeparatedAudio(separated)}
-              />
+          {/* Upload & Library Tab */}
+          <TabsContent value="upload" className="space-y-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <AudioUpload 
+                  onSamplesUploaded={(samples) => {
+                    console.log('Uploaded samples:', samples);
+                    setUploadedSamples(samples);
+                    const latestSample = samples[samples.length - 1];
+                    if (latestSample && latestSample.analysis) {
+                      setAudioAnalysis(latestSample.analysis);
+                    }
+                  }}
+                  onAudioSeparated={(separated) => setSeparatedAudio(separated)}
+                />
+                
+                <AudioOutputSelector onDeviceChange={setAudioOutputDevice} />
+              </div>
+              
+              <div className="space-y-6">
+                <SampleLibrary 
+                  onSampleSelect={(sample) => console.log('Selected sample:', sample)}
+                  uploadedSamples={uploadedSamples}
+                />
+                
+                <ProductionAssistant 
+                  audioAnalysis={audioAnalysis}
+                  currentTrack={currentTrack}
+                />
+              </div>
             </div>
-            <div className="space-y-8">
-              <GenerationHistory onTrackSelect={handleTrackSelect} />
-            
-            {/* AUDIO OUTPUT DEVICE SELECTOR */}
-            <AudioOutputSelector onDeviceChange={setAudioOutputDevice} />
 
-            <SampleLibrary
-              onSampleSelect={(sample) => console.log('Selected sample:', sample)}
-              uploadedSamples={uploadedSamples}
-            />
-
-            {/* AUTO-PLAY SECTION - HIGHLIGHTED */}
+            {/* Auto-Play Section */}
             {uploadedSamples.length > 0 && (
               <div 
                 id="auto-play-section"
@@ -245,52 +269,58 @@ const Index = () => {
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          {/* Generate Tab */}
+          <TabsContent value="generate" className="space-y-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <PromptBuilder onGenerate={handleGenerate} />
+                <DrumPatternGenerator />
+              </div>
+              
+              <div className="space-y-6">
+                <CounterMelodyGenerator />
+                <GenerationHistory onTrackSelect={handleTrackSelect} />
+              </div>
             </div>
-          </div>
+          </TabsContent>
 
-          {/* Stem Editor (if audio is separated) */}
-          {separatedAudio && (
-            <StemEditor 
-              separatedAudio={separatedAudio}
-              onStemUpdate={(stemId, updates) => {
-                setSeparatedAudio(prev => {
-                  if (!prev) return null;
-                  return {
-                    ...prev,
-                    stems: prev.stems.map(stem => 
-                      stem.id === stemId ? { ...stem, ...updates } : stem
-                    )
-                  };
-                });
-              }}
-            />
-          )}
+          {/* Record Tab */}
+          <TabsContent value="record" className="space-y-6">
+            <RecordingStudio />
+          </TabsContent>
 
-          {/* Recording & Production - Now Secondary */}
-          <RecordingStudio />
-
-          {/* AI Generators */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <ProductionAssistant 
-              audioAnalysis={audioAnalysis}
-              currentTrack={currentTrack}
-            />
-            <DrumPatternGenerator />
-            <CounterMelodyGenerator />
-          </div>
-
-          {/* Mixing & Mastering */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {/* Mix Tab */}
+          <TabsContent value="mix" className="space-y-6">
             <MixingConsole />
+          </TabsContent>
+
+          {/* Master Tab */}
+          <TabsContent value="master" className="space-y-6">
             <MasteringSuite />
+          </TabsContent>
+
+          {/* Workflow Tab */}
+          <TabsContent value="workflow" className="space-y-6">
+            <MusicProductionWorkflow />
+          </TabsContent>
+        </Tabs>
+
+        {/* Current Track Player */}
+        {currentTrack && (
+          <div className="mt-6">
+            <AudioPlayer track={currentTrack} />
           </div>
-        </div>
+        )}
         
-        {/* Bottom Section - Audio Player */}
-        <div className="mt-8">
-          <AudioPlayer track={currentTrack} />
-        </div>
-      </main>
+        {/* Stem Editor (if separated audio available) */}
+        {separatedAudio && (
+          <div className="mt-6">
+            <StemEditor separatedAudio={separatedAudio} />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
