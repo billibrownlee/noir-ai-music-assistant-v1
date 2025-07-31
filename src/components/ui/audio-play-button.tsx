@@ -30,11 +30,25 @@ export const AudioPlayButton: React.FC<AudioPlayButtonProps> = ({
   const handlePlay = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (!audioUrl || disabled) {
-      console.warn('🔇 AudioPlayButton: Cannot play - missing audioUrl or disabled:', { 
-        audioUrl: audioUrl?.substring(0, 50), 
+    // Enhanced validation
+    if (!audioUrl || audioUrl.trim() === '' || disabled) {
+      console.warn('🔇 AudioPlayButton: Cannot play - missing/empty audioUrl or disabled:', { 
+        audioUrl: audioUrl?.substring(0, 50) || 'undefined', 
         disabled, 
-        trackName 
+        trackName,
+        trackId
+      });
+      return;
+    }
+
+    // Validate URL format
+    try {
+      new URL(audioUrl);
+    } catch (urlError) {
+      console.error('🔇 AudioPlayButton: Invalid URL format:', {
+        audioUrl: audioUrl.substring(0, 50),
+        trackName,
+        error: urlError
       });
       return;
     }
@@ -45,12 +59,16 @@ export const AudioPlayButton: React.FC<AudioPlayButtonProps> = ({
       audioUrl: audioUrl.substring(0, 50) + '...'
     });
     
-    // Use global audio system which handles AirPods routing automatically
-    await playTrack({
-      id: trackId,
-      name: trackName,
-      audioUrl: audioUrl
-    });
+    try {
+      // Use global audio system which handles AirPods routing automatically
+      await playTrack({
+        id: trackId,
+        name: trackName,
+        audioUrl: audioUrl
+      });
+    } catch (playError) {
+      console.error('🔇 AudioPlayButton: Failed to play track:', playError);
+    }
   };
 
   return (

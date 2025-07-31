@@ -88,6 +88,18 @@ export const TempoControl: React.FC<TempoControlProps> = ({
       const result = await audioProcessor.current.changeSpeed(latestSample.file, speedFactor);
       
       if (result.success && result.processedAudioUrl) {
+        // Validate the processed audio URL before updating
+        if (!result.processedAudioUrl || result.processedAudioUrl.trim() === '') {
+          throw new Error('Processed audio URL is empty - processing may have failed');
+        }
+
+        // Validate URL format
+        try {
+          new URL(result.processedAudioUrl);
+        } catch (urlError) {
+          throw new Error('Processed audio URL has invalid format');
+        }
+
         // Update the sample with new tempo - only pass the changes
         const updates = {
           audioUrl: result.processedAudioUrl,
@@ -102,7 +114,8 @@ export const TempoControl: React.FC<TempoControlProps> = ({
         console.log('🎵 Updating sample with new audio URL:', {
           sampleId: latestSample.id,
           oldUrl: latestSample.audioUrl?.substring(0, 50),
-          newUrl: result.processedAudioUrl?.substring(0, 50)
+          newUrl: result.processedAudioUrl?.substring(0, 50),
+          urlValid: !!result.processedAudioUrl
         });
         
         onUpdateSample?.(latestSample.id, updates);

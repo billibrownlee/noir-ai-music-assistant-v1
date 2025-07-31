@@ -53,10 +53,22 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
         audioRef.current = null;
       }
 
-      // Validate track data
-      if (!track?.audioUrl) {
-        console.error('❌ Invalid track - no audioUrl:', track);
-        throw new Error('Invalid audio track');
+      // Enhanced validation for track data
+      if (!track?.audioUrl || track.audioUrl.trim() === '') {
+        console.error('❌ Invalid track - missing or empty audioUrl:', {
+          track: track?.name || 'Unknown',
+          audioUrl: track?.audioUrl || 'undefined',
+          id: track?.id || 'no-id'
+        });
+        throw new Error(`Cannot play audio: Invalid audio URL for track "${track?.name || 'Unknown'}"`);
+      }
+
+      // Validate URL format
+      try {
+        new URL(track.audioUrl);
+      } catch (urlError) {
+        console.error('❌ Invalid audio URL format:', track.audioUrl);
+        throw new Error(`Cannot play audio: Invalid URL format for track "${track?.name || 'Unknown'}"`);
       }
 
       console.log('🎵 Creating optimized audio element for:', track.name);
