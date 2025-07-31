@@ -241,7 +241,7 @@ const Index = () => {
                       variant="neon" 
                       size="lg"
                       onClick={playLatestUploadedSample}
-                      className="bg-neon-green text-black hover:bg-neon-green/80 font-bold"
+                      className="bg-neon-green text-white hover:bg-neon-green/80 font-bold"
                     >
                       ▶️ Play Sample
                     </Button>
