@@ -2,41 +2,66 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Professional AI Music Generation Platform Design System 
+Studio-grade dark theme with neon accents and waveform aesthetics
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Studio Dark Theme */
+    --background: 240 6% 6%;
+    --foreground: 0 0% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Studio Cards & Surfaces */
+    --card: 240 6% 8%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 240 6% 10%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Neon Primary - Electric Purple */
+    --primary: 270 100% 70%;
+    --primary-foreground: 240 6% 6%;
+    --primary-glow: 270 100% 80%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Studio Secondary - Deep Purple */
+    --secondary: 260 20% 15%;
+    --secondary-foreground: 0 0% 90%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted Studio Elements */
+    --muted: 240 6% 12%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Cyan Accent */
+    --accent: 180 100% 70%;
+    --accent-foreground: 240 6% 6%;
+    --accent-glow: 180 100% 80%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Professional Controls */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 240 6% 15%;
+    --input: 240 6% 12%;
+    --ring: 270 100% 70%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Studio Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(270 100% 70%), hsl(270 100% 80%));
+    --gradient-studio: linear-gradient(180deg, hsl(240 6% 8%), hsl(240 6% 6%));
+    --gradient-waveform: linear-gradient(90deg, hsl(270 100% 70%), hsl(180 100% 70%));
+    --gradient-glass: linear-gradient(135deg, hsl(240 6% 12% / 0.8), hsl(240 6% 8% / 0.6));
+
+    /* Studio Shadows & Glows */
+    --shadow-studio: 0 25px 50px -12px hsl(240 6% 3% / 0.8);
+    --shadow-neon: 0 0 30px hsl(270 100% 70% / 0.4);
+    --shadow-cyan: 0 0 30px hsl(180 100% 70% / 0.3);
+
+    /* Professional Animations */
+    --transition-studio: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
     --sidebar-background: 0 0% 98%;
 

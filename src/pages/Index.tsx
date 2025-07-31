@@ -1,12 +1,67 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import StudioHeader from "@/components/studio/StudioHeader";
+import PromptBuilder from "@/components/studio/PromptBuilder";
+import AudioPlayer from "@/components/studio/AudioPlayer";
+import GenerationHistory from "@/components/studio/GenerationHistory";
+
+interface Track {
+  id: string;
+  title: string;
+  genre: string;
+  duration: number;
+  bpm: number;
+  key: string;
+  prompt: string;
+  timestamp: Date;
+  liked: boolean;
+}
 
 const Index = () => {
+  const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
+
+  const handleGenerate = (prompt: string, settings: any) => {
+    // Simulate track generation
+    const newTrack: Track = {
+      id: Date.now().toString(),
+      title: `AI Track ${Date.now()}`,
+      genre: settings.genre || "Unknown",
+      duration: settings.duration || 180,
+      bpm: settings.bpm?.[0] || 120,
+      key: settings.key || "C",
+      prompt,
+      timestamp: new Date(),
+      liked: false
+    };
+    
+    setCurrentTrack(newTrack);
+  };
+
+  const handleTrackSelect = (track: Track) => {
+    setCurrentTrack(track);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-gradient-studio">
+      <StudioHeader />
+      
+      <main className="container mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Prompt Builder */}
+          <div className="lg:col-span-2">
+            <PromptBuilder onGenerate={handleGenerate} />
+          </div>
+          
+          {/* Right Column - History */}
+          <div>
+            <GenerationHistory onTrackSelect={handleTrackSelect} />
+          </div>
+        </div>
+        
+        {/* Bottom Section - Audio Player */}
+        <div className="mt-8">
+          <AudioPlayer track={currentTrack} />
+        </div>
+      </main>
     </div>
   );
 };
