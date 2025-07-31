@@ -40,7 +40,7 @@ const Index = () => {
   const [uploadedSamples, setUploadedSamples] = useState<any[]>([]);
   const { playTrack, setAudioOutputDevice } = useGlobalAudio();
 
-  // Auto-play the most recent uploaded sample
+  // Manual play function for user control
   const playLatestUploadedSample = () => {
     if (uploadedSamples.length > 0) {
       const latestSample = uploadedSamples[uploadedSamples.length - 1];
@@ -53,31 +53,6 @@ const Index = () => {
       }
     }
   };
-
-  // Auto-play the latest uploaded sample when available
-  useEffect(() => {
-    if (uploadedSamples.length > 0) {
-      const latestSample = uploadedSamples[uploadedSamples.length - 1];
-      if (latestSample.audioUrl) {
-        // Auto-play after a short delay
-        setTimeout(() => {
-          console.log('🎵 AUTO-PLAYING YOUR UPLOADED SAMPLE 🎵');
-          playTrack({
-            id: latestSample.id,
-            name: latestSample.name,
-            audioUrl: latestSample.audioUrl
-          });
-          
-          // Highlight the playing section
-          const playSection = document.getElementById('auto-play-section');
-          if (playSection) {
-            playSection.classList.add('ring-4', 'ring-neon-green', 'bg-neon-green/10');
-            playSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 1000);
-      }
-    }
-  }, [uploadedSamples, playTrack]);
 
   // Check audio output device
   useEffect(() => {
@@ -200,28 +175,28 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Auto-Play Section */}
+            {/* Manual Play Section - Full User Control */}
             {uploadedSamples.length > 0 && (
               <div 
-                id="auto-play-section"
-                className="space-y-4 mt-6 transition-all duration-1000 border-2 border-neon-blue animate-pulse"
+                id="manual-play-section"
+                className="space-y-4 mt-6 border-2 border-neon-blue/30 rounded-xl"
               >
                 <div className="bg-gradient-to-br from-neon-blue/20 via-neon-purple/20 to-neon-green/20 p-6 rounded-xl border-2 border-neon-blue/50 shadow-2xl shadow-neon-blue/20">
                   <div className="flex items-center justify-center mb-4">
-                    <div className="animate-bounce text-4xl">🎵</div>
+                    <div className="text-4xl">🎵</div>
                     <h3 className="font-bold text-xl mx-3 text-neon-blue">
-                      AUTO-PLAYING YOUR UPLOADED SAMPLE
+                      YOUR UPLOADED SAMPLE - READY TO PLAY
                     </h3>
-                    <div className="animate-bounce text-4xl">🎵</div>
+                    <div className="text-4xl">🎵</div>
                   </div>
                   
                   <div className="bg-studio-surface/50 p-4 rounded-lg border border-neon-green/30 mb-4">
                     <h4 className="font-medium mb-3 flex items-center gap-2 text-neon-green">
-                      🎧 Audio Output & Playback Info
+                      🎧 Audio Ready for Manual Playback
                     </h4>
                     <div className="space-y-2 text-sm">
                       <p className="text-studio-text-secondary">
-                        <strong className="text-neon-blue">Now Playing:</strong> 
+                        <strong className="text-neon-blue">Sample Ready:</strong> 
                         <span className="text-neon-green ml-2 font-mono">
                           {uploadedSamples[uploadedSamples.length - 1]?.name}
                         </span>
@@ -243,8 +218,8 @@ const Index = () => {
                   
                   <div className="flex justify-center gap-4">
                     <div className="text-center">
-                      <div className="w-4 h-4 bg-neon-green rounded-full animate-pulse mx-auto mb-2"></div>
-                      <p className="text-xs text-neon-green font-medium">PLAYING FROM HERE</p>
+                      <div className="w-4 h-4 bg-neon-blue rounded-full mx-auto mb-2"></div>
+                      <p className="text-xs text-neon-blue font-medium">CLICK TO PLAY MANUALLY</p>
                     </div>
                   </div>
                   
@@ -255,7 +230,7 @@ const Index = () => {
                       onClick={playLatestUploadedSample}
                       className="bg-neon-green text-black hover:bg-neon-green/80 font-bold"
                     >
-                      🔄 Replay Sample
+                      ▶️ Play Sample
                     </Button>
                     
                     <Button 
