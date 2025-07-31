@@ -174,43 +174,52 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         setUploadedSamples(prev => [...prev, sample]);
         console.log('✅ UPLOAD STARTED:', sample.name);
         
-        // FOOLPROOF 100% PROGRESS SYSTEM
-        const progressSteps = [0, 25, 50, 75, 100];
-        let currentStep = 0;
+        // SIMPLE 100% PROGRESS SYSTEM
+        console.log('🚀 Starting simple progress for:', sample.name);
         
-        const guaranteedProgress = () => {
-          if (currentStep < progressSteps.length) {
-            const progressValue = progressSteps[currentStep];
-            console.log(`📊 STEP ${currentStep + 1}/5: ${sample.name} → ${progressValue}%`);
-            
-            setUploadedSamples(prev => 
-              prev.map(s => s.id === id ? { ...s, uploadProgress: progressValue } : s)
-            );
-            
-            currentStep++;
-            
-            if (progressValue === 100) {
-              console.log('🎯 UPLOAD COMPLETE:', sample.name, '- GUARANTEED 100%');
-              
-              // IMMEDIATE LIBRARY SAVE
-              setTimeout(() => {
-                setUploadedSamples(currentSamples => {
-                  const allSamples = currentSamples.filter(s => s.uploadProgress === 100);
-                  console.log('🏦 SAVING TO LIBRARY:', allSamples.length, 'completed samples');
-                  onSamplesUploaded(allSamples);
-                  console.log('✅ LIBRARY SAVE COMPLETE');
-                  return currentSamples;
-                });
-              }, 100);
-            } else {
-              // Continue to next step
-              setTimeout(guaranteedProgress, 200);
-            }
-          }
-        };
+        // Step 1: 25%
+        setTimeout(() => {
+          console.log('📊 Progress: 25%');
+          setUploadedSamples(prev => 
+            prev.map(s => s.id === id ? { ...s, uploadProgress: 25 } : s)
+          );
+        }, 100);
         
-        // Start the guaranteed progress
-        setTimeout(guaranteedProgress, 100);
+        // Step 2: 50%
+        setTimeout(() => {
+          console.log('📊 Progress: 50%');
+          setUploadedSamples(prev => 
+            prev.map(s => s.id === id ? { ...s, uploadProgress: 50 } : s)
+          );
+        }, 300);
+        
+        // Step 3: 75%
+        setTimeout(() => {
+          console.log('📊 Progress: 75%');
+          setUploadedSamples(prev => 
+            prev.map(s => s.id === id ? { ...s, uploadProgress: 75 } : s)
+          );
+        }, 500);
+        
+        // Step 4: 100% COMPLETE
+        setTimeout(() => {
+          console.log('🎯 Progress: 100% COMPLETE!');
+          setUploadedSamples(prev => 
+            prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
+          );
+          
+          // Save to library immediately
+          setTimeout(() => {
+            setUploadedSamples(currentSamples => {
+              const completedSamples = currentSamples.filter(s => s.uploadProgress === 100);
+              if (completedSamples.length > 0) {
+                console.log('🏦 Auto-saving', completedSamples.length, 'samples to library');
+                onSamplesUploaded(completedSamples);
+              }
+              return currentSamples;
+            });
+          }, 100);
+        }, 700);
         
         
         // Get metadata and analysis
