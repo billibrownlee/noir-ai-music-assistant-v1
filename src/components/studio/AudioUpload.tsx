@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Upload, X, Music, FileAudio } from 'lucide-react';
+import { Upload, X, Music, FileAudio, Play, Pause } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface AudioSample {
@@ -17,7 +17,10 @@ interface AudioSample {
   key?: string;
   tags: string[];
   file: File;
+  audioUrl?: string;
   duration?: number;
+  uploadProgress?: number;
+  isPlaying?: boolean;
 }
 
 interface AudioUploadProps {
@@ -27,8 +30,47 @@ interface AudioUploadProps {
 export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) => {
   const [uploadedSamples, setUploadedSamples] = useState<AudioSample[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+  const [playingAudio, setPlayingAudio] = useState<HTMLAudioElement | null>(null);
+  const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const validateAudioFile = (file: File): boolean => {
+    const validTypes = ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/m4a', 'audio/ogg'];
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    
+    if (!validTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload MP3, WAV, FLAC, M4A, or OGG files only.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Please upload files smaller than 50MB.",
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
+  const extractAudioMetadata = (file: File): Promise<{ duration: number }> => {
+    return new Promise((resolve) => {
+      const audio = new Audio();
+      audio.addEventListener('loadedmetadata', () => {
+        resolve({ duration: audio.duration });
+      });
+      audio.addEventListener('error', () => {
+        resolve({ duration: 0 });
+      });
+      audio.src = URL.createObjectURL(file);
+    });
+  };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -38,55 +80,111 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
     handleFiles(files);
   }, []);
 
-  const handleFiles = (files: File[]) => {
-    const audioFiles = files.filter(file => file.type.startsWith('audio/'));
+  const handleFiles = async (files: File[]) => {
+    const audioFiles = files.filter(file => validateAudioFile(file));
     
-    if (audioFiles.length === 0) {
-      toast({
-        title: "Invalid files",
-        description: "Please upload audio files only.",
-        variant: "destructive"
-      });
-      return;
-    }
+    if (audioFiles.length === 0) return;
 
-    audioFiles.forEach(file => {
+    for (const file of audioFiles) {
       const id = Math.random().toString(36).substr(2, 9);
+      const audioUrl = URL.createObjectURL(file);
+      
       const sample: AudioSample = {
         id,
         name: file.name.replace(/\.[^/.]+$/, ""),
         genre: '',
         tags: [],
-        file
+        file,
+        audioUrl,
+        uploadProgress: 0,
+        isPlaying: false
       };
 
-      // Get audio duration
-      const audio = new Audio();
-      audio.onloadedmetadata = () => {
-        sample.duration = audio.duration;
-        setUploadedSamples(prev => {
-          const updated = prev.map(s => s.id === id ? { ...s, duration: audio.duration } : s);
-          return updated;
-        });
-      };
-      audio.src = URL.createObjectURL(file);
-
+      // Add sample to list immediately
       setUploadedSamples(prev => [...prev, sample]);
       
+      // Get audio metadata
+      try {
+        const metadata = await extractAudioMetadata(file);
+        setUploadedSamples(prev => 
+          prev.map(s => s.id === id ? { ...s, duration: metadata.duration } : s)
+        );
+      } catch (error) {
+        console.error('Error extracting metadata:', error);
+      }
+      
       // Simulate upload progress
-      setUploadProgress(prev => ({ ...prev, [id]: 0 }));
+      let progress = 0;
       const interval = setInterval(() => {
-        setUploadProgress(prev => {
-          const current = prev[id] || 0;
-          if (current >= 100) {
-            clearInterval(interval);
-            return prev;
-          }
-          return { ...prev, [id]: current + 10 };
-        });
-      }, 100);
+        progress += Math.random() * 15;
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(interval);
+        }
+        
+        setUploadedSamples(prev => 
+          prev.map(s => s.id === id ? { ...s, uploadProgress: progress } : s)
+        );
+      }, 200);
+    }
+
+    toast({
+      title: "Files uploaded!",
+      description: `${audioFiles.length} audio file(s) processed successfully.`,
     });
   };
+
+  const playAudio = useCallback(async (sample: AudioSample) => {
+    try {
+      // Stop currently playing audio
+      if (playingAudio) {
+        playingAudio.pause();
+        playingAudio.currentTime = 0;
+      }
+
+      if (playingSampleId === sample.id) {
+        // Stop current sample
+        setPlayingAudio(null);
+        setPlayingSampleId(null);
+        setUploadedSamples(prev => 
+          prev.map(s => ({ ...s, isPlaying: false }))
+        );
+        return;
+      }
+
+      // Play new sample
+      const audio = new Audio(sample.audioUrl);
+      audio.addEventListener('ended', () => {
+        setPlayingAudio(null);
+        setPlayingSampleId(null);
+        setUploadedSamples(prev => 
+          prev.map(s => ({ ...s, isPlaying: false }))
+        );
+      });
+
+      audio.addEventListener('error', () => {
+        toast({
+          title: "Playback error",
+          description: "Could not play the audio file.",
+          variant: "destructive"
+        });
+      });
+
+      await audio.play();
+      setPlayingAudio(audio);
+      setPlayingSampleId(sample.id);
+      setUploadedSamples(prev => 
+        prev.map(s => ({ ...s, isPlaying: s.id === sample.id }))
+      );
+
+    } catch (error) {
+      toast({
+        title: "Playback failed",
+        description: "Could not play the audio file.",
+        variant: "destructive"
+      });
+    }
+  }, [playingAudio, playingSampleId, toast]);
 
   const updateSample = (id: string, updates: Partial<AudioSample>) => {
     setUploadedSamples(prev => 
@@ -97,11 +195,20 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
   };
 
   const removeSample = (id: string) => {
+    // Clean up audio URL to prevent memory leaks
+    const sample = uploadedSamples.find(s => s.id === id);
+    if (sample?.audioUrl) {
+      URL.revokeObjectURL(sample.audioUrl);
+    }
+    
+    // Stop playing audio if it's the current sample
+    if (playingSampleId === id && playingAudio) {
+      playingAudio.pause();
+      setPlayingAudio(null);
+      setPlayingSampleId(null);
+    }
+    
     setUploadedSamples(prev => prev.filter(sample => sample.id !== id));
-    setUploadProgress(prev => {
-      const { [id]: removed, ...rest } = prev;
-      return rest;
-    });
   };
 
   const addTag = (sampleId: string, tag: string) => {
@@ -124,15 +231,36 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
   const handleUploadToLibrary = async () => {
     if (uploadedSamples.length === 0) return;
     
-    // Here you would upload to Supabase storage and save metadata to database
-    toast({
-      title: "Samples uploaded!",
-      description: `${uploadedSamples.length} audio samples added to your library.`,
-    });
-    
-    onSamplesUploaded(uploadedSamples);
-    setUploadedSamples([]);
-    setUploadProgress({});
+    try {
+      // In a real implementation, you would upload to Supabase storage here
+      // For now, we'll just simulate the process
+      const processedSamples = uploadedSamples.filter(s => (s.uploadProgress || 0) >= 100);
+      
+      toast({
+        title: "Samples added to library!",
+        description: `${processedSamples.length} audio samples are now available in your library.`,
+      });
+      
+      onSamplesUploaded(processedSamples);
+      
+      // Clean up URLs
+      uploadedSamples.forEach(sample => {
+        if (sample.audioUrl) {
+          URL.revokeObjectURL(sample.audioUrl);
+        }
+      });
+      
+      setUploadedSamples([]);
+      setPlayingAudio(null);
+      setPlayingSampleId(null);
+      
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Could not add samples to library. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -183,18 +311,40 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
             {uploadedSamples.map(sample => (
               <Card key={sample.id} className="glass-card-subtle">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
                       <FileAudio className="w-6 h-6 text-neon-purple" />
-                      <div>
-                        <h4 className="font-medium">{sample.name}</h4>
+                      {sample.isPlaying && (
+                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-pulse" />
+                      )}
+                    </div>
+                    <div>
+                      <h4 className="font-medium">{sample.name}</h4>
+                      <div className="flex items-center gap-2 text-sm text-studio-text-secondary">
                         {sample.duration && (
-                          <p className="text-sm text-studio-text-secondary">
-                            {Math.floor(sample.duration / 60)}:{(sample.duration % 60).toFixed(0).padStart(2, '0')}
-                          </p>
+                          <span>{Math.floor(sample.duration / 60)}:{(sample.duration % 60).toFixed(0).padStart(2, '0')}</span>
                         )}
+                        <span>•</span>
+                        <span>{(sample.file.size / (1024 * 1024)).toFixed(1)} MB</span>
                       </div>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {sample.audioUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => playAudio(sample)}
+                        className="flex items-center gap-1"
+                      >
+                        {sample.isPlaying ? (
+                          <Pause className="w-4 h-4" />
+                        ) : (
+                          <Play className="w-4 h-4" />
+                        )}
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -203,11 +353,16 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
                       <X className="w-4 h-4" />
                     </Button>
                   </div>
+                </div>
 
                   {/* Upload Progress */}
-                  {uploadProgress[sample.id] < 100 && (
+                  {sample.uploadProgress !== undefined && sample.uploadProgress < 100 && (
                     <div className="mb-4">
-                      <Progress value={uploadProgress[sample.id]} className="w-full" />
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm">Uploading...</span>
+                        <span className="text-sm">{Math.round(sample.uploadProgress)}%</span>
+                      </div>
+                      <Progress value={sample.uploadProgress} className="w-full" />
                     </div>
                   )}
 
@@ -295,8 +450,9 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
               className="w-full"
               size="lg"
               variant="neon"
+              disabled={uploadedSamples.length === 0 || uploadedSamples.some(s => (s.uploadProgress || 0) < 100)}
             >
-              Add to Sample Library
+              Add {uploadedSamples.filter(s => (s.uploadProgress || 0) >= 100).length} Sample(s) to Library
             </Button>
           </div>
         )}
