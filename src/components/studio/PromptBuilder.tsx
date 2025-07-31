@@ -134,6 +134,8 @@ export default function PromptBuilder({ onGenerate }: PromptBuilderProps) {
             value={customPrompt}
             onChange={(e) => setCustomPrompt(e.target.value)}
             className="min-h-24 bg-input/50 border-border/50 focus:border-primary"
+            autoComplete="off"
+            spellCheck={false}
           />
         </div>
 
