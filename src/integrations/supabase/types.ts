@@ -14,7 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audio_samples: {
+        Row: {
+          analysis_data: Json | null
+          bpm: number | null
+          created_at: string | null
+          duration: number | null
+          file_size: number
+          file_type: string
+          filename: string
+          genre: string | null
+          id: string
+          key: string | null
+          public_url: string | null
+          storage_path: string
+          tags: string[] | null
+          updated_at: string | null
+          upload_status: string | null
+        }
+        Insert: {
+          analysis_data?: Json | null
+          bpm?: number | null
+          created_at?: string | null
+          duration?: number | null
+          file_size: number
+          file_type: string
+          filename: string
+          genre?: string | null
+          id?: string
+          key?: string | null
+          public_url?: string | null
+          storage_path: string
+          tags?: string[] | null
+          updated_at?: string | null
+          upload_status?: string | null
+        }
+        Update: {
+          analysis_data?: Json | null
+          bpm?: number | null
+          created_at?: string | null
+          duration?: number | null
+          file_size?: number
+          file_type?: string
+          filename?: string
+          genre?: string | null
+          id?: string
+          key?: string | null
+          public_url?: string | null
+          storage_path?: string
+          tags?: string[] | null
+          updated_at?: string | null
+          upload_status?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
