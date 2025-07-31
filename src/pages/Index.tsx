@@ -14,6 +14,7 @@ import { MasteringSuite } from "@/components/studio/MasteringSuite";
 import { StemEditor } from "@/components/studio/StemEditor";
 import { MusicProductionWorkflow } from "@/components/studio/MusicProductionWorkflow";
 import { SeparatedAudio } from "@/lib/audioSeparation";
+import { AudioAnalysis } from "@/lib/audioAnalyzer";
 
 interface Track {
   id: string;
@@ -30,6 +31,7 @@ interface Track {
 const Index = () => {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [separatedAudio, setSeparatedAudio] = useState<SeparatedAudio | null>(null);
+  const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysis | null>(null);
 
   const handleGenerate = (prompt: string, settings: any) => {
     // Simulate track generation
@@ -66,7 +68,14 @@ const Index = () => {
             <div className="space-y-8">
               <PromptBuilder onGenerate={handleGenerate} />
               <AudioUpload 
-                onSamplesUploaded={(samples) => console.log('Uploaded samples:', samples)}
+                onSamplesUploaded={(samples) => {
+                  console.log('Uploaded samples:', samples);
+                  // Pass the latest sample's analysis to Lando
+                  const latestSample = samples[samples.length - 1];
+                  if (latestSample && latestSample.analysis) {
+                    setAudioAnalysis(latestSample.analysis);
+                  }
+                }}
                 onAudioSeparated={(separated) => setSeparatedAudio(separated)}
               />
             </div>
@@ -99,7 +108,10 @@ const Index = () => {
 
           {/* AI Generators */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <ProductionAssistant />
+            <ProductionAssistant 
+              audioAnalysis={audioAnalysis}
+              currentTrack={currentTrack}
+            />
             <DrumPatternGenerator />
             <CounterMelodyGenerator />
           </div>

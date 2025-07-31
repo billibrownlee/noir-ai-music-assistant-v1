@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
+import { AudioAnalysis } from '@/lib/audioAnalyzer';
 import { 
   Brain, 
   Volume2, 
@@ -16,16 +17,28 @@ import {
   Sparkles,
   TrendingUp,
   Music,
-  Headphones
+  Headphones,
+  Mic,
+  Guitar,
+  Drum,
+  Piano,
+  Wand2
 } from 'lucide-react';
 
 interface ProductionSuggestion {
   id: string;
-  type: 'mixing' | 'arrangement' | 'sound-design' | 'mastering';
+  type: 'mixing' | 'arrangement' | 'sound-design' | 'mastering' | 'instrumentation' | 'creative';
   title: string;
   description: string;
   confidence: number;
   actionable: boolean;
+  reasoning?: string;
+  instrument?: string;
+}
+
+interface ProductionAssistantProps {
+  audioAnalysis?: AudioAnalysis;
+  currentTrack?: any;
 }
 
 const SAMPLE_SUGGESTIONS: ProductionSuggestion[] = [
@@ -63,10 +76,161 @@ const SAMPLE_SUGGESTIONS: ProductionSuggestion[] = [
   }
 ];
 
-export const ProductionAssistant: React.FC = () => {
-  const [suggestions] = useState<ProductionSuggestion[]>(SAMPLE_SUGGESTIONS);
+// AI Analysis Engine - Lando's Brain
+const generateIntelligentSuggestions = (analysis: AudioAnalysis): ProductionSuggestion[] => {
+  const suggestions: ProductionSuggestion[] = [];
+  
+  // Tempo-based suggestions
+  if (analysis.tempo < 80) {
+    suggestions.push({
+      id: `tempo-${Date.now()}`,
+      type: 'arrangement',
+      title: 'Add Rhythmic Drive Elements',
+      description: `At ${analysis.tempo} BPM, consider adding shakers, hi-hats, or percussion loops to create more rhythmic momentum`,
+      confidence: 88,
+      actionable: true,
+      reasoning: 'Slow tempo tracks benefit from additional rhythmic elements'
+    });
+  } else if (analysis.tempo > 140) {
+    suggestions.push({
+      id: `tempo-${Date.now()}`,
+      type: 'mixing',
+      title: 'Apply Side-Chain Compression',
+      description: `High-energy ${analysis.tempo} BPM track would benefit from side-chain compression to create pumping effect`,
+      confidence: 92,
+      actionable: true,
+      reasoning: 'Fast tempo tracks work well with dynamic compression'
+    });
+  }
+
+  // Key and Mode suggestions
+  if (analysis.mode === 'minor') {
+    suggestions.push({
+      id: `key-${Date.now()}`,
+      type: 'instrumentation',
+      title: 'Layer Emotional Strings',
+      description: `The ${analysis.key} minor key creates perfect foundation for lush string arrangements or pad textures`,
+      confidence: 90,
+      actionable: true,
+      reasoning: 'Minor keys naturally support emotional string arrangements',
+      instrument: 'strings'
+    });
+  } else {
+    suggestions.push({
+      id: `key-${Date.now()}`,
+      type: 'instrumentation',
+      title: 'Add Bright Lead Elements',
+      description: `${analysis.key} major key is ideal for bright lead synths, guitars, or brass sections`,
+      confidence: 85,
+      actionable: true,
+      reasoning: 'Major keys support uplifting melodic elements',
+      instrument: 'lead'
+    });
+  }
+
+  // Energy-based suggestions
+  if (analysis.energy < 0.4) {
+    suggestions.push({
+      id: `energy-${Date.now()}`,
+      type: 'sound-design',
+      title: 'Enhance Dynamic Range',
+      description: 'Low energy detected - consider adding subtle risers, sweeps, or dynamic automation to build excitement',
+      confidence: 87,
+      actionable: true,
+      reasoning: 'Low energy tracks need movement and dynamics'
+    });
+  } else if (analysis.energy > 0.8) {
+    suggestions.push({
+      id: `energy-${Date.now()}`,
+      type: 'arrangement',
+      title: 'Create Breathing Space',
+      description: 'High energy throughout - consider adding breakdown sections or filter sweeps for dynamic contrast',
+      confidence: 89,
+      actionable: true,
+      reasoning: 'High energy tracks need moments of release'
+    });
+  }
+
+  // Danceability suggestions
+  if (analysis.danceability > 0.7) {
+    suggestions.push({
+      id: `dance-${Date.now()}`,
+      type: 'instrumentation',
+      title: 'Layer Sub Bass Foundation',
+      description: 'High danceability detected - a solid sub bass layer (40-80Hz) will enhance the groove',
+      confidence: 94,
+      actionable: true,
+      reasoning: 'Danceable tracks need strong low-end foundation',
+      instrument: 'bass'
+    });
+  }
+
+  // Spectral suggestions
+  if (analysis.spectralFeatures.centroid > 2000) {
+    suggestions.push({
+      id: `spectral-${Date.now()}`,
+      type: 'mixing',
+      title: 'Warm Up the Low-Mids',
+      description: 'Bright spectral content detected - consider adding warmth in 200-500Hz range for balance',
+      confidence: 86,
+      actionable: true,
+      reasoning: 'Bright tracks often need low-mid warmth for fullness'
+    });
+  }
+
+  // Harmonic content suggestions
+  const harmonicRichness = analysis.harmonicContent.reduce((a, b) => a + b, 0) / analysis.harmonicContent.length;
+  if (harmonicRichness < 0.3) {
+    suggestions.push({
+      id: `harmonic-${Date.now()}`,
+      type: 'sound-design',
+      title: 'Add Harmonic Saturation',
+      description: 'Limited harmonic content - tape saturation or tube warmth could add richness and character',
+      confidence: 83,
+      actionable: true,
+      reasoning: 'Low harmonic content benefits from saturation processing'
+    });
+  }
+
+  // Creative arrangement suggestions based on rhythm pattern
+  const rhythmVariation = Math.max(...analysis.rhythmPattern) - Math.min(...analysis.rhythmPattern);
+  if (rhythmVariation < 0.2) {
+    suggestions.push({
+      id: `rhythm-${Date.now()}`,
+      type: 'creative',
+      title: 'Introduce Rhythmic Variations',
+      description: 'Steady rhythm detected - consider adding ghost notes, swing, or syncopated elements for interest',
+      confidence: 81,
+      actionable: true,
+      reasoning: 'Consistent rhythms benefit from subtle variations'
+    });
+  }
+
+  return suggestions;
+};
+
+export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({ 
+  audioAnalysis, 
+  currentTrack 
+}) => {
+  const [suggestions, setSuggestions] = useState<ProductionSuggestion[]>(SAMPLE_SUGGESTIONS);
   const [selectedType, setSelectedType] = useState<string>('all');
   const [analysisMode, setAnalysisMode] = useState<'smart' | 'detailed' | 'creative'>('smart');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Generate intelligent suggestions when audio analysis is available
+  useEffect(() => {
+    if (audioAnalysis) {
+      setIsAnalyzing(true);
+      
+      // Simulate Lando thinking (adds realism to AI processing)
+      setTimeout(() => {
+        const intelligentSuggestions = generateIntelligentSuggestions(audioAnalysis);
+        setSuggestions([...intelligentSuggestions, ...SAMPLE_SUGGESTIONS]);
+        setIsAnalyzing(false);
+      }, 1500);
+    }
+  }, [audioAnalysis]);
 
   const filteredSuggestions = suggestions.filter(
     suggestion => selectedType === 'all' || suggestion.type === selectedType
@@ -77,17 +241,23 @@ export const ProductionAssistant: React.FC = () => {
       'mixing': 'bg-neon-blue/20 text-neon-blue',
       'arrangement': 'bg-neon-purple/20 text-neon-purple',
       'sound-design': 'bg-neon-green/20 text-neon-green',
-      'mastering': 'bg-neon-orange/20 text-neon-orange'
+      'mastering': 'bg-neon-orange/20 text-neon-orange',
+      'instrumentation': 'bg-pink-500/20 text-pink-400',
+      'creative': 'bg-yellow-500/20 text-yellow-400'
     };
     return colors[type as keyof typeof colors] || 'bg-studio-surface-secondary text-studio-text-secondary';
   };
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: string, instrument?: string) => {
     const icons = {
       'mixing': Volume2,
       'arrangement': Layers,
       'sound-design': Zap,
-      'mastering': Target
+      'mastering': Target,
+      'instrumentation': instrument === 'strings' ? Piano : 
+                        instrument === 'bass' ? Guitar :
+                        instrument === 'lead' ? Guitar : Mic,
+      'creative': Wand2
     };
     const Icon = icons[type as keyof typeof icons] || Music;
     return <Icon className="w-4 h-4" />;
@@ -98,10 +268,10 @@ export const ProductionAssistant: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain className="w-5 h-5 text-neon-purple" />
-          Production Assistant
+          Lando - AI Production Assistant
           <Badge variant="outline" className="ml-auto">
             <Sparkles className="w-3 h-3 mr-1" />
-            AI Powered
+            {isAnalyzing ? 'Analyzing...' : audioAnalysis ? 'AI Enhanced' : 'AI Powered'}
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -114,25 +284,53 @@ export const ProductionAssistant: React.FC = () => {
           </TabsList>
           
           <TabsContent value="suggestions" className="space-y-4">
-            {/* Filter Controls */}
-            <div className="flex gap-2">
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Filter by type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="mixing">Mixing</SelectItem>
-                  <SelectItem value="arrangement">Arrangement</SelectItem>
-                  <SelectItem value="sound-design">Sound Design</SelectItem>
-                  <SelectItem value="mastering">Mastering</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* AI Status & Filter Controls */}
+            <div className="space-y-3">
+              {audioAnalysis && (
+                <Card className="glass-card-subtle border-neon-purple/30">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Brain className="w-4 h-4 text-neon-purple animate-pulse" />
+                      <span className="font-medium">Lando analyzed your track:</span>
+                      <Badge variant="outline" className="text-xs">
+                        {audioAnalysis.tempo} BPM
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {audioAnalysis.key} {audioAnalysis.mode}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {Math.round(audioAnalysis.energy * 100)}% Energy
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               
-              <Button variant="outline" size="sm">
-                <TrendingUp className="w-4 h-4 mr-1" />
-                Analyze Track
-              </Button>
+              <div className="flex gap-2">
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Filter by type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="mixing">Mixing</SelectItem>
+                    <SelectItem value="arrangement">Arrangement</SelectItem>
+                    <SelectItem value="sound-design">Sound Design</SelectItem>
+                    <SelectItem value="mastering">Mastering</SelectItem>
+                    <SelectItem value="instrumentation">Instrumentation</SelectItem>
+                    <SelectItem value="creative">Creative</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  disabled={isAnalyzing}
+                >
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                  {isAnalyzing ? 'Analyzing...' : 'Re-analyze'}
+                </Button>
+              </div>
             </div>
 
             {/* Suggestions List */}
@@ -142,11 +340,16 @@ export const ProductionAssistant: React.FC = () => {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        {getTypeIcon(suggestion.type)}
+                        {getTypeIcon(suggestion.type, suggestion.instrument)}
                         <h4 className="font-medium">{suggestion.title}</h4>
                         <Badge className={`text-xs ${getTypeColor(suggestion.type)}`}>
                           {suggestion.type}
                         </Badge>
+                        {suggestion.instrument && (
+                          <Badge variant="outline" className="text-xs">
+                            {suggestion.instrument}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-studio-text-secondary">
@@ -159,9 +362,17 @@ export const ProductionAssistant: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    <p className="text-sm text-studio-text-secondary">
+                    <p className="text-sm text-studio-text-secondary mb-2">
                       {suggestion.description}
                     </p>
+                    {suggestion.reasoning && (
+                      <div className="flex items-start gap-2 mt-2 p-2 bg-studio-surface-secondary/50 rounded text-xs">
+                        <Brain className="w-3 h-3 text-neon-purple mt-0.5 flex-shrink-0" />
+                        <span className="text-studio-text-secondary italic">
+                          Lando's insight: {suggestion.reasoning}
+                        </span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -185,53 +396,90 @@ export const ProductionAssistant: React.FC = () => {
               </div>
 
               {/* Analysis Results */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="glass-card-subtle">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <BarChart3 className="w-4 h-4 text-neon-blue" />
-                      <span className="font-medium">Frequency Balance</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>Low End</span>
-                        <span className="text-neon-green">Good</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Mids</span>
-                        <span className="text-neon-orange">Crowded</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span>High End</span>
-                        <span className="text-neon-blue">Bright</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+              {audioAnalysis ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Card className="glass-card-subtle">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <BarChart3 className="w-4 h-4 text-neon-blue" />
+                          <span className="font-medium">Musical Analysis</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Tempo</span>
+                            <span className="text-neon-blue">{audioAnalysis.tempo} BPM</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Key</span>
+                            <span className="text-neon-green">{audioAnalysis.key} {audioAnalysis.mode}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Energy</span>
+                            <span className="text-neon-orange">{Math.round(audioAnalysis.energy * 100)}%</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Danceability</span>
+                            <span className="text-neon-purple">{Math.round(audioAnalysis.danceability * 100)}%</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
 
-                <Card className="glass-card-subtle">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Volume2 className="w-4 h-4 text-neon-purple" />
-                      <span className="font-medium">Dynamics</span>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>LUFS</span>
-                        <span>-12.3</span>
+                    <Card className="glass-card-subtle">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Volume2 className="w-4 h-4 text-neon-purple" />
+                          <span className="font-medium">Spectral Features</span>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Centroid</span>
+                            <span>{Math.round(audioAnalysis.spectralFeatures.centroid)} Hz</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Rolloff</span>
+                            <span>{Math.round(audioAnalysis.spectralFeatures.rolloff)} Hz</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Zero Crossings</span>
+                            <span>{audioAnalysis.spectralFeatures.zcr.toFixed(3)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Valence</span>
+                            <span className="text-neon-green">{Math.round(audioAnalysis.valence * 100)}%</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <Card className="glass-card-subtle">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Wand2 className="w-4 h-4 text-neon-purple" />
+                        <span className="font-medium">Lando's Professional Assessment</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Peak</span>
-                        <span>-2.1 dB</span>
+                      <div className="text-sm text-studio-text-secondary space-y-2">
+                        <p>
+                          "This track has a {audioAnalysis.valence > 0.5 ? 'positive, uplifting' : 'moody, introspective'} feel 
+                          with {audioAnalysis.energy > 0.7 ? 'high energy' : audioAnalysis.energy > 0.4 ? 'moderate energy' : 'low energy'} characteristics. 
+                          The {audioAnalysis.key} {audioAnalysis.mode} tonality at {audioAnalysis.tempo} BPM suggests 
+                          {audioAnalysis.danceability > 0.6 ? 'strong dancefloor potential' : 'more experimental or cinematic applications'}."
+                        </p>
+                        <p className="italic text-neon-purple">
+                          - Lando's recommendation: Focus on {audioAnalysis.energy < 0.5 ? 'building dynamic contrast' : 'maintaining the energy while adding depth'}
+                        </p>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span>Range</span>
-                        <span>8.7 LU</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-studio-text-secondary">
+                  <Brain className="w-12 h-12 mx-auto mb-3 text-studio-text-secondary/50" />
+                  <p>Upload an audio file to enable Lando's advanced analysis</p>
+                </div>
+              )}
             </div>
           </TabsContent>
           
