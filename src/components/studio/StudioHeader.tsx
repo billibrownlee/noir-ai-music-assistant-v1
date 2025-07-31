@@ -16,8 +16,8 @@ export default function StudioHeader() {
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full animate-pulse-neon"></div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">FugattoAI</h1>
-              <p className="text-xs text-muted-foreground">Professional Music Generation</p>
+              <h1 className="text-2xl font-bold text-foreground">Lando</h1>
+              <p className="text-xs text-muted-foreground">AI Music Generation Platform</p>
             </div>
           </div>
           <Badge variant="outline" className="border-primary/50 text-primary">
