@@ -12,6 +12,7 @@ import { RecordingStudio } from "@/components/studio/RecordingStudio";
 import { MixingConsole } from "@/components/studio/MixingConsole";
 import { MasteringSuite } from "@/components/studio/MasteringSuite";
 import { StemEditor } from "@/components/studio/StemEditor";
+import { MusicProductionWorkflow } from "@/components/studio/MusicProductionWorkflow";
 import { SeparatedAudio } from "@/lib/audioSeparation";
 
 interface Track {
@@ -57,7 +58,10 @@ const Index = () => {
       
       <main className="container mx-auto px-6 py-8">
         <div className="space-y-8">
-          {/* Main Production Tools */}
+          {/* Step-by-Step Music Production Workflow */}
+          <MusicProductionWorkflow />
+
+          {/* Original Production Tools - Secondary */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             <div className="space-y-8">
               <PromptBuilder onGenerate={handleGenerate} />
@@ -90,7 +94,7 @@ const Index = () => {
             />
           )}
 
-          {/* Recording & Production */}
+          {/* Recording & Production - Now Secondary */}
           <RecordingStudio />
 
           {/* AI Generators */}
