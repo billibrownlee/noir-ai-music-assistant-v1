@@ -140,8 +140,9 @@ const Index = () => {
 
           {/* Upload & Library Tab */}
           <TabsContent value="upload" className="space-y-6">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <div className="space-y-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+              {/* Left Column - Upload Section */}
+              <div className="xl:col-span-1 space-y-6">
                 <AudioUpload 
                   onSamplesUploaded={(samples) => {
                     console.log('Uploaded samples:', samples);
@@ -158,7 +159,8 @@ const Index = () => {
                 <AudioOutputSelector onDeviceChange={setAudioOutputDevice} />
               </div>
               
-              <div className="space-y-6">
+              {/* Middle Column - Sample Library */}
+              <div className="xl:col-span-1 space-y-6">
                 <SampleLibrary 
                   onSampleSelect={(sample) => console.log('Selected sample:', sample)}
                   uploadedSamples={uploadedSamples}
@@ -167,11 +169,16 @@ const Index = () => {
                     console.log('Deleted sample:', sampleId);
                   }}
                 />
-                
-                <AIChatAssistant 
-                  audioAnalysis={audioAnalysis}
-                  separatedAudio={separatedAudio}
-                />
+              </div>
+              
+              {/* Right Column - AI Chat Assistant */}
+              <div className="xl:col-span-1 space-y-6">
+                <div className="h-[600px]"> {/* Fixed height for consistent layout */}
+                  <AIChatAssistant 
+                    audioAnalysis={audioAnalysis}
+                    separatedAudio={separatedAudio}
+                  />
+                </div>
                 
                 {/* Audio Output Status */}
                 <div className="bg-studio-surface/30 p-3 rounded-lg border border-neon-blue/30">

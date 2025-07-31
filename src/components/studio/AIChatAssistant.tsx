@@ -217,7 +217,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   };
 
   return (
-    <Card className="glass-card h-full flex flex-col">
+    <Card className="glass-card h-full flex flex-col min-h-[600px]">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -258,7 +258,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
       
       <CardContent className="flex-1 flex flex-col p-0">
         {/* Chat Messages */}
-        <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1 px-4 min-h-[400px]" ref={scrollAreaRef}>
           <div className="space-y-4 pb-4">
             {messages.map(message => (
               <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
