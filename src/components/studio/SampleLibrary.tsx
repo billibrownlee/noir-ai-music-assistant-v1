@@ -249,19 +249,28 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                     {/* Action Buttons */}
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {sample.audioUrl ? (
-                        <AudioPlayButton
-                          audioUrl={sample.audioUrl}
-                          trackName={sample.name}
-                          trackId={sample.id}
-                          variant="ghost"
-                          size="sm"
-                        />
+                        <>
+                          {console.log(`🎵 SampleLibrary: Sample "${sample.name}" has audioUrl:`, {
+                            id: sample.id,
+                            hasUrl: !!sample.audioUrl,
+                            urlPrefix: sample.audioUrl?.substring(0, 50) || 'none',
+                            urlValid: sample.audioUrl && sample.audioUrl.trim() !== ''
+                          })}
+                          <AudioPlayButton
+                            audioUrl={sample.audioUrl}
+                            trackName={sample.name}
+                            trackId={sample.id}
+                            variant="ghost"
+                            size="sm"
+                          />
+                        </>
                       ) : (
                         <Button
                           variant="ghost"
                           size="sm"
                           disabled
                           className="opacity-50"
+                          title="No audio file available"
                         >
                           <Play className="w-4 h-4" />
                         </Button>
