@@ -11,6 +11,8 @@ import { CounterMelodyGenerator } from "@/components/studio/CounterMelodyGenerat
 import { RecordingStudio } from "@/components/studio/RecordingStudio";
 import { MixingConsole } from "@/components/studio/MixingConsole";
 import { MasteringSuite } from "@/components/studio/MasteringSuite";
+import { StemEditor } from "@/components/studio/StemEditor";
+import { SeparatedAudio } from "@/lib/audioSeparation";
 
 interface Track {
   id: string;
@@ -26,6 +28,7 @@ interface Track {
 
 const Index = () => {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
+  const [separatedAudio, setSeparatedAudio] = useState<SeparatedAudio | null>(null);
 
   const handleGenerate = (prompt: string, settings: any) => {
     // Simulate track generation
@@ -58,13 +61,34 @@ const Index = () => {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             <div className="space-y-8">
               <PromptBuilder onGenerate={handleGenerate} />
-              <AudioUpload onSamplesUploaded={(samples) => console.log('Uploaded samples:', samples)} />
+              <AudioUpload 
+                onSamplesUploaded={(samples) => console.log('Uploaded samples:', samples)}
+                onAudioSeparated={(separated) => setSeparatedAudio(separated)}
+              />
             </div>
             <div className="space-y-8">
               <GenerationHistory onTrackSelect={handleTrackSelect} />
               <SampleLibrary onSampleSelect={(sample) => console.log('Selected sample:', sample)} />
             </div>
           </div>
+
+          {/* Stem Editor (if audio is separated) */}
+          {separatedAudio && (
+            <StemEditor 
+              separatedAudio={separatedAudio}
+              onStemUpdate={(stemId, updates) => {
+                setSeparatedAudio(prev => {
+                  if (!prev) return null;
+                  return {
+                    ...prev,
+                    stems: prev.stems.map(stem => 
+                      stem.id === stemId ? { ...stem, ...updates } : stem
+                    )
+                  };
+                });
+              }}
+            />
+          )}
 
           {/* Recording & Production */}
           <RecordingStudio />

@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Upload, X, Music, FileAudio, Play, Pause } from 'lucide-react';
+import { Upload, X, Music, FileAudio, Play, Pause, Layers } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AudioAnalyzer, AudioAnalysis } from '@/lib/audioAnalyzer';
+import { AudioSeparationEngine, SeparatedAudio } from '@/lib/audioSeparation';
 
 interface AudioSample {
   id: string;
@@ -27,14 +28,17 @@ interface AudioSample {
 
 interface AudioUploadProps {
   onSamplesUploaded: (samples: AudioSample[]) => void;
+  onAudioSeparated?: (separatedAudio: SeparatedAudio) => void;
 }
 
-export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) => {
+export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onAudioSeparated }) => {
   const [uploadedSamples, setUploadedSamples] = useState<AudioSample[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<HTMLAudioElement | null>(null);
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
   const [audioAnalyzer] = useState(() => new AudioAnalyzer());
+  const [separationEngine] = useState(() => new AudioSeparationEngine());
+  const [separationProgress, setSeparationProgress] = useState<{ progress: number, stage: string } | null>(null);
   const { toast } = useToast();
 
   const validateAudioFile = (file: File): boolean => {
@@ -255,6 +259,38 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
     });
   };
 
+  const separateAudioStems = useCallback(async (sample: AudioSample) => {
+    if (!sample.file) return;
+    
+    try {
+      setSeparationProgress({ progress: 0, stage: 'Starting separation...' });
+      
+      const separatedAudio = await separationEngine.separateAudio(
+        sample.file,
+        (progress, stage) => {
+          setSeparationProgress({ progress, stage });
+        }
+      );
+      
+      setSeparationProgress(null);
+      
+      toast({
+        title: "Audio separated successfully!",
+        description: `Extracted ${separatedAudio.stems.length} stems with ${separatedAudio.separationQuality}% quality`,
+      });
+      
+      onAudioSeparated?.(separatedAudio);
+      
+    } catch (error) {
+      setSeparationProgress(null);
+      toast({
+        title: "Separation failed",
+        description: "Could not separate audio stems. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [separationEngine, onAudioSeparated, toast]);
+
   const handleUploadToLibrary = async () => {
     if (uploadedSamples.length === 0) return;
     
@@ -331,6 +367,22 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
           </Label>
         </div>
 
+        {/* Separation Progress */}
+        {separationProgress && (
+          <Card className="glass-card-subtle border-neon-blue border">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <Layers className="w-5 h-5 text-neon-blue animate-pulse" />
+                <span className="font-medium">Separating Audio Stems...</span>
+              </div>
+              <Progress value={separationProgress.progress} className="w-full mb-2" />
+              <p className="text-sm text-studio-text-secondary">
+                {separationProgress.stage}
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Uploaded Samples */}
         {uploadedSamples.length > 0 && (
           <div className="space-y-4">
@@ -365,29 +417,38 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {sample.audioUrl && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => playAudio(sample)}
-                        className="flex items-center gap-1"
-                      >
-                        {sample.isPlaying ? (
-                          <Pause className="w-4 h-4" />
-                        ) : (
-                          <Play className="w-4 h-4" />
+                      <div className="flex items-center gap-2">
+                        {sample.audioUrl && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => playAudio(sample)}
+                            className="flex items-center gap-1"
+                          >
+                            {sample.isPlaying ? (
+                              <Pause className="w-4 h-4" />
+                            ) : (
+                              <Play className="w-4 h-4" />
+                            )}
+                          </Button>
                         )}
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeSample(sample.id)}
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => separateAudioStems(sample)}
+                          disabled={separationProgress !== null}
+                        >
+                          <Layers className="w-4 h-4 mr-1" />
+                          Separate
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSample(sample.id)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
                 </div>
 
                   {/* Upload Progress */}
