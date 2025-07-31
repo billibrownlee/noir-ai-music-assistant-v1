@@ -50,19 +50,6 @@ const Index = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { playTrack, setAudioOutputDevice } = useGlobalAudio();
 
-  // Manual play function for user control
-  const playLatestUploadedSample = () => {
-    if (uploadedSamples.length > 0) {
-      const latestSample = uploadedSamples[uploadedSamples.length - 1];
-      if (latestSample.audioUrl) {
-        playTrack({
-          id: latestSample.id,
-          name: latestSample.name,
-          audioUrl: latestSample.audioUrl
-        });
-      }
-    }
-  };
 
   // Check audio output device
   useEffect(() => {
@@ -263,81 +250,6 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Manual Play Section - Full User Control */}
-            {uploadedSamples.length > 0 && (
-              <div 
-                id="manual-play-section"
-                className="space-y-4 mt-6 border-2 border-neon-blue/30 rounded-xl"
-              >
-                <div className="bg-gradient-to-br from-neon-blue/20 via-neon-purple/20 to-neon-green/20 p-6 rounded-xl border-2 border-neon-blue/50 shadow-2xl shadow-neon-blue/20">
-                  <div className="flex items-center justify-center mb-4">
-                    <div className="text-4xl">🎵</div>
-                    <h3 className="font-bold text-xl mx-3 text-neon-blue">
-                      YOUR UPLOADED SAMPLE - READY TO PLAY
-                    </h3>
-                    <div className="text-4xl">🎵</div>
-                  </div>
-                  
-                  <div className="bg-studio-surface/50 p-4 rounded-lg border border-neon-green/30 mb-4">
-                    <h4 className="font-medium mb-3 flex items-center gap-2 text-neon-green">
-                      🎧 Audio Ready for Manual Playback (Same AirPods Routing)
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <p className="text-studio-text-secondary">
-                        <strong className="text-neon-blue">Sample Ready:</strong> 
-                        <span className="text-neon-green ml-2 font-mono">
-                          {uploadedSamples[uploadedSamples.length - 1]?.name}
-                        </span>
-                      </p>
-                      <p className="text-studio-text-secondary">
-                        <strong className="text-neon-blue">Audio Routing:</strong> 
-                        <span id="audio-output-device" className="text-neon-orange ml-2">
-                          Same device used by Sample Library & Stem Editor
-                        </span>
-                      </p>
-                      <p className="text-studio-text-secondary">
-                        <strong className="text-neon-blue">Duration:</strong> 
-                        <span className="text-neon-green ml-2">
-                          {uploadedSamples[uploadedSamples.length - 1]?.duration?.toFixed(1)} seconds
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-center gap-4">
-                    <div className="text-center">
-                      <div className="w-4 h-4 bg-neon-blue rounded-full mx-auto mb-2"></div>
-                      <p className="text-xs text-neon-blue font-medium">CLICK TO PLAY MANUALLY</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-center gap-3 mt-4">
-                    <Button 
-                      variant="neon" 
-                      size="lg"
-                      onClick={playLatestUploadedSample}
-                      className="bg-neon-green text-white hover:bg-neon-green/80 font-bold"
-                    >
-                      ▶️ Play Sample
-                    </Button>
-                    
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        const testAudio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaMFbIsNiTNVxcpJtVUWklAAAAAA==');
-                        testAudio.volume = 0.2;
-                        testAudio.play().then(() => {
-                          console.log('🔊 Test beep played - did you hear it in your AirPods?');
-                        }).catch(console.error);
-                      }}
-                      className="border-neon-blue text-neon-blue hover:bg-neon-blue/10"
-                    >
-                      🔊 Test AirPods
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
           </TabsContent>
 
           {/* Generate Tab */}
