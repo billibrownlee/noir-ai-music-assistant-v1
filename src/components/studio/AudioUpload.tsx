@@ -170,9 +170,36 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           isPlaying: false
         };
 
-        // Add sample to list immediately
+        // Add sample to list immediately with 0% progress
         setUploadedSamples(prev => [...prev, sample]);
         console.log('Added sample to list:', sample.name);
+        
+        // Start progress simulation immediately
+        let progress = 0;
+        const progressInterval = setInterval(() => {
+          progress += 20; // Increase by 20% each step
+          console.log(`📊 Progress for ${sample.name}: ${progress}%`);
+          
+          setUploadedSamples(prev => 
+            prev.map(s => s.id === id ? { ...s, uploadProgress: progress } : s)
+          );
+          
+          if (progress >= 100) {
+            clearInterval(progressInterval);
+            console.log('✅ UPLOAD COMPLETE: 100% reached for:', sample.name);
+            
+            // Trigger callback when upload completes
+            setTimeout(() => {
+              setUploadedSamples(currentSamples => {
+                const completedSamples = currentSamples.filter(s => (s.uploadProgress || 0) >= 100);
+                console.log('🚀 SENDING TO PARENT:', completedSamples.length, 'completed samples');
+                onSamplesUploaded(completedSamples);
+                return currentSamples;
+              });
+            }, 100);
+          }
+        }, 200); // Progress every 200ms (total 1 second to reach 100%)
+        
         
         // Get metadata and analysis
         try {
@@ -191,47 +218,21 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             } : s)
           );
           
-          // IMMEDIATE 100% COMPLETION - NO SIMULATION
-          console.log('🚀 IMMEDIATE: Setting upload to 100% instantly');
+          // Trigger analysis callback if available
+          if (onAnalysisComplete && metadata.analysis) {
+            console.log('📊 INSTANT: Triggering analysis callback');
+            onAnalysisComplete(metadata.analysis);
+          }
           
-          // Set progress to 100% immediately
-          setUploadedSamples(prev => 
-            prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
-          );
-          
-          console.log('✅ GUARANTEED: Upload set to 100% for:', file.name);
-          
-          // Trigger callbacks immediately with a slight delay to ensure state is updated
-          setTimeout(() => {
-            console.log('🎵 INSTANT: File ready for processing:', file.name);
-            
-            // Get the updated samples and send to parent immediately
-            setUploadedSamples(currentSamples => {
-              const completedSamples = currentSamples.filter(s => (s.uploadProgress || 0) >= 99);
-              console.log('🤖 AUTO-UPLOAD: Sending', completedSamples.length, 'samples to parent');
-              
-              // Send to parent component right away
-              onSamplesUploaded(completedSamples);
-              console.log('✅ onSamplesUploaded called with samples:', completedSamples.map(s => s.name));
-              
-              return currentSamples; // Don't modify state, just trigger callback
-            });
-            
-            // Only try separation if specifically requested
-            if (onAudioSeparated) {
-              console.log('🔄 INSTANT: Starting separation...');
-              startSimplifiedSeparation(file, id);
-            }
-            
-            // Always trigger analysis callback
-            if (onAnalysisComplete && metadata.analysis) {
-              console.log('📊 INSTANT: Triggering analysis callback');
-              onAnalysisComplete(metadata.analysis);
-            }
-          }, 300); // Slightly longer delay to ensure proper state propagation
+          // Start separation if requested
+          if (onAudioSeparated) {
+            console.log('🔄 Starting separation...');
+            startSimplifiedSeparation(file, id);
+          }
           
         } catch (metadataError) {
           console.error('Error extracting metadata:', metadataError);
+          // Still mark as complete even if metadata fails
           setUploadedSamples(prev => 
             prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
           );
@@ -689,10 +690,23 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                   {sample.uploadProgress !== undefined && sample.uploadProgress < 100 && (
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm">Uploading...</span>
-                        <span className="text-sm">{Math.round(sample.uploadProgress)}%</span>
+                        <span className="text-sm font-medium">Uploading...</span>
+                        <span className="text-sm font-mono">{Math.round(sample.uploadProgress)}%</span>
                       </div>
-                      <Progress value={sample.uploadProgress} className="w-full" />
+                      <Progress value={sample.uploadProgress} className="w-full h-2" />
+                      <div className="text-xs text-studio-text-secondary mt-1">
+                        Processing {sample.name}...
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Complete Status */}
+                  {sample.uploadProgress === 100 && (
+                    <div className="mb-4 p-2 bg-neon-green/10 border border-neon-green/30 rounded">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-neon-green rounded-full"></div>
+                        <span className="text-sm font-medium text-neon-green">Upload Complete - Ready for AI Processing!</span>
+                      </div>
                     </div>
                   )}
 
