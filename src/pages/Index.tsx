@@ -8,6 +8,9 @@ import { SampleLibrary } from "@/components/studio/SampleLibrary";
 import { ProductionAssistant } from "@/components/studio/ProductionAssistant";
 import { DrumPatternGenerator } from "@/components/studio/DrumPatternGenerator";
 import { CounterMelodyGenerator } from "@/components/studio/CounterMelodyGenerator";
+import { RecordingStudio } from "@/components/studio/RecordingStudio";
+import { MixingConsole } from "@/components/studio/MixingConsole";
+import { MasteringSuite } from "@/components/studio/MasteringSuite";
 
 interface Track {
   id: string;
@@ -50,24 +53,33 @@ const Index = () => {
       <StudioHeader />
       
       <main className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-          {/* Left Column - Main Controls */}
-          <div className="xl:col-span-2 space-y-8">
-            <PromptBuilder onGenerate={handleGenerate} />
-            <AudioUpload onSamplesUploaded={(samples) => console.log('Uploaded samples:', samples)} />
-          </div>
-          
-          {/* Right Column - Generators & History */}
-          <div className="xl:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-8">
+          {/* Main Production Tools */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="space-y-8">
+              <PromptBuilder onGenerate={handleGenerate} />
+              <AudioUpload onSamplesUploaded={(samples) => console.log('Uploaded samples:', samples)} />
+            </div>
             <div className="space-y-8">
               <GenerationHistory onTrackSelect={handleTrackSelect} />
               <SampleLibrary onSampleSelect={(sample) => console.log('Selected sample:', sample)} />
             </div>
-            <div className="space-y-8">
-              <ProductionAssistant />
-              <DrumPatternGenerator />
-              <CounterMelodyGenerator />
-            </div>
+          </div>
+
+          {/* Recording & Production */}
+          <RecordingStudio />
+
+          {/* AI Generators */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <ProductionAssistant />
+            <DrumPatternGenerator />
+            <CounterMelodyGenerator />
+          </div>
+
+          {/* Mixing & Mastering */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <MixingConsole />
+            <MasteringSuite />
           </div>
         </div>
         
