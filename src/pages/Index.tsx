@@ -150,7 +150,7 @@ const Index = () => {
 
           {/* Upload & Library Tab */}
           <TabsContent value="upload" className="space-y-6">
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
               {/* Left Column - Upload Section */}
               <div className="xl:col-span-1 space-y-4">
                 {/* Audio Upload Section */}
@@ -236,8 +236,8 @@ const Index = () => {
                 </Collapsible>
               </div>
               
-              {/* Right Column - AI Chat Assistant */}
-              <div className="xl:col-span-1 space-y-4">
+              {/* Right Column - AI Chat Assistant (Always Visible) */}
+              <div className="col-span-1 space-y-4">
                 <Collapsible open={isAIChatOpen} onOpenChange={setIsAIChatOpen}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
