@@ -82,14 +82,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   uploadedSamples = [],
   onUpdateSample 
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: '1',
-      type: 'assistant',
-      content: AI_RESPONSES.greeting,
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -611,12 +604,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
   };
 
   const clearChat = () => {
-    setMessages([{
-      id: '1',
-      type: 'assistant',
-      content: AI_RESPONSES.greeting,
-      timestamp: new Date()
-    }]);
+    setMessages([]);
   };
 
   return (
