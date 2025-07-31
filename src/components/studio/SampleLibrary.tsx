@@ -29,6 +29,8 @@ interface AudioSample {
   duration?: number;
   uploadDate: Date;
   isPlaying?: boolean;
+  audioUrl?: string;
+  file?: File;
 }
 
 const SAMPLE_LIBRARY: AudioSample[] = [
@@ -76,13 +78,26 @@ const SAMPLE_LIBRARY: AudioSample[] = [
 
 interface SampleLibraryProps {
   onSampleSelect?: (sample: AudioSample) => void;
+  uploadedSamples?: AudioSample[];
 }
 
-export const SampleLibrary: React.FC<SampleLibraryProps> = ({ onSampleSelect }) => {
-  const [samples, setSamples] = useState<AudioSample[]>(SAMPLE_LIBRARY);
+export const SampleLibrary: React.FC<SampleLibraryProps> = ({ 
+  onSampleSelect, 
+  uploadedSamples = [] 
+}) => {
+  // Combine default samples with uploaded samples
+  const allSamples = [...SAMPLE_LIBRARY, ...uploadedSamples];
+  const [samples, setSamples] = useState<AudioSample[]>(allSamples);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
   const [playingId, setPlayingId] = useState<string | null>(null);
+  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
+
+  // Update samples when new ones are uploaded
+  React.useEffect(() => {
+    const combinedSamples = [...SAMPLE_LIBRARY, ...uploadedSamples];
+    setSamples(combinedSamples);
+  }, [uploadedSamples]);
 
   const filteredSamples = samples.filter(sample => {
     const matchesSearch = sample.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -91,12 +106,65 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({ onSampleSelect }) 
     return matchesSearch && matchesGenre;
   });
 
-  const handlePlay = (sampleId: string) => {
-    if (playingId === sampleId) {
+  const handlePlay = async (sample: AudioSample) => {
+    try {
+      // Stop current audio if playing
+      if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+      }
+
+      // If clicking the same sample that's playing, stop it
+      if (playingId === sample.id) {
+        setPlayingId(null);
+        setAudioPlayer(null);
+        setSamples(prev => prev.map(s => ({ ...s, isPlaying: false })));
+        return;
+      }
+
+      // Only play if we have an audio URL
+      if (!sample.audioUrl) {
+        console.log('No audio URL available for sample:', sample.name);
+        return;
+      }
+
+      // Create new audio player
+      const audio = new Audio(sample.audioUrl);
+      
+      audio.addEventListener('loadstart', () => {
+        console.log('Loading audio:', sample.name);
+      });
+
+      audio.addEventListener('canplay', () => {
+        console.log('Audio ready to play:', sample.name);
+      });
+
+      audio.addEventListener('ended', () => {
+        setPlayingId(null);
+        setAudioPlayer(null);
+        setSamples(prev => prev.map(s => ({ ...s, isPlaying: false })));
+      });
+
+      audio.addEventListener('error', (e) => {
+        console.error('Audio playback error:', e);
+        setPlayingId(null);
+        setAudioPlayer(null);
+        setSamples(prev => prev.map(s => ({ ...s, isPlaying: false })));
+      });
+
+      await audio.play();
+      
+      setAudioPlayer(audio);
+      setPlayingId(sample.id);
+      setSamples(prev => prev.map(s => ({ 
+        ...s, 
+        isPlaying: s.id === sample.id 
+      })));
+
+    } catch (error) {
+      console.error('Error playing audio:', error);
       setPlayingId(null);
-    } else {
-      setPlayingId(sampleId);
-      // In a real app, this would trigger actual audio playback
+      setAudioPlayer(null);
     }
   };
 
@@ -132,6 +200,11 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({ onSampleSelect }) 
           <div className="flex items-center gap-2">
             <Library className="w-5 h-5 text-neon-purple" />
             Sample Library ({filteredSamples.length})
+            {uploadedSamples.length > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {uploadedSamples.length} uploaded
+              </Badge>
+            )}
           </div>
         </CardTitle>
         
@@ -176,8 +249,14 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({ onSampleSelect }) 
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="flex-shrink-0">
+                      <div className="flex-shrink-0 relative">
                         <Music2 className="w-8 h-8 text-neon-purple p-1.5 bg-neon-purple/20 rounded" />
+                        {sample.isPlaying && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-pulse"></div>
+                        )}
+                        {sample.audioUrl && !SAMPLE_LIBRARY.some(s => s.id === sample.id) && (
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-neon-blue rounded-full"></div>
+                        )}
                       </div>
                       
                       <div className="flex-1 min-w-0">
@@ -228,10 +307,12 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({ onSampleSelect }) 
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handlePlay(sample.id);
+                          handlePlay(sample);
                         }}
+                        className={sample.isPlaying ? "text-neon-green" : ""}
+                        disabled={!sample.audioUrl && !SAMPLE_LIBRARY.some(s => s.id === sample.id)}
                       >
-                        {playingId === sample.id ? (
+                        {sample.isPlaying ? (
                           <Pause className="w-4 h-4" />
                         ) : (
                           <Play className="w-4 h-4" />
@@ -271,7 +352,12 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({ onSampleSelect }) 
               <div className="text-center py-8 text-studio-text-secondary">
                 <Music2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No samples found</p>
-                <p className="text-sm">Try adjusting your search or filters</p>
+                <p className="text-sm">
+                  {uploadedSamples.length === 0 
+                    ? "Upload audio files to get started" 
+                    : "Try adjusting your search or filters"
+                  }
+                </p>
               </div>
             )}
           </div>

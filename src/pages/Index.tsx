@@ -32,6 +32,7 @@ const Index = () => {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [separatedAudio, setSeparatedAudio] = useState<SeparatedAudio | null>(null);
   const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysis | null>(null);
+  const [uploadedSamples, setUploadedSamples] = useState<any[]>([]);
 
   const handleGenerate = (prompt: string, settings: any) => {
     // Simulate track generation
@@ -70,6 +71,7 @@ const Index = () => {
               <AudioUpload 
                 onSamplesUploaded={(samples) => {
                   console.log('Uploaded samples:', samples);
+                  setUploadedSamples(samples);
                   // Pass the latest sample's analysis to Lando
                   const latestSample = samples[samples.length - 1];
                   if (latestSample && latestSample.analysis) {
@@ -81,7 +83,10 @@ const Index = () => {
             </div>
             <div className="space-y-8">
               <GenerationHistory onTrackSelect={handleTrackSelect} />
-              <SampleLibrary onSampleSelect={(sample) => console.log('Selected sample:', sample)} />
+              <SampleLibrary 
+                onSampleSelect={(sample) => console.log('Selected sample:', sample)}
+                uploadedSamples={uploadedSamples}
+              />
             </div>
           </div>
 
