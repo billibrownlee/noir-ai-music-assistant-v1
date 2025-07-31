@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.realtime-token]
 verify_jwt = false
+
+[functions.generate-music]
+verify_jwt = false

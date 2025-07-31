@@ -21,6 +21,7 @@ import { StemEditor } from "@/components/studio/StemEditor";
 import { TempoControl } from "@/components/studio/TempoControl";
 import { MusicProductionWorkflow } from "@/components/studio/MusicProductionWorkflow";
 import { AudioGenerator } from "@/components/studio/AudioGenerator";
+import { MusicGenerator } from "@/components/studio/MusicGenerator";
 import { SeparatedAudio } from "@/lib/audioSeparation";
 import { AudioAnalysis } from "@/lib/audioAnalyzer";
 import { useGlobalAudio } from "@/hooks/useGlobalAudio";
@@ -373,6 +374,32 @@ const Index = () => {
                         genre: 'Generated',
                         tags: ['AI', 'TTS', audio.voice],
                         duration: 0, // Will be updated when played
+                        analysis: null
+                      }]);
+                    }} />
+                  </CollapsibleContent>
+                </Collapsible>
+                
+                <Collapsible defaultOpen={true}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">🎵 AI Music Generator</span>
+                      <ChevronDown className="h-4 w-4 text-white" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <MusicGenerator onMusicGenerated={(music) => {
+                      console.log('Generated music:', music);
+                      // Add to uploaded samples so it appears in the library
+                      setUploadedSamples(prev => [...prev, {
+                        id: music.id,
+                        name: music.originalPrompt,
+                        audioUrl: music.audioUrl,
+                        genre: music.style,
+                        tags: ['AI', 'Generated', music.style, `${music.metadata.bpm}BPM`],
+                        duration: music.duration,
+                        bpm: music.metadata.bpm,
+                        key: music.metadata.key,
                         analysis: null
                       }]);
                     }} />
