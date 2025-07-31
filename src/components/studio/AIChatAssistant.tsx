@@ -786,7 +786,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
           )}
         </div>
         
-        {/* Text Input Area */}
+        {/* Text Input Area - Always Active */}
         <div className="p-4 border-t border-studio-border/30">
           <div className="flex gap-2">
             <Input
@@ -794,14 +794,22 @@ Be conversational, helpful, and provide specific production advice. You can use 
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={isProcessing ? "Processing... you can still type your next command!" : "Ask Lando about mixing, stems, effects..."}
+              placeholder={
+                isProcessing 
+                  ? "Processing... you can still type your next command!" 
+                  : isVoiceConnected 
+                    ? "Type here or speak (both work anytime!)" 
+                    : "Ask Lando about mixing, stems, effects..."
+              }
               className="flex-1"
               disabled={false}
+              autoFocus={true}
             />
             <Button 
-              onClick={handleSendMessage}
+              onClick={isVoiceConnected ? sendVoiceMessage : handleSendMessage}
               disabled={!inputMessage.trim()}
               className="px-3"
+              title={isVoiceConnected ? "Send as voice message" : "Send text message"}
             >
               <Send className="w-4 h-4" />
             </Button>
