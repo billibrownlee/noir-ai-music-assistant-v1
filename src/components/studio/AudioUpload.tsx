@@ -141,17 +141,25 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
           // Simulate upload progress
           let progress = 0;
           const interval = setInterval(() => {
-            progress += Math.random() * 20 + 10;
+            progress += Math.random() * 15 + 5; // 5-20% increments
+            
+            // Ensure progress never exceeds 100
             if (progress >= 100) {
               progress = 100;
               clearInterval(interval);
               console.log('Upload complete for:', file.name);
+              
+              // Set final progress to exactly 100%
+              setUploadedSamples(prev => 
+                prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
+              );
+            } else {
+              // Update progress normally
+              setUploadedSamples(prev => 
+                prev.map(s => s.id === id ? { ...s, uploadProgress: Math.round(progress) } : s)
+              );
             }
-            
-            setUploadedSamples(prev => 
-              prev.map(s => s.id === id ? { ...s, uploadProgress: progress } : s)
-            );
-          }, 300);
+          }, 200); // Faster updates for smoother progress
           
         } catch (metadataError) {
           console.error('Error extracting metadata:', metadataError);
