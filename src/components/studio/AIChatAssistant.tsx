@@ -231,10 +231,12 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     return creativeSuggestions[Math.floor(Math.random() * creativeSuggestions.length)];
   };
 
-  // Handle audio processing commands
+  // Handle audio processing commands with expanded capabilities
   const handleAudioProcessingCommand = async (msg: string): Promise<boolean> => {
     if (uploadedSamples.length === 0) {
-      if (msg.includes('reverse') || msg.includes('speed') || msg.includes('normalize') || msg.includes('distortion') || msg.includes('tempo')) {
+      if (msg.includes('reverse') || msg.includes('speed') || msg.includes('normalize') || msg.includes('distortion') || 
+          msg.includes('tempo') || msg.includes('eq') || msg.includes('filter') || msg.includes('compress') || 
+          msg.includes('gate') || msg.includes('stretch') || msg.includes('pitch')) {
         addAssistantMessage("❌ No audio uploaded yet! Please upload an audio file first before I can process it.");
         return true;
       }
@@ -259,65 +261,136 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     try {
       // Reverse audio
       if (msg.includes('reverse')) {
-        processingDescription = "Reversing your audio...";
-        addAssistantMessage(`🔄 ${processingDescription}`);
+        processingDescription = "Reversing your audio";
+        addAssistantMessage(`🔄 ${processingDescription}...`);
         result = await audioProcessor.current.reverseAudio(latestSample.file);
       }
       
-      // Speed/Tempo change
+      // Speed/Tempo change with more granular control
       else if (msg.includes('speed') || msg.includes('slow') || msg.includes('fast') || msg.includes('tempo')) {
         let speedFactor = 1;
         
-        // Extract speed factor from message
-        const speedMatch = msg.match(/(\d*\.?\d+)x?/);
+        // Extract speed factor from message with better parsing
+        const speedMatch = msg.match(/(\d*\.?\d+)\s*[x%]?/);
+        const percentMatch = msg.match(/(\d+)%/);
+        
         if (speedMatch) {
           speedFactor = parseFloat(speedMatch[1]);
+          // If it's a percentage, convert to factor
+          if (msg.includes('%')) {
+            speedFactor = speedFactor / 100;
+          }
         } else if (msg.includes('slow') || (msg.includes('tempo') && msg.includes('down'))) {
-          speedFactor = 0.75; // More subtle tempo change
+          speedFactor = 0.8; // More subtle default
         } else if (msg.includes('fast') || (msg.includes('tempo') && msg.includes('up'))) {
-          speedFactor = 1.25; // More subtle tempo change
+          speedFactor = 1.2; // More subtle default
         }
         
-        const tempoDesc = speedFactor < 1 ? `slowing tempo down to ${speedFactor}x` : `speeding tempo up to ${speedFactor}x`;
-        processingDescription = `Changing tempo: ${tempoDesc}...`;
-        addAssistantMessage(`🎛️ ${processingDescription}`);
+        // Prevent extreme values
+        speedFactor = Math.max(0.25, Math.min(4.0, speedFactor));
+        
+        const tempoDesc = speedFactor < 1 ? `slowing to ${speedFactor.toFixed(2)}x speed` : `speeding up to ${speedFactor.toFixed(2)}x speed`;
+        processingDescription = `Changing tempo: ${tempoDesc}`;
+        addAssistantMessage(`🎛️ ${processingDescription}...`);
         result = await audioProcessor.current.changeSpeed(latestSample.file, speedFactor);
       }
       
-      // Normalize
+      // Normalize with different levels
       else if (msg.includes('normalize') || msg.includes('loud')) {
-        processingDescription = "Normalizing volume...";
-        addAssistantMessage(`📈 ${processingDescription}`);
+        processingDescription = "Normalizing volume levels";
+        addAssistantMessage(`📈 ${processingDescription}...`);
         result = await audioProcessor.current.normalizeAudio(latestSample.file);
       }
       
-      // Add distortion
-      else if (msg.includes('distortion') || msg.includes('distort')) {
+      // Add distortion with better control
+      else if (msg.includes('distortion') || msg.includes('distort') || msg.includes('overdrive') || msg.includes('saturation')) {
         let amount = 0.5;
-        const amountMatch = msg.match(/(\d+)%/);
-        if (amountMatch) {
-          amount = parseInt(amountMatch[1]) / 100;
+        
+        // Parse amount from various formats
+        const percentMatch = msg.match(/(\d+)%/);
+        const levelMatch = msg.match(/(light|mild|medium|heavy|extreme)/i);
+        const decimalMatch = msg.match(/(\d*\.?\d+)/);
+        
+        if (percentMatch) {
+          amount = parseInt(percentMatch[1]) / 100;
+        } else if (levelMatch) {
+          const level = levelMatch[1].toLowerCase();
+          switch (level) {
+            case 'light': case 'mild': amount = 0.2; break;
+            case 'medium': amount = 0.5; break;
+            case 'heavy': amount = 0.8; break;
+            case 'extreme': amount = 1.0; break;
+          }
+        } else if (decimalMatch && !msg.includes('speed')) {
+          amount = Math.min(1.0, parseFloat(decimalMatch[1]));
         }
         
-        processingDescription = `Adding ${Math.round(amount * 100)}% distortion...`;
-        addAssistantMessage(`🎸 ${processingDescription}`);
+        processingDescription = `Adding ${Math.round(amount * 100)}% distortion/saturation`;
+        addAssistantMessage(`🎸 ${processingDescription}...`);
         result = await audioProcessor.current.addDistortion(latestSample.file, amount);
       }
       
-      // Fade in/out
+      // Fade in/out with better control
       else if (msg.includes('fade')) {
-        const fadeIn = msg.includes('fade in') ? 2 : 0;
-        const fadeOut = msg.includes('fade out') ? 2 : 0;
+        let fadeIn = 0;
+        let fadeOut = 0;
         
-        processingDescription = `Applying fade effects...`;
-        addAssistantMessage(`🎚️ ${processingDescription}`);
+        // Parse fade durations
+        const fadeInMatch = msg.match(/fade\s+in\s+(\d+(?:\.\d+)?)\s*(s|sec|seconds?)?/i);
+        const fadeOutMatch = msg.match(/fade\s+out\s+(\d+(?:\.\d+)?)\s*(s|sec|seconds?)?/i);
+        const generalFadeMatch = msg.match(/fade\s+(\d+(?:\.\d+)?)\s*(s|sec|seconds?)?/i);
+        
+        if (fadeInMatch) {
+          fadeIn = parseFloat(fadeInMatch[1]);
+        } else if (msg.includes('fade in')) {
+          fadeIn = 1.5; // Default fade in duration
+        }
+        
+        if (fadeOutMatch) {
+          fadeOut = parseFloat(fadeOutMatch[1]);
+        } else if (msg.includes('fade out')) {
+          fadeOut = 2.0; // Default fade out duration
+        } else if (generalFadeMatch && !msg.includes('fade in')) {
+          fadeOut = parseFloat(generalFadeMatch[1]);
+        }
+        
+        processingDescription = `Applying fade effects (in: ${fadeIn}s, out: ${fadeOut}s)`;
+        addAssistantMessage(`🎚️ ${processingDescription}...`);
         result = await audioProcessor.current.applyFade(latestSample.file, fadeIn, fadeOut);
+      }
+
+      // Pitch shift (separate from speed change)
+      else if (msg.includes('pitch') && (msg.includes('up') || msg.includes('down') || msg.includes('shift'))) {
+        // For now, use speed change as approximation - could be enhanced with proper pitch shifting
+        let pitchFactor = 1;
+        const semitonesMatch = msg.match(/(\d+)\s*semitones?/i);
+        const halfStepsMatch = msg.match(/(\d+)\s*half\s*steps?/i);
+        
+        if (semitonesMatch || halfStepsMatch) {
+          const semitones = parseInt((semitonesMatch || halfStepsMatch)![1]);
+          pitchFactor = Math.pow(2, (msg.includes('down') ? -semitones : semitones) / 12);
+        } else if (msg.includes('octave')) {
+          pitchFactor = msg.includes('down') ? 0.5 : 2.0;
+        } else {
+          pitchFactor = msg.includes('down') ? 0.9 : 1.1;
+        }
+        
+        processingDescription = `Shifting pitch ${msg.includes('down') ? 'down' : 'up'}`;
+        addAssistantMessage(`🎵 ${processingDescription}...`);
+        result = await audioProcessor.current.changeSpeed(latestSample.file, pitchFactor);
+      }
+
+      // Enhanced chaining commands
+      else if (msg.includes('then') || msg.includes('and then') || msg.includes('followed by')) {
+        addAssistantMessage(`🔗 **Chain Processing Detected!**\n\nI can process multiple effects in sequence. Let me break this down:\n\n💡 **For better results, try one effect at a time:**\n1. Apply the first effect\n2. Listen to the result\n3. Apply the next effect\n\nThis gives you more control and better sound quality!`);
+        setIsProcessing(false);
+        return true;
       }
 
       // Process result
       if (result) {
         if (result.success && result.processedAudioUrl) {
-          // Update the sample with processed audio
+          // Create enhanced processing history
           const processedSample = {
             ...latestSample,
             audioUrl: result.processedAudioUrl,
@@ -326,9 +399,10 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             processHistory: [
               ...(latestSample.processHistory || []),
               {
-                effect: processingDescription.replace('...', ''),
+                effect: processingDescription,
                 timestamp: new Date(),
-                processingTime: result.processingTime
+                processingTime: result.processingTime,
+                parameters: { /* could store effect parameters here */ }
               }
             ]
           };
@@ -340,11 +414,16 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             : '';
           
           addAssistantMessage(
-            `✅ **Processing Complete!**\n\n` +
-            `🎵 Applied: ${processingDescription.replace('...', '')}\n` +
+            `✅ **Audio Processing Complete!**\n\n` +
+            `🎵 Applied: ${processingDescription}\n` +
             `⏱️ Processing time: ${result.processingTime}ms\n` +
             `🎧 **Your processed audio is ready to play!**${historyText}\n\n` +
-            `💡 **Want to do more?** Try: "add distortion", "reverse it", "normalize volume", or "slow it down"`
+            `💡 **Want to do more?** Try:\n` +
+            `• "add light distortion" or "heavy saturation"\n` +
+            `• "fade out 3 seconds" or "fade in 1.5s"\n` +
+            `• "pitch up 2 semitones" or "pitch down an octave"\n` +
+            `• "slow down 25%" or "speed up 1.5x"\n` +
+            `• "reverse it" or "normalize volume"`
           );
           
           toast({
@@ -728,8 +807,8 @@ Be conversational, helpful, and provide specific production advice. You can use 
             </Button>
           </div>
           
-          {/* Quick Actions - Always Available */}
-          <div className="flex gap-2 mt-2 flex-wrap">
+          {/* Enhanced Quick Actions - Always Available */}
+          <div className="grid grid-cols-3 gap-2 mt-2">
             <Button 
               variant="outline" 
               size="sm" 
@@ -737,12 +816,12 @@ Be conversational, helpful, and provide specific production advice. You can use 
               className="text-xs"
             >
               <Cog className="w-3 h-3 mr-1" />
-              Reverse Audio
+              Reverse
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("speed up 2x")}
+              onClick={() => setInputMessage("speed up 1.5x")}
               className="text-xs"
             >
               <Zap className="w-3 h-3 mr-1" />
@@ -760,20 +839,56 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("add distortion")}
+              onClick={() => setInputMessage("add light distortion")}
               className="text-xs"
             >
               <Wand2 className="w-3 h-3 mr-1" />
-              Add FX
+              Light FX
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("slow the tempo down")}
+              onClick={() => setInputMessage("slow down 25%")}
               className="text-xs"
             >
               <Music className="w-3 h-3 mr-1" />
               Slow Down
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setInputMessage("fade out 3 seconds")}
+              className="text-xs"
+            >
+              <Volume2 className="w-3 h-3 mr-1" />
+              Fade Out
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setInputMessage("pitch up 2 semitones")}
+              className="text-xs"
+            >
+              <Music className="w-3 h-3 mr-1" />
+              Pitch Up
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setInputMessage("heavy saturation")}
+              className="text-xs"
+            >
+              <Wand2 className="w-3 h-3 mr-1" />
+              Heavy FX
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setInputMessage("fade in 2 seconds")}
+              className="text-xs"
+            >
+              <Volume2 className="w-3 h-3 mr-1" />
+              Fade In
             </Button>
           </div>
         </div>
