@@ -353,11 +353,15 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   };
 
   const removeSample = (id: string) => {
+    // Clean up audio URL to prevent memory leaks
     const sample = uploadedSamples.find(s => s.id === id);
     if (sample?.audioUrl) {
       URL.revokeObjectURL(sample.audioUrl);
+      console.log('🧹 Cleaned up audio URL for removed sample:', sample.name);
     }
+    
     setUploadedSamples(prev => prev.filter(sample => sample.id !== id));
+    console.log('✅ Sample removed successfully');
   };
 
   const addTag = (sampleId: string, tag: string) => {
@@ -519,33 +523,33 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             {uploadedSamples.map(sample => (
               <Card key={sample.id} className="glass-card-subtle">
                 <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
                       <div className="relative">
                         <FileAudio className="w-6 h-6 text-neon-purple" />
                         {currentTrack?.id === sample.id && isPlaying && (
                           <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-pulse" />
                         )}
                       </div>
-                    <div>
-                      <h4 className="font-medium">{sample.name}</h4>
-                      <div className="flex items-center gap-2 text-sm text-studio-text-secondary">
-                        {sample.duration && (
-                          <span>{Math.floor(sample.duration / 60)}:{(sample.duration % 60).toFixed(0).padStart(2, '0')}</span>
-                        )}
-                        <span>•</span>
-                        <span>{(sample.file.size / (1024 * 1024)).toFixed(1)} MB</span>
-                        {sample.analysis && (
-                          <>
-                            <span>•</span>
-                            <span>{sample.analysis.tempo} BPM</span>
-                            <span>•</span>
-                            <span>{sample.analysis.key} {sample.analysis.mode}</span>
-                          </>
-                        )}
+                      <div>
+                        <h4 className="font-medium">{sample.name}</h4>
+                        <div className="flex items-center gap-2 text-sm text-studio-text-secondary">
+                          {sample.duration && (
+                            <span>{Math.floor(sample.duration / 60)}:{(sample.duration % 60).toFixed(0).padStart(2, '0')}</span>
+                          )}
+                          <span>•</span>
+                          <span>{(sample.file.size / (1024 * 1024)).toFixed(1)} MB</span>
+                          {sample.analysis && (
+                            <>
+                              <span>•</span>
+                              <span>{sample.analysis.tempo} BPM</span>
+                              <span>•</span>
+                              <span>{sample.analysis.key} {sample.analysis.mode}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
                       <div className="flex items-center gap-2">
                         {sample.audioUrl && (
                           <AudioPlayButton
@@ -566,11 +570,16 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                           Separate
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="destructive"
                           size="sm"
-                          onClick={() => removeSample(sample.id)}
+                          onClick={() => {
+                            console.log('🗑️ Removing sample before upload:', sample.name);
+                            removeSample(sample.id);
+                          }}
+                          className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-4 h-4 mr-1" />
+                          Remove
                         </Button>
                       </div>
                 </div>
@@ -672,15 +681,37 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               </Card>
             ))}
 
-            <Button 
-              onClick={handleUploadToLibrary}
-              className="w-full"
-              size="lg"
-              variant="neon"
-              disabled={uploadedSamples.length === 0 || uploadedSamples.some(s => (s.uploadProgress || 0) < 99)}
-            >
-              Add {uploadedSamples.filter(s => (s.uploadProgress || 0) >= 99).length} Sample(s) to Library
-            </Button>
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleUploadToLibrary}
+                className="flex-1"
+                size="lg"
+                variant="neon"
+                disabled={uploadedSamples.length === 0 || uploadedSamples.some(s => (s.uploadProgress || 0) < 99)}
+              >
+                Add {uploadedSamples.filter(s => (s.uploadProgress || 0) >= 99).length} Sample(s) to Library
+              </Button>
+              
+              {uploadedSamples.length > 0 && (
+                <Button 
+                  onClick={() => {
+                    console.log('🗑️ Clearing all samples before upload');
+                    uploadedSamples.forEach(sample => {
+                      if (sample.audioUrl) {
+                        URL.revokeObjectURL(sample.audioUrl);
+                      }
+                    });
+                    setUploadedSamples([]);
+                  }}
+                  variant="destructive"
+                  size="lg"
+                  className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Clear All
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </CardContent>
