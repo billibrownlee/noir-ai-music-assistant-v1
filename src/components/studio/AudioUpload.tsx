@@ -138,28 +138,53 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
             prev.map(s => s.id === id ? { ...s, duration: metadata.duration } : s)
           );
           
-          // Simulate upload progress
+          // Simulate upload progress with guaranteed completion
           let progress = 0;
-          const interval = setInterval(() => {
-            progress += Math.random() * 15 + 5; // 5-20% increments
+          let attempts = 0;
+          const maxAttempts = 50; // Prevent infinite loops
+          
+          const progressInterval = setInterval(() => {
+            attempts++;
             
-            // Ensure progress never exceeds 100
-            if (progress >= 100) {
+            // Add progress increment (5-15% each time)
+            const increment = Math.random() * 10 + 5;
+            progress += increment;
+            
+            console.log(`Upload progress for ${file.name}: ${Math.round(progress)}%`);
+            
+            // Force completion conditions
+            if (progress >= 100 || attempts >= maxAttempts) {
               progress = 100;
-              clearInterval(interval);
-              console.log('Upload complete for:', file.name);
+              clearInterval(progressInterval);
+              
+              console.log('✅ Upload complete for:', file.name);
               
               // Set final progress to exactly 100%
               setUploadedSamples(prev => 
                 prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
               );
+              
+              // Trigger success notification
+              setTimeout(() => {
+                console.log('🎵 File ready for playback:', file.name);
+              }, 500);
+              
             } else {
               // Update progress normally
               setUploadedSamples(prev => 
                 prev.map(s => s.id === id ? { ...s, uploadProgress: Math.round(progress) } : s)
               );
             }
-          }, 200); // Faster updates for smoother progress
+          }, 150); // Slightly faster updates
+          
+          // Backup completion after 10 seconds maximum
+          setTimeout(() => {
+            clearInterval(progressInterval);
+            setUploadedSamples(prev => 
+              prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
+            );
+            console.log('🔄 Backup completion triggered for:', file.name);
+          }, 10000);
           
         } catch (metadataError) {
           console.error('Error extracting metadata:', metadataError);
