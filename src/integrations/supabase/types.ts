@@ -109,6 +109,51 @@ export type Database = {
           },
         ]
       }
+      saved_generated_music: {
+        Row: {
+          audio_url: string
+          created_at: string
+          duration: number
+          generation_time: number
+          id: string
+          instrumental: boolean
+          metadata: Json
+          original_id: string
+          original_prompt: string
+          prompt: string
+          saved_at: string
+          style: string
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string
+          duration: number
+          generation_time: number
+          id?: string
+          instrumental?: boolean
+          metadata: Json
+          original_id: string
+          original_prompt: string
+          prompt: string
+          saved_at?: string
+          style: string
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string
+          duration?: number
+          generation_time?: number
+          id?: string
+          instrumental?: boolean
+          metadata?: Json
+          original_id?: string
+          original_prompt?: string
+          prompt?: string
+          saved_at?: string
+          style?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

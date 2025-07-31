@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Music, Play, Pause, Download, Sparkles, Zap, Volume2, Trash2, AlertTriangle, MoreHorizontal } from 'lucide-react';
+import { Music, Play, Pause, Download, Sparkles, Zap, Volume2, Trash2, AlertTriangle, MoreHorizontal, Save, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGlobalAudio } from '@/hooks/useGlobalAudio';
 import { MusicGenerationEngine } from '@/lib/musicGenerationEngine';
@@ -224,6 +224,47 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
     });
   };
 
+  const saveGeneratedMusic = async (music: GeneratedMusic) => {
+    try {
+      const { error } = await supabase
+        .from('saved_generated_music')
+        .insert({
+          original_id: music.id,
+          prompt: music.prompt,
+          original_prompt: music.originalPrompt,
+          audio_url: music.audioUrl,
+          duration: music.duration,
+          style: music.style,
+          instrumental: music.instrumental,
+          metadata: music.metadata,
+          generation_time: music.generationTime
+        });
+
+      if (error) {
+        console.error('Failed to save music:', error);
+        toast({
+          title: "Save Failed",
+          description: "Could not save the music. Please try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "💾 Music Saved!",
+        description: `"${music.originalPrompt}" has been saved to your collection.`,
+      });
+
+    } catch (error) {
+      console.error('Error saving music:', error);
+      toast({
+        title: "Save Failed", 
+        description: "An error occurred while saving the music.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const selectedStyle = musicStyles.find(s => s.value === style);
 
   return (
@@ -379,14 +420,20 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
                           <MoreHorizontal className="w-3 h-3" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => downloadMusic(music)}
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Download
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
+                       <DropdownMenuContent align="end">
+                         <DropdownMenuItem
+                           onClick={() => saveGeneratedMusic(music)}
+                         >
+                           <Save className="w-4 h-4 mr-2" />
+                           Save to Collection
+                         </DropdownMenuItem>
+                         <DropdownMenuItem
+                           onClick={() => downloadMusic(music)}
+                         >
+                           <Download className="w-4 h-4 mr-2" />
+                           Download
+                         </DropdownMenuItem>
+                         <DropdownMenuSeparator />
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <DropdownMenuItem 
