@@ -578,26 +578,29 @@ export class MusicGenerationEngine {
   }
 
   private generateRnBChords(duration: number, beatDuration: number, rootFreq: number, isMinor: boolean): Float32Array {
-    console.log('🎹 Generating R&B chords:', { duration, beatDuration, rootFreq, isMinor });
-    const tracks: Float32Array[] = [];
+    console.log('🎹 Generating R&B chords (simplified):', { duration, beatDuration, rootFreq, isMinor });
+    
+    // Create a simplified single chord track instead of multiple tracks to avoid memory issues
+    const samples = Math.floor(this.synthesizer['sampleRate'] * duration);
+    const chordTrack = new Float32Array(samples);
     
     // R&B chord progressions with extensions (7ths, 9ths)
-    const chordTones = isMinor ? [0, 3, 7, 10] : [0, 4, 7, 11]; // Add 7th
+    const chordTones = isMinor ? [0, 3, 7] : [0, 4, 7]; // Simplified to 3 tones instead of 4
+    const baseFreq = rootFreq * 0.5; // Lower octave for fuller sound
     
-    for (const tone of chordTones) {
-      const freq = rootFreq * Math.pow(2, tone / 12);
-      console.log('🎵 Generating chord tone at:', freq, 'Hz');
-      const chord = this.synthesizer.generateSineWave(freq, duration, 0.06);
-      console.log('🎵 Generated sine wave with length:', chord.length);
-      const chordEnv = this.synthesizer.applyEnvelope(chord, 0.5, 0.3, 0.9, 1);
-      console.log('🎵 Applied envelope, length:', chordEnv.length);
-      const chordReverb = this.synthesizer.addReverb(chordEnv, 0.4, 0.3);
-      console.log('🎵 Applied reverb, length:', chordReverb.length);
-      tracks.push(chordReverb);
+    // Generate a single combined chord instead of separate tracks
+    for (let i = 0; i < samples; i++) {
+      let sample = 0;
+      for (const tone of chordTones) {
+        const freq = baseFreq * Math.pow(2, tone / 12);
+        const t = i / this.synthesizer['sampleRate'];
+        sample += Math.sin(2 * Math.PI * freq * t) * 0.02; // Very quiet chords
+      }
+      chordTrack[i] = sample;
     }
     
-    console.log('🎹 Combining', tracks.length, 'chord tracks...');
-    return this.synthesizer.combineWaves(tracks);
+    console.log('🎹 Generated simplified chord track with length:', chordTrack.length);
+    return chordTrack;
   }
 
   private generateRnBMelody(duration: number, beatDuration: number, rootFreq: number, isMinor: boolean): Float32Array {
