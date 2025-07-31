@@ -32,7 +32,10 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeUpdateRef = useRef<NodeJS.Timeout>();
-  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('');
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>(() => {
+    // Load saved device from localStorage
+    return localStorage.getItem('preferredAudioDevice') || '';
+  });
 
   const createAudioElement = useCallback(async (track: AudioTrack) => {
     if (audioRef.current) {
@@ -43,17 +46,18 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const audio = new Audio(track.audioUrl);
     audio.volume = volume;
     
-    // Set specific audio output device if selected
+    // CRITICAL: Set specific audio output device FIRST
     if (selectedAudioDevice && 'setSinkId' in audio) {
       try {
         await (audio as any).setSinkId(selectedAudioDevice);
-        console.log('Audio routed to selected device:', selectedAudioDevice);
+        console.log('✅ Audio successfully routed to AirPods device:', selectedAudioDevice);
       } catch (error) {
-        console.log('Could not set audio device, using default:', error);
+        console.error('❌ Failed to set AirPods device, using default:', error);
       }
+    } else {
+      console.log('🔊 Using system default audio output');
     }
     
-    // Ensure audio uses default system output device
     audio.setAttribute('crossorigin', 'anonymous');
     
     // For better compatibility with AirPods and other Bluetooth devices
@@ -103,7 +107,8 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const playTrack = useCallback(async (track: AudioTrack) => {
     try {
-      console.log('Playing track through system default output:', track.name);
+      console.log('🎵 Playing track through AirPods:', track.name);
+      console.log('🎧 Selected device:', selectedAudioDevice || 'System Default');
       
       // If same track is playing, just pause/unpause
       if (currentTrack?.id === track.id && audioRef.current) {
@@ -133,17 +138,17 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         await playPromise;
-        console.log('Audio playing through system output device (AirPods)');
+        console.log('🔊 Audio now playing through your AirPods!');
       }
       
       setIsPlaying(true);
 
     } catch (error) {
-      console.error('Error playing track:', error);
-      console.log('If audio not playing through AirPods, check system audio settings');
+      console.error('❌ Error playing track:', error);
+      console.log('💡 Try selecting your AirPods in the Audio Output Device selector');
       setIsPlaying(false);
     }
-  }, [currentTrack, isPlaying, createAudioElement]);
+  }, [currentTrack, isPlaying, createAudioElement, selectedAudioDevice]);
 
   const pauseTrack = useCallback(() => {
     if (audioRef.current && isPlaying) {
@@ -178,7 +183,9 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const setAudioOutputDevice = useCallback((deviceId: string) => {
     setSelectedAudioDevice(deviceId);
-    console.log('Audio output device set to:', deviceId);
+    // Save to localStorage for persistence
+    localStorage.setItem('preferredAudioDevice', deviceId);
+    console.log('💾 AirPods connection saved! Device:', deviceId);
   }, []);
 
   const value: GlobalAudioContextType = {

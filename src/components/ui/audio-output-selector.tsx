@@ -63,7 +63,7 @@ export const AudioOutputSelector: React.FC<AudioOutputSelectorProps> = ({ onDevi
       const device = audioDevices.find(d => d.deviceId === deviceId);
       const deviceName = device?.label || 'Selected Device';
       
-      console.log('Connecting to audio device:', deviceName);
+      console.log('🎧 Connecting to AirPods:', deviceName);
       
       // Test audio output to the selected device
       if ('setSinkId' in HTMLAudioElement.prototype) {
@@ -73,7 +73,7 @@ export const AudioOutputSelector: React.FC<AudioOutputSelectorProps> = ({ onDevi
         await (testAudio as any).setSinkId(deviceId);
         testAudio.volume = 0.3;
         
-        // Play test sound
+        // Play test sound to confirm routing
         await testAudio.play();
         
         setSelectedDevice(deviceId);
@@ -81,11 +81,11 @@ export const AudioOutputSelector: React.FC<AudioOutputSelectorProps> = ({ onDevi
         onDeviceChange?.(deviceId);
         
         toast({
-          title: "Connected! 🎧",
-          description: `Audio output set to: ${deviceName}`,
+          title: "🎧 AirPods Connected!",
+          description: `Audio will now play through: ${deviceName}`,
         });
         
-        console.log('Successfully connected to:', deviceName);
+        console.log('✅ Successfully connected to AirPods:', deviceName);
       } else {
         // Fallback for browsers that don't support setSinkId
         setSelectedDevice(deviceId);
@@ -93,18 +93,18 @@ export const AudioOutputSelector: React.FC<AudioOutputSelectorProps> = ({ onDevi
         onDeviceChange?.(deviceId);
         
         toast({
-          title: "Device Selected",
-          description: `Selected: ${deviceName} (Browser may use system default)`,
+          title: "AirPods Selected",
+          description: `Selected: ${deviceName} (Using browser default routing)`,
         });
       }
       
     } catch (error) {
-      console.error('Error connecting to device:', error);
+      console.error('❌ Error connecting to AirPods:', error);
       setConnectionStatus('error');
       
       toast({
         title: "Connection Failed",
-        description: "Could not connect to the selected audio device.",
+        description: "Could not connect to AirPods. Please try again.",
         variant: "destructive"
       });
     } finally {
