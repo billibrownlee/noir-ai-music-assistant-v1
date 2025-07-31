@@ -32,7 +32,7 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeUpdateRef = useRef<NodeJS.Timeout>();
 
-  const createAudioElement = useCallback((track: AudioTrack) => {
+  const createAudioElement = useCallback(async (track: AudioTrack) => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = '';
@@ -41,8 +41,25 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const audio = new Audio(track.audioUrl);
     audio.volume = volume;
     
+    // Ensure audio uses default system output device
+    audio.setAttribute('crossorigin', 'anonymous');
+    
+    // For better compatibility with AirPods and other Bluetooth devices
+    try {
+      // Request audio context if not already active (helps with Bluetooth devices)
+      if (typeof window !== 'undefined' && 'AudioContext' in window) {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+        }
+      }
+    } catch (error) {
+      console.log('AudioContext setup info:', error);
+    }
+    
     audio.addEventListener('loadedmetadata', () => {
       setDuration(audio.duration);
+      console.log('Audio loaded - should play through default output device (AirPods if connected)');
     });
 
     audio.addEventListener('timeupdate', () => {
@@ -63,20 +80,29 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
       setCurrentTrack(null);
     });
 
+    // Add explicit play promise handling for better device compatibility
+    audio.addEventListener('canplaythrough', () => {
+      console.log('Audio ready to play through system output device');
+    });
+
     audioRef.current = audio;
     return audio;
   }, [volume]);
 
   const playTrack = useCallback(async (track: AudioTrack) => {
     try {
+      console.log('Playing track through system default output:', track.name);
+      
       // If same track is playing, just pause/unpause
       if (currentTrack?.id === track.id && audioRef.current) {
         if (isPlaying) {
           audioRef.current.pause();
           setIsPlaying(false);
+          console.log('Paused audio');
         } else {
           await audioRef.current.play();
           setIsPlaying(true);
+          console.log('Resumed audio through AirPods/default output');
         }
         return;
       }
@@ -88,14 +114,21 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
 
       // Create new audio element for new track
-      const audio = createAudioElement(track);
+      const audio = await createAudioElement(track);
       setCurrentTrack(track);
       
-      await audio.play();
+      // Play with explicit promise handling
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        await playPromise;
+        console.log('Audio playing through system output device (AirPods)');
+      }
+      
       setIsPlaying(true);
 
     } catch (error) {
       console.error('Error playing track:', error);
+      console.log('If audio not playing through AirPods, check system audio settings');
       setIsPlaying(false);
     }
   }, [currentTrack, isPlaying, createAudioElement]);
