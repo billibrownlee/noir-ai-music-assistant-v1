@@ -287,58 +287,68 @@ export const RecordingStudio: React.FC = () => {
         </div>
 
         {/* Input Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <Label>Input Device</Label>
-            <Select value={inputDevice} onValueChange={setInputDevice}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">Default Microphone</SelectItem>
-                <SelectItem value="usb-mic">USB Microphone</SelectItem>
-                <SelectItem value="audio-interface">Audio Interface</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-4">
+          <h3 className="font-medium flex items-center gap-2">
+            <Settings className="w-4 h-4" />
+            Recording Settings
+          </h3>
           
-          <div>
-            <Label>Recording Track</Label>
-            <Select value={selectedTrack} onValueChange={setSelectedTrack}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {session.tracks.map(track => (
-                  <SelectItem key={track.id} value={track.id}>
-                    {track.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <Button
-              variant={session.isRecording ? "destructive" : "neon"}
-              onClick={() => session.isRecording ? stopRecording() : startRecording(selectedTrack)}
-              className="flex-1"
-            >
-              {session.isRecording ? (
-                <>
-                  <Square className="w-4 h-4 mr-2" />
-                  Stop
-                </>
-              ) : (
-                <>
-                  <Mic className="w-4 h-4 mr-2" />
-                  Record
-                </>
-              )}
-            </Button>
-            <Button variant="outline" size="sm">
-              <Headphones className="w-4 h-4" />
-            </Button>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Input Device</Label>
+              <Select value={inputDevice} onValueChange={setInputDevice}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-studio-surface border border-studio-border">
+                  <SelectItem value="default">Default Microphone</SelectItem>
+                  <SelectItem value="usb-mic">USB Microphone</SelectItem>
+                  <SelectItem value="audio-interface">Audio Interface</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Recording Track</Label>
+              <Select value={selectedTrack} onValueChange={setSelectedTrack}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-studio-surface border border-studio-border">
+                  {session.tracks.map(track => (
+                    <SelectItem key={track.id} value={track.id}>
+                      {track.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Recording Controls</Label>
+              <div className="flex items-center gap-3">
+                <Button
+                  variant={session.isRecording ? "destructive" : "neon"}
+                  onClick={() => session.isRecording ? stopRecording() : startRecording(selectedTrack)}
+                  className="flex-1"
+                >
+                  {session.isRecording ? (
+                    <>
+                      <Square className="w-4 h-4 mr-2" />
+                      Stop
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-4 h-4 mr-2" />
+                      Record
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" size="sm" className="px-3">
+                  <Headphones className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -351,14 +361,21 @@ export const RecordingStudio: React.FC = () => {
           
           {session.tracks.map(track => (
             <Card key={track.id} className="glass-card-subtle">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-start gap-4">
                   {/* Track Info */}
                   <div className="min-w-32">
-                    <h4 className="font-medium">{track.name}</h4>
-                    <Badge variant="outline" className="text-xs">
-                      {track.type}
-                    </Badge>
+                    <h4 className="font-medium text-base mb-2">{track.name}</h4>
+                    <div className="flex flex-wrap gap-1">
+                      <Badge variant="outline" className="text-xs">
+                        {track.type}
+                      </Badge>
+                      {track.isRecording && (
+                        <Badge variant="destructive" className="text-xs animate-pulse">
+                          REC
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Waveform */}
@@ -368,19 +385,21 @@ export const RecordingStudio: React.FC = () => {
                       isRecording={track.isRecording}
                     />
                   </div>
-                  
-                  {/* Controls */}
-                  <div className="flex items-center gap-2">
+                </div>
+                
+                {/* Controls */}
+                <div className="flex items-center justify-between gap-4 pt-2 border-t border-studio-border/20">
+                  <div className="flex items-center gap-4 flex-1">
                     {/* Volume */}
-                    <div className="w-20">
-                      <Label className="text-xs">Vol</Label>
+                    <div className="w-24">
+                      <Label className="text-xs mb-1 block">Volume</Label>
                       <Slider
                         value={[track.volume]}
                         onValueChange={([value]) => updateTrackVolume(track.id, value)}
                         min={0}
                         max={100}
                         step={1}
-                        className="mt-1"
+                        className="mb-1"
                       />
                       <span className="text-xs text-studio-text-secondary">
                         {track.volume}%
@@ -388,42 +407,45 @@ export const RecordingStudio: React.FC = () => {
                     </div>
                     
                     {/* Pan */}
-                    <div className="w-20">
-                      <Label className="text-xs">Pan</Label>
+                    <div className="w-24">
+                      <Label className="text-xs mb-1 block">Pan</Label>
                       <Slider
                         value={[track.pan]}
                         onValueChange={([value]) => updateTrackPan(track.id, value)}
                         min={-100}
                         max={100}
                         step={1}
-                        className="mt-1"
+                        className="mb-1"
                       />
                       <span className="text-xs text-studio-text-secondary">
                         {track.pan > 0 ? 'R' : track.pan < 0 ? 'L' : 'C'}{Math.abs(track.pan)}
                       </span>
                     </div>
-                    
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
                     {/* Mute/Solo */}
-                    <div className="flex flex-col gap-1">
+                    <div className="flex gap-2">
                       <Button
                         variant={track.muted ? "destructive" : "outline"}
                         size="sm"
                         onClick={() => toggleMute(track.id)}
-                        className="text-xs px-2 py-1"
+                        className="text-xs px-3 py-1 min-w-[2rem]"
                       >
                         M
                       </Button>
                       <Button
                         variant={track.soloed ? "neon" : "outline"}
                         size="sm"
-                        className="text-xs px-2 py-1"
+                        className="text-xs px-3 py-1 min-w-[2rem]"
                       >
                         S
                       </Button>
                     </div>
                     
                     {/* Duration */}
-                    <div className="text-sm text-studio-text-secondary min-w-16">
+                    <div className="text-sm text-studio-text-secondary min-w-[4rem] text-right">
+                      <Label className="text-xs block">Duration</Label>
                       {formatTime(track.duration)}
                     </div>
                   </div>
@@ -434,19 +456,30 @@ export const RecordingStudio: React.FC = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Settings className="w-4 h-4 mr-2" />
-            Audio Settings
-          </Button>
-          <Button variant="outline" size="sm">
-            <Zap className="w-4 h-4 mr-2" />
-            Add Track
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Export Session
-          </Button>
+        <div className="space-y-3">
+          <h3 className="font-medium flex items-center gap-2">
+            <Zap className="w-4 h-4" />
+            Quick Actions
+          </h3>
+          
+          <div className="flex flex-wrap gap-3">
+            <Button variant="outline" size="sm" className="whitespace-nowrap">
+              <Settings className="w-4 h-4 mr-2" />
+              Audio Settings
+            </Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap">
+              <Zap className="w-4 h-4 mr-2" />
+              Add Track
+            </Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap">
+              <Download className="w-4 h-4 mr-2" />
+              Export Session
+            </Button>
+            <Button variant="outline" size="sm" className="whitespace-nowrap">
+              <Clock className="w-4 h-4 mr-2" />
+              Metronome
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
