@@ -834,12 +834,13 @@ Be conversational, helpful, and provide specific production advice. You can use 
             </Button>
           </div>
           
-          {/* Enhanced Quick Actions - Always Available */}
+          {/* Enhanced Quick Actions - Direct Audio Processing */}
           <div className="grid grid-cols-3 gap-2 mt-2">
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("reverse the audio")}
+              onClick={() => handleAudioProcessingCommand("reverse")}
+              disabled={uploadedSamples.length === 0 || isProcessing}
               className="text-xs"
             >
               <Cog className="w-3 h-3 mr-1" />
@@ -848,7 +849,8 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("speed up 1.5x")}
+              onClick={() => handleAudioProcessingCommand("speed up 1.5x")}
+              disabled={uploadedSamples.length === 0 || isProcessing}
               className="text-xs"
             >
               <Zap className="w-3 h-3 mr-1" />
@@ -857,7 +859,8 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("normalize volume")}
+              onClick={() => handleAudioProcessingCommand("normalize volume")}
+              disabled={uploadedSamples.length === 0 || isProcessing}
               className="text-xs"
             >
               <Volume2 className="w-3 h-3 mr-1" />
@@ -866,7 +869,8 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("add light distortion")}
+              onClick={() => handleAudioProcessingCommand("add light distortion")}
+              disabled={uploadedSamples.length === 0 || isProcessing}
               className="text-xs"
             >
               <Wand2 className="w-3 h-3 mr-1" />
@@ -875,7 +879,8 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("slow down 25%")}
+              onClick={() => handleAudioProcessingCommand("slow down 25%")}
+              disabled={uploadedSamples.length === 0 || isProcessing}
               className="text-xs"
             >
               <Music className="w-3 h-3 mr-1" />
@@ -884,7 +889,8 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("fade out 3 seconds")}
+              onClick={() => handleAudioProcessingCommand("fade out 3 seconds")}
+              disabled={uploadedSamples.length === 0 || isProcessing}
               className="text-xs"
             >
               <Volume2 className="w-3 h-3 mr-1" />
@@ -893,7 +899,8 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("pitch up 2 semitones")}
+              onClick={() => handleAudioProcessingCommand("pitch up 2 semitones")}
+              disabled={uploadedSamples.length === 0 || isProcessing}
               className="text-xs"
             >
               <Music className="w-3 h-3 mr-1" />
@@ -902,20 +909,22 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("heavy saturation")}
+              onClick={() => handleAudioProcessingCommand("pitch down 2 semitones")}
+              disabled={uploadedSamples.length === 0 || isProcessing}
               className="text-xs"
             >
-              <Wand2 className="w-3 h-3 mr-1" />
-              Heavy FX
+              <Music className="w-3 h-3 mr-1" />
+              Pitch Down
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("fade in 2 seconds")}
+              onClick={() => handleAudioProcessingCommand("heavy saturation")}
+              disabled={uploadedSamples.length === 0 || isProcessing}
               className="text-xs"
             >
-              <Volume2 className="w-3 h-3 mr-1" />
-              Fade In
+              <Wand2 className="w-3 h-3 mr-1" />
+              Heavy FX
             </Button>
           </div>
         </div>
