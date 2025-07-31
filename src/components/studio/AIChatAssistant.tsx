@@ -179,7 +179,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     
     // General production advice
     if (msg.includes('help') || msg.includes('how') || msg.includes('what')) {
-      return "🎯 I can help with:\n• **Audio Processing**: reverse, speed up/slow down, normalize, add distortion\n• **Stem manipulation** and processing\n• **Mixing and mastering** techniques\n• **EQ, compression, and effects** guidance\n• **Creative production** ideas\n\n💡 **Try saying**: \"reverse the audio\", \"speed up by 1.5x\", \"normalize the volume\", \"add distortion\"";
+      return "🎯 I can help with:\n• **Audio Processing**: reverse, speed up/slow down, change tempo, normalize, add distortion\n• **Stem manipulation** and processing\n• **Mixing and mastering** techniques\n• **EQ, compression, and effects** guidance\n• **Creative production** ideas\n\n💡 **Try saying**: \"slow the tempo down\", \"speed up by 1.5x\", \"reverse the audio\", \"normalize the volume\", \"add distortion\"";
     }
     
     // Default creative response
@@ -198,7 +198,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   // Handle audio processing commands
   const handleAudioProcessingCommand = async (msg: string): Promise<boolean> => {
     if (uploadedSamples.length === 0) {
-      if (msg.includes('reverse') || msg.includes('speed') || msg.includes('normalize') || msg.includes('distortion')) {
+      if (msg.includes('reverse') || msg.includes('speed') || msg.includes('normalize') || msg.includes('distortion') || msg.includes('tempo')) {
         addAssistantMessage("❌ No audio uploaded yet! Please upload an audio file first before I can process it.");
         return true;
       }
@@ -222,21 +222,22 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         result = await audioProcessor.current.reverseAudio(latestSample.file);
       }
       
-      // Speed change
-      else if (msg.includes('speed') || msg.includes('slow') || msg.includes('fast')) {
+      // Speed/Tempo change
+      else if (msg.includes('speed') || msg.includes('slow') || msg.includes('fast') || msg.includes('tempo')) {
         let speedFactor = 1;
         
         // Extract speed factor from message
         const speedMatch = msg.match(/(\d*\.?\d+)x?/);
         if (speedMatch) {
           speedFactor = parseFloat(speedMatch[1]);
-        } else if (msg.includes('slow')) {
-          speedFactor = 0.5;
-        } else if (msg.includes('fast')) {
-          speedFactor = 2.0;
+        } else if (msg.includes('slow') || (msg.includes('tempo') && msg.includes('down'))) {
+          speedFactor = 0.75; // More subtle tempo change
+        } else if (msg.includes('fast') || (msg.includes('tempo') && msg.includes('up'))) {
+          speedFactor = 1.25; // More subtle tempo change
         }
         
-        processingDescription = `Changing speed to ${speedFactor}x...`;
+        const tempoDesc = speedFactor < 1 ? `slowing tempo down to ${speedFactor}x` : `speeding tempo up to ${speedFactor}x`;
+        processingDescription = `Changing tempo: ${tempoDesc}...`;
         addAssistantMessage(`🎛️ ${processingDescription}`);
         result = await audioProcessor.current.changeSpeed(latestSample.file, speedFactor);
       }
