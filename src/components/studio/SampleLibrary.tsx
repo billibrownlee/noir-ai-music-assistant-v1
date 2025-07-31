@@ -306,49 +306,66 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                             Download
                           </DropdownMenuItem>
                           <DropdownMenuItem>
+                            <Music2 className="w-4 h-4 mr-2" />
                             Use in Prompt
                           </DropdownMenuItem>
-                          {/* Only show delete for uploaded samples */}
-                          {!SAMPLE_LIBRARY.some(s => s.id === sample.id) && (
+                          
+                          {/* Show delete option for all uploaded samples */}
+                          {uploadedSamples.some(s => s.id === sample.id) && (
                             <>
                               <DropdownMenuSeparator />
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <DropdownMenuItem 
-                                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10 focus:bg-red-400/10 focus:text-red-300"
                                     onSelect={(e) => e.preventDefault()}
                                   >
                                     <Trash2 className="w-4 h-4 mr-2" />
-                                    Delete Sample
+                                    Remove Sample
                                   </DropdownMenuItem>
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
                                     <AlertDialogTitle className="flex items-center gap-2">
                                       <AlertTriangle className="w-5 h-5 text-red-400" />
-                                      Delete Sample
+                                      Remove Sample
                                     </AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Are you sure you want to delete "{sample.name}"? This action cannot be undone and the sample will be permanently removed from your library.
+                                      Are you sure you want to remove "{sample.name}" from your library? This action cannot be undone and the sample will be permanently deleted.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction 
                                       onClick={() => {
+                                        console.log('🗑️ Removing sample:', sample.name, 'ID:', sample.id);
                                         onDeleteSample?.(sample.id);
                                         toast({
-                                          title: "🗑️ Sample Deleted",
+                                          title: "🗑️ Sample Removed",
                                           description: `"${sample.name}" has been removed from your library.`,
                                         });
                                       }}
-                                      className="bg-red-500 hover:bg-red-600"
+                                      className="bg-red-500 hover:bg-red-600 text-white"
                                     >
-                                      Delete
+                                      Remove
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
                               </AlertDialog>
+                            </>
+                          )}
+                          
+                          {/* Show info for default samples that cannot be deleted */}
+                          {SAMPLE_LIBRARY.some(s => s.id === sample.id) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                disabled
+                                className="text-muted-foreground"
+                              >
+                                <Hash className="w-4 h-4 mr-2" />
+                                Default Sample
+                              </DropdownMenuItem>
                             </>
                           )}
                         </DropdownMenuContent>
