@@ -7,6 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Play, Pause, Download, Sparkles, Music, Mic2, Volume2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useGlobalAudio } from "@/hooks/useGlobalAudio";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PromptBuilderProps {
   onGenerate: (prompt: string, settings: any) => void;
@@ -61,6 +64,9 @@ export default function PromptBuilder({ onGenerate }: PromptBuilderProps) {
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingVoice, setIsGeneratingVoice] = useState(false);
+  const { toast } = useToast();
+  const { playTrack } = useGlobalAudio();
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -72,6 +78,66 @@ export default function PromptBuilder({ onGenerate }: PromptBuilderProps) {
       onGenerate(fullPrompt, { ...settings, genre: selectedGenre });
       setIsGenerating(false);
     }, 3000);
+  };
+
+  const handleVoicePreview = async () => {
+    const textToSpeak = customPrompt || GENRE_TEMPLATES[selectedGenre as keyof typeof GENRE_TEMPLATES].prompts[0];
+    
+    if (!textToSpeak.trim()) {
+      toast({
+        title: "No text to speak",
+        description: "Please enter a prompt first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGeneratingVoice(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-audio', {
+        body: {
+          text: textToSpeak.trim(),
+          voice: 'nova',
+          model: 'tts-1',
+          speed: 1.0
+        }
+      });
+
+      if (error) throw error;
+      if (!data?.audioContent) throw new Error('No audio content received');
+
+      // Convert base64 to blob URL
+      const binaryString = atob(data.audioContent);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      await playTrack({
+        id: `prompt-${Date.now()}`,
+        name: 'Prompt Preview',
+        audioUrl
+      });
+
+      toast({
+        title: "🎤 Playing prompt",
+        description: "Listen to your prompt being spoken aloud",
+      });
+
+    } catch (error) {
+      console.error('Voice generation failed:', error);
+      toast({
+        title: "Voice generation failed",
+        description: error.message || "Failed to generate voice. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingVoice(false);
+    }
   };
 
   return (
@@ -228,9 +294,24 @@ export default function PromptBuilder({ onGenerate }: PromptBuilderProps) {
 
         {/* Quick Actions */}
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1">
-            <Volume2 className="w-4 h-4" />
-            Preview
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1"
+            onClick={handleVoicePreview}
+            disabled={isGeneratingVoice || (!customPrompt && !selectedGenre)}
+          >
+            {isGeneratingVoice ? (
+              <>
+                <div className="animate-spin w-3 h-3 border-2 border-current border-t-transparent rounded-full" />
+                Speaking...
+              </>
+            ) : (
+              <>
+                <Volume2 className="w-4 h-4" />
+                Speak Prompt
+              </>
+            )}
           </Button>
           <Button variant="outline" size="sm" className="flex-1">
             <Mic2 className="w-4 h-4" />
