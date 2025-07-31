@@ -77,28 +77,63 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
   const extractAudioMetadata = (file: File): Promise<{ duration: number, analysis?: AudioAnalysis }> => {
     return new Promise((resolve) => {
-      const audio = new Audio();
-      audio.addEventListener('loadedmetadata', async () => {
-        try {
-          // Basic metadata
-          const metadata = { duration: audio.duration };
-          
-          // Try to do quick analysis
-          try {
-            const analysis = await audioAnalyzer.analyzeAudioFile(file);
-            resolve({ ...metadata, analysis });
-          } catch (analysisError) {
-            console.log('Analysis failed, proceeding with basic metadata:', analysisError);
-            resolve(metadata);
+      try {
+        const audio = new Audio();
+        let resolved = false;
+        
+        const resolveOnce = (data: { duration: number, analysis?: AudioAnalysis }) => {
+          if (!resolved) {
+            resolved = true;
+            // Clean up
+            audio.src = '';
+            audio.remove();
+            resolve(data);
           }
-        } catch (error) {
-          resolve({ duration: 0 });
-        }
-      });
-      audio.addEventListener('error', () => {
+        };
+
+        const handleLoadedMetadata = async () => {
+          try {
+            const duration = audio.duration || 0;
+            console.log('✅ Audio metadata loaded - Duration:', duration);
+            
+            // Try analysis but don't let it crash the upload
+            try {
+              const analysis = await audioAnalyzer.analyzeAudioFile(file);
+              resolveOnce({ duration, analysis });
+            } catch (analysisError) {
+              console.log('Analysis failed, using basic metadata:', analysisError);
+              resolveOnce({ duration });
+            }
+          } catch (error) {
+            console.log('Metadata extraction failed:', error);
+            resolveOnce({ duration: 0 });
+          }
+        };
+
+        const handleError = (error: any) => {
+          console.log('Audio load error:', error);
+          resolveOnce({ duration: 0 });
+        };
+
+        // Set up listeners
+        audio.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
+        audio.addEventListener('error', handleError, { once: true });
+        
+        // Fallback timeout - don't hang forever
+        setTimeout(() => {
+          console.log('⚠️ Metadata extraction timeout - using defaults');
+          resolveOnce({ duration: 0 });
+        }, 3000);
+
+        // Create URL and load
+        const audioUrl = URL.createObjectURL(file);
+        audio.src = audioUrl;
+        audio.load();
+        
+      } catch (error) {
+        console.log('Failed to create audio for metadata:', error);
         resolve({ duration: 0 });
-      });
-      audio.src = URL.createObjectURL(file);
+      }
     });
   };
 

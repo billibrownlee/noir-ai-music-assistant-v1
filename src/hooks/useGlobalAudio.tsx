@@ -38,76 +38,138 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
   });
 
   const createAudioElement = useCallback(async (track: AudioTrack) => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = '';
-    }
-
-    const audio = new Audio(track.audioUrl);
-    audio.volume = volume;
-    
-    // CRITICAL: Set specific audio output device FIRST
-    if (selectedAudioDevice && 'setSinkId' in audio) {
-      try {
-        await (audio as any).setSinkId(selectedAudioDevice);
-        console.log('✅ Audio successfully routed to AirPods device:', selectedAudioDevice);
-      } catch (error) {
-        console.error('❌ Failed to set AirPods device, using default:', error);
-      }
-    } else {
-      console.log('🔊 Using system default audio output');
-    }
-    
-    audio.setAttribute('crossorigin', 'anonymous');
-    
-    // For better compatibility with AirPods and other Bluetooth devices
     try {
-      // Request audio context if not already active (helps with Bluetooth devices)
-      if (typeof window !== 'undefined' && 'AudioContext' in window) {
-        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        if (audioContext.state === 'suspended') {
-          await audioContext.resume();
+      // Clean up existing audio first
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current.remove();
+        audioRef.current = null;
+      }
+
+      // Validate track data
+      if (!track?.audioUrl) {
+        console.error('❌ Invalid track - no audioUrl:', track);
+        throw new Error('Invalid audio track');
+      }
+
+      console.log('🎵 Creating audio element for:', track.name);
+      const audio = new Audio();
+      
+      // Set volume safely
+      try {
+        audio.volume = Math.max(0, Math.min(1, volume));
+      } catch (volumeError) {
+        console.log('Volume setting failed, using default:', volumeError);
+        audio.volume = 0.8;
+      }
+      
+      // CRITICAL: Set audio output device FIRST (if supported)
+      if (selectedAudioDevice && 'setSinkId' in audio) {
+        try {
+          await (audio as any).setSinkId(selectedAudioDevice);
+          console.log('✅ Audio routed to device:', selectedAudioDevice);
+        } catch (error) {
+          console.log('⚠️ Device routing failed, using default:', error);
         }
       }
-    } catch (error) {
-      console.log('AudioContext setup info:', error);
-    }
-    
-    audio.addEventListener('loadedmetadata', () => {
-      setDuration(audio.duration);
-      console.log('Audio loaded - should play through default output device (AirPods if connected)');
-    });
-
-    audio.addEventListener('timeupdate', () => {
-      setCurrentTime(audio.currentTime);
-    });
-
-    audio.addEventListener('ended', () => {
-      setIsPlaying(false);
-      setCurrentTime(0);
-      if (timeUpdateRef.current) {
-        clearInterval(timeUpdateRef.current);
+      
+      // Set crossorigin for better compatibility
+      audio.setAttribute('crossorigin', 'anonymous');
+      audio.setAttribute('preload', 'metadata');
+      
+      // Enhanced audio context setup for better device compatibility
+      try {
+        if (typeof window !== 'undefined' && 'AudioContext' in window) {
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+            console.log('✅ AudioContext resumed');
+          }
+        }
+      } catch (contextError) {
+        console.log('AudioContext setup warning:', contextError);
       }
-    });
+      
+      // BULLETPROOF EVENT LISTENERS
+      const setupEventListeners = () => {
+        // Metadata loaded
+        audio.addEventListener('loadedmetadata', () => {
+          try {
+            const audioDuration = audio.duration || 0;
+            setDuration(audioDuration);
+            console.log('✅ Audio metadata loaded - Duration:', audioDuration);
+          } catch (error) {
+            console.log('Metadata processing error:', error);
+            setDuration(0);
+          }
+        }, { once: true });
 
-    audio.addEventListener('error', (e) => {
-      console.error('Audio playback error:', e);
+        // Time updates
+        audio.addEventListener('timeupdate', () => {
+          try {
+            setCurrentTime(audio.currentTime || 0);
+          } catch (error) {
+            console.log('Time update error:', error);
+          }
+        });
+
+        // Audio ended
+        audio.addEventListener('ended', () => {
+          try {
+            setIsPlaying(false);
+            setCurrentTime(0);
+            if (timeUpdateRef.current) {
+              clearInterval(timeUpdateRef.current);
+            }
+            console.log('✅ Audio playback ended cleanly');
+          } catch (error) {
+            console.log('End event error:', error);
+          }
+        });
+
+        // Error handling
+        audio.addEventListener('error', (e) => {
+          console.error('❌ Audio playback error:', e);
+          setIsPlaying(false);
+          setCurrentTrack(null);
+          
+          // Don't crash on errors - just reset
+          try {
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current.src = '';
+            }
+          } catch (cleanupError) {
+            console.log('Error cleanup warning:', cleanupError);
+          }
+        });
+
+        // Can play through (ready to play)
+        audio.addEventListener('canplaythrough', () => {
+          console.log('✅ Audio ready to play through selected output');
+        }, { once: true });
+      };
+
+      setupEventListeners();
+      
+      // Set the source LAST after all setup
+      audio.src = track.audioUrl;
+      audio.load();
+      
+      audioRef.current = audio;
+      return audio;
+      
+    } catch (error) {
+      console.error('❌ Failed to create audio element:', error);
       setIsPlaying(false);
       setCurrentTrack(null);
-    });
-
-    // Add explicit play promise handling for better device compatibility
-    audio.addEventListener('canplaythrough', () => {
-      console.log('Audio ready to play through system output device');
-    });
-
-    audioRef.current = audio;
-    return audio;
-  }, [volume]);
-
+      throw error;
+    }
+  }, [volume, selectedAudioDevice]);
   const playTrack = useCallback(async (track: AudioTrack) => {
     try {
-      console.log('🎵 Playing track through AirPods:', track.name);
+      console.log('🎵 Playing track through selected output:', track.name);
       console.log('🎧 Selected device:', selectedAudioDevice || 'System Default');
       
       // If same track is playing, just pause/unpause
@@ -119,7 +181,7 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
         } else {
           await audioRef.current.play();
           setIsPlaying(true);
-          console.log('Resumed audio through AirPods/default output');
+          console.log('Resumed audio through selected output');
         }
         return;
       }
@@ -138,14 +200,14 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         await playPromise;
-        console.log('🔊 Audio now playing through your AirPods!');
+        console.log('🔊 Audio now playing through selected output!');
       }
       
       setIsPlaying(true);
 
     } catch (error) {
       console.error('❌ Error playing track:', error);
-      console.log('💡 Try selecting your AirPods in the Audio Output Device selector');
+      console.log('💡 Check your audio output device settings');
       setIsPlaying(false);
     }
   }, [currentTrack, isPlaying, createAudioElement, selectedAudioDevice]);
