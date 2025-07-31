@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AudioOutputSelector } from "@/components/ui/audio-output-selector";
 import StudioHeader from "@/components/studio/StudioHeader";
 import PromptBuilder from "@/components/studio/PromptBuilder";
@@ -39,6 +41,11 @@ const Index = () => {
   const [separatedAudio, setSeparatedAudio] = useState<SeparatedAudio | null>(null);
   const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysis | null>(null);
   const [uploadedSamples, setUploadedSamples] = useState<any[]>([]);
+  const [isUploadOpen, setIsUploadOpen] = useState(true);
+  const [isTempoOpen, setIsTempoOpen] = useState(false);
+  const [isSampleLibraryOpen, setIsSampleLibraryOpen] = useState(true);
+  const [isAIChatOpen, setIsAIChatOpen] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { playTrack, setAudioOutputDevice } = useGlobalAudio();
 
   // Manual play function for user control
@@ -143,62 +150,114 @@ const Index = () => {
           <TabsContent value="upload" className="space-y-6">
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               {/* Left Column - Upload Section */}
-              <div className="xl:col-span-1 space-y-6">
-                <AudioUpload 
-                  onSamplesUploaded={(samples) => {
-                    console.log('Uploaded samples:', samples);
-                    setUploadedSamples(samples);
-                    const latestSample = samples[samples.length - 1];
-                    if (latestSample && latestSample.analysis) {
-                      setAudioAnalysis(latestSample.analysis);
-                    }
-                  }}
-                  onAudioSeparated={(separated) => setSeparatedAudio(separated)}
-                  onAnalysisComplete={(analysis) => setAudioAnalysis(analysis)}
-                />
+              <div className="xl:col-span-1 space-y-4">
+                {/* Audio Upload Section */}
+                <Collapsible open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                      <span className="font-medium text-lg">📤 Audio Upload</span>
+                      {isUploadOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <AudioUpload 
+                      onSamplesUploaded={(samples) => {
+                        console.log('Uploaded samples:', samples);
+                        setUploadedSamples(samples);
+                        const latestSample = samples[samples.length - 1];
+                        if (latestSample && latestSample.analysis) {
+                          setAudioAnalysis(latestSample.analysis);
+                        }
+                      }}
+                      onAudioSeparated={(separated) => setSeparatedAudio(separated)}
+                      onAnalysisComplete={(analysis) => setAudioAnalysis(analysis)}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
                 
-                <AudioOutputSelector onDeviceChange={setAudioOutputDevice} />
-                
-                {/* Tempo Control */}
-                <TempoControl 
-                  uploadedSamples={uploadedSamples}
-                  onUpdateSample={(sampleId, updates) => {
-                    setUploadedSamples(prev => 
-                      prev.map(sample => sample.id === sampleId ? { ...sample, ...updates } : sample)
-                    );
-                  }}
-                  onTempoChange={(bpm) => {
-                    console.log('Tempo changed to:', bpm);
-                  }}
-                />
+                {/* Tempo Control Section */}
+                <Collapsible open={isTempoOpen} onOpenChange={setIsTempoOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                      <span className="font-medium text-lg">🎛️ Tempo Control</span>
+                      {isTempoOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <TempoControl 
+                      uploadedSamples={uploadedSamples}
+                      onUpdateSample={(sampleId, updates) => {
+                        setUploadedSamples(prev => 
+                          prev.map(sample => sample.id === sampleId ? { ...sample, ...updates } : sample)
+                        );
+                      }}
+                      onTempoChange={(bpm) => {
+                        console.log('Tempo changed to:', bpm);
+                      }}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
+
+                {/* Settings Section */}
+                <Collapsible open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                      <span className="font-medium text-lg">⚙️ Audio Settings</span>
+                      {isSettingsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <AudioOutputSelector onDeviceChange={setAudioOutputDevice} />
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
               
               {/* Middle Column - Sample Library */}
-              <div className="xl:col-span-1 space-y-6">
-                <SampleLibrary 
-                  onSampleSelect={(sample) => console.log('Selected sample:', sample)}
-                  uploadedSamples={uploadedSamples}
-                  onDeleteSample={(sampleId) => {
-                    setUploadedSamples(prev => prev.filter(sample => sample.id !== sampleId));
-                    console.log('Deleted sample:', sampleId);
-                  }}
-                />
+              <div className="xl:col-span-1 space-y-4">
+                <Collapsible open={isSampleLibraryOpen} onOpenChange={setIsSampleLibraryOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                      <span className="font-medium text-lg">🎵 Sample Library</span>
+                      {isSampleLibraryOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <SampleLibrary 
+                      onSampleSelect={(sample) => console.log('Selected sample:', sample)}
+                      uploadedSamples={uploadedSamples}
+                      onDeleteSample={(sampleId) => {
+                        setUploadedSamples(prev => prev.filter(sample => sample.id !== sampleId));
+                        console.log('Deleted sample:', sampleId);
+                      }}
+                    />
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
               
               {/* Right Column - AI Chat Assistant */}
-              <div className="xl:col-span-1">
-                <div className="h-[600px] overflow-hidden"> {/* Fixed height with overflow control */}
-                  <AIChatAssistant 
-                    audioAnalysis={audioAnalysis}
-                    separatedAudio={separatedAudio}
-                    uploadedSamples={uploadedSamples}
-                    onUpdateSample={(sampleId, updates) => {
-                      setUploadedSamples(prev => 
-                        prev.map(sample => sample.id === sampleId ? { ...sample, ...updates } : sample)
-                      );
-                    }}
-                  />
-                </div>
+              <div className="xl:col-span-1 space-y-4">
+                <Collapsible open={isAIChatOpen} onOpenChange={setIsAIChatOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                      <span className="font-medium text-lg">🤖 Lando AI Chat</span>
+                      {isAIChatOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <div className="h-[600px] overflow-hidden">
+                      <AIChatAssistant 
+                        audioAnalysis={audioAnalysis}
+                        separatedAudio={separatedAudio}
+                        uploadedSamples={uploadedSamples}
+                        onUpdateSample={(sampleId, updates) => {
+                          setUploadedSamples(prev => 
+                            prev.map(sample => sample.id === sampleId ? { ...sample, ...updates } : sample)
+                          );
+                        }}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             </div>
 
@@ -283,35 +342,117 @@ const Index = () => {
           <TabsContent value="generate" className="space-y-6">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               <div className="space-y-6">
-                <PromptBuilder onGenerate={handleGenerate} />
-                <DrumPatternGenerator />
+                <Collapsible defaultOpen={true}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                      <span className="font-medium text-lg">🎯 Prompt Builder</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <PromptBuilder onGenerate={handleGenerate} />
+                  </CollapsibleContent>
+                </Collapsible>
+                
+                <Collapsible defaultOpen={false}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                      <span className="font-medium text-lg">🥁 Drum Patterns</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <DrumPatternGenerator />
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
               
               <div className="space-y-6">
-                <CounterMelodyGenerator />
-                <GenerationHistory onTrackSelect={handleTrackSelect} />
+                <Collapsible defaultOpen={false}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                      <span className="font-medium text-lg">🎹 Counter Melody</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <CounterMelodyGenerator />
+                  </CollapsibleContent>
+                </Collapsible>
+                
+                <Collapsible defaultOpen={true}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                      <span className="font-medium text-lg">📚 Generation History</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <GenerationHistory onTrackSelect={handleTrackSelect} />
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             </div>
           </TabsContent>
 
           {/* Record Tab */}
           <TabsContent value="record" className="space-y-6">
-            <RecordingStudio />
+            <Collapsible defaultOpen={true}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                  <span className="font-medium text-lg">🎤 Recording Studio</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <RecordingStudio />
+              </CollapsibleContent>
+            </Collapsible>
           </TabsContent>
 
           {/* Mix Tab */}
           <TabsContent value="mix" className="space-y-6">
-            <MixingConsole />
+            <Collapsible defaultOpen={true}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                  <span className="font-medium text-lg">🎛️ Mixing Console</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <MixingConsole />
+              </CollapsibleContent>
+            </Collapsible>
           </TabsContent>
 
           {/* Master Tab */}
           <TabsContent value="master" className="space-y-6">
-            <MasteringSuite />
+            <Collapsible defaultOpen={true}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                  <span className="font-medium text-lg">🎚️ Mastering Suite</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <MasteringSuite />
+              </CollapsibleContent>
+            </Collapsible>
           </TabsContent>
 
           {/* Workflow Tab */}
           <TabsContent value="workflow" className="space-y-6">
-            <MusicProductionWorkflow />
+            <Collapsible defaultOpen={true}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
+                  <span className="font-medium text-lg">⚡ Production Workflow</span>
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2">
+                <MusicProductionWorkflow />
+              </CollapsibleContent>
+            </Collapsible>
           </TabsContent>
         </Tabs>
 
