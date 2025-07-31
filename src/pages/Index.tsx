@@ -5,6 +5,9 @@ import AudioPlayer from "@/components/studio/AudioPlayer";
 import GenerationHistory from "@/components/studio/GenerationHistory";
 import { AudioUpload } from "@/components/studio/AudioUpload";
 import { SampleLibrary } from "@/components/studio/SampleLibrary";
+import { ProductionAssistant } from "@/components/studio/ProductionAssistant";
+import { DrumPatternGenerator } from "@/components/studio/DrumPatternGenerator";
+import { CounterMelodyGenerator } from "@/components/studio/CounterMelodyGenerator";
 
 interface Track {
   id: string;
@@ -47,17 +50,24 @@ const Index = () => {
       <StudioHeader />
       
       <main className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Prompt Builder & Upload */}
-          <div className="lg:col-span-2 space-y-8">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          {/* Left Column - Main Controls */}
+          <div className="xl:col-span-2 space-y-8">
             <PromptBuilder onGenerate={handleGenerate} />
             <AudioUpload onSamplesUploaded={(samples) => console.log('Uploaded samples:', samples)} />
           </div>
           
-          {/* Right Column - History & Sample Library */}
-          <div className="space-y-8">
-            <GenerationHistory onTrackSelect={handleTrackSelect} />
-            <SampleLibrary onSampleSelect={(sample) => console.log('Selected sample:', sample)} />
+          {/* Right Column - Generators & History */}
+          <div className="xl:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-8">
+              <GenerationHistory onTrackSelect={handleTrackSelect} />
+              <SampleLibrary onSampleSelect={(sample) => console.log('Selected sample:', sample)} />
+            </div>
+            <div className="space-y-8">
+              <ProductionAssistant />
+              <DrumPatternGenerator />
+              <CounterMelodyGenerator />
+            </div>
           </div>
         </div>
         
