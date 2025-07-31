@@ -2,3 +2,6 @@ project_id = "ctoycqciacgctnaaaqbp"
 
 [functions.generate-audio]
 verify_jwt = false
+
+[functions.realtime-token]
+verify_jwt = false

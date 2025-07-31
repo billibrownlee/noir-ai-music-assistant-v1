@@ -5,8 +5,10 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { AudioProcessor, AudioProcessingResult } from '@/lib/audioProcessor';
+import { RealtimeChat, RealtimeMessage } from '@/utils/RealtimeAudio';
 import { 
   Send, 
   Brain, 
@@ -22,7 +24,10 @@ import {
   Pause,
   RotateCcw,
   Cog,
-  Download
+  Download,
+  Phone,
+  PhoneOff,
+  Sparkles
 } from 'lucide-react';
 import { AudioAnalysis } from '@/lib/audioAnalyzer';
 import { SeparatedAudio } from '@/lib/audioSeparation';
@@ -88,10 +93,30 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Realtime voice chat state
+  const [realtimeChat, setRealtimeChat] = useState<RealtimeChat | null>(null);
+  const [isVoiceConnected, setIsVoiceConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState('nova');
+  const [realtimeMessages, setRealtimeMessages] = useState<RealtimeMessage[]>([]);
+  
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const audioProcessor = useRef(new AudioProcessor());
+
+  const voices = [
+    { value: 'nova', label: 'Nova (Warm Female)' },
+    { value: 'alloy', label: 'Alloy (Neutral)' },
+    { value: 'echo', label: 'Echo (Deep Male)' },
+    { value: 'sage', label: 'Sage (Wise)' },
+    { value: 'shimmer', label: 'Shimmer (Bright)' },
+    { value: 'coral', label: 'Coral (Friendly)' },
+    { value: 'ballad', label: 'Ballad (Smooth)' },
+    { value: 'verse', label: 'Verse (Clear)' }
+  ];
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -405,6 +430,88 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     }
   };
 
+  // Realtime voice chat functions
+  const startVoiceChat = async () => {
+    try {
+      setIsConnecting(true);
+      
+      const chat = new RealtimeChat(
+        (message: RealtimeMessage) => {
+          console.log('📨 Realtime message:', message);
+          setRealtimeMessages(prev => [...prev, message]);
+        },
+        (status) => {
+          console.log('📡 Connection status:', status);
+          setIsVoiceConnected(status === 'connected');
+          setIsConnecting(status === 'connecting');
+        },
+        (speaking) => {
+          setIsSpeaking(speaking);
+        }
+      );
+      
+      const instructions = `You are Lando, an expert AI music production assistant. You help users with audio production, mixing, mastering, and creative guidance. 
+
+Current context:
+- User has ${uploadedSamples.length} audio samples uploaded
+- ${audioAnalysis ? `Current track: ${audioAnalysis.tempo} BPM in ${audioAnalysis.key}` : 'No audio analysis available'}
+- ${separatedAudio ? `Audio stems available: ${separatedAudio.stems.map(s => s.name).join(', ')}` : 'No separated audio available'}
+
+Be conversational, helpful, and provide specific production advice. You can use your function tools to help analyze audio files, suggest chord progressions, and provide mixing advice.`;
+
+      await chat.init(selectedVoice, instructions);
+      setRealtimeChat(chat);
+      
+      toast({
+        title: "🎤 Voice Chat Connected!",
+        description: `High-quality realtime conversation with ${voices.find(v => v.value === selectedVoice)?.label}`,
+      });
+      
+    } catch (error) {
+      console.error('❌ Voice chat connection failed:', error);
+      setIsConnecting(false);
+      setIsVoiceConnected(false);
+      
+      toast({
+        title: "Connection Failed",
+        description: error instanceof Error ? error.message : 'Failed to start voice chat',
+        variant: "destructive",
+      });
+    }
+  };
+
+  const endVoiceChat = () => {
+    if (realtimeChat) {
+      realtimeChat.disconnect();
+      setRealtimeChat(null);
+      setIsVoiceConnected(false);
+      setIsConnecting(false);
+      setIsSpeaking(false);
+      setRealtimeMessages([]);
+      
+      toast({
+        title: "Voice Chat Ended",
+        description: "Disconnected from realtime voice conversation",
+      });
+    }
+  };
+
+  const sendVoiceMessage = async () => {
+    if (!inputMessage.trim() || !realtimeChat) return;
+    
+    try {
+      await realtimeChat.sendMessage(inputMessage);
+      setInputMessage('');
+    } catch (error) {
+      console.error('❌ Failed to send voice message:', error);
+      toast({
+        title: "Send Failed",
+        description: "Failed to send message in voice chat",
+        variant: "destructive",
+      });
+    }
+  };
+
   const clearChat = () => {
     setMessages([{
       id: '1',
@@ -519,8 +626,88 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             )}
           </div>
         </ScrollArea>
+
+        {/* Voice Chat Section */}
+        <div className="p-4 border-t border-studio-border/30 bg-studio-surface/30">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-neon-purple" />
+              <span className="text-sm font-medium text-studio-text-primary">High-Quality Voice Chat</span>
+              <Badge variant={isVoiceConnected ? "default" : "outline"} className="text-xs">
+                {isVoiceConnected ? "Connected" : isConnecting ? "Connecting..." : "Offline"}
+              </Badge>
+              {isSpeaking && (
+                <Badge variant="secondary" className="text-xs animate-pulse">
+                  🎤 Speaking
+                </Badge>
+              )}
+            </div>
+            
+            {/* Voice Selection */}
+            <Select value={selectedVoice} onValueChange={setSelectedVoice} disabled={isVoiceConnected}>
+              <SelectTrigger className="w-40 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {voices.map(voice => (
+                  <SelectItem key={voice.value} value={voice.value}>
+                    {voice.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Voice Chat Controls */}
+          <div className="flex gap-2 mb-3">
+            {!isVoiceConnected ? (
+              <Button 
+                onClick={startVoiceChat}
+                disabled={isConnecting}
+                className="flex-1 bg-neon-purple hover:bg-neon-purple/80"
+              >
+                <Phone className="w-4 h-4 mr-2" />
+                {isConnecting ? "Connecting..." : "Start Voice Chat"}
+              </Button>
+            ) : (
+              <>
+                <Button 
+                  onClick={endVoiceChat}
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  <PhoneOff className="w-4 h-4 mr-2" />
+                  End Voice Chat
+                </Button>
+                <Button 
+                  onClick={sendVoiceMessage}
+                  disabled={!inputMessage.trim()}
+                  variant="outline"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Realtime Messages Display */}
+          {realtimeMessages.length > 0 && (
+            <div className="mb-3 p-2 bg-studio-surface-secondary/30 rounded border max-h-20 overflow-y-auto">
+              <div className="text-xs text-studio-text-secondary mb-1">Live Transcript:</div>
+              {realtimeMessages.slice(-3).map((msg, idx) => (
+                <div key={idx} className="text-xs text-studio-text-primary">
+                  <span className="font-medium">
+                    {msg.role === 'user' ? 'You' : 'Lando'}:
+                  </span>
+                  {' '}
+                  {msg.content}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         
-        {/* Input Area */}
+        {/* Text Input Area */}
         <div className="p-4 border-t border-studio-border/30">
           <div className="flex gap-2">
             <Input
