@@ -31,14 +31,20 @@ interface AudioSample {
 interface AudioUploadProps {
   onSamplesUploaded: (samples: AudioSample[]) => void;
   onAudioSeparated?: (separatedAudio: SeparatedAudio) => void;
+  onAnalysisComplete?: (analysis: AudioAnalysis) => void;
 }
 
-export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onAudioSeparated }) => {
+export const AudioUpload: React.FC<AudioUploadProps> = ({ 
+  onSamplesUploaded, 
+  onAudioSeparated,
+  onAnalysisComplete 
+}) => {
   const [uploadedSamples, setUploadedSamples] = useState<AudioSample[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [audioAnalyzer] = useState(() => new AudioAnalyzer());
   const [separationEngine] = useState(() => new AudioSeparationEngine());
   const [separationProgress, setSeparationProgress] = useState<{ progress: number, stage: string } | null>(null);
+  const [isSeparating, setIsSeparating] = useState(false);
   const { toast } = useToast();
   const { currentTrack, isPlaying } = useGlobalAudio();
 
@@ -69,11 +75,25 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
     return true;
   };
 
-  const extractAudioMetadata = (file: File): Promise<{ duration: number }> => {
+  const extractAudioMetadata = (file: File): Promise<{ duration: number, analysis?: AudioAnalysis }> => {
     return new Promise((resolve) => {
       const audio = new Audio();
-      audio.addEventListener('loadedmetadata', () => {
-        resolve({ duration: audio.duration });
+      audio.addEventListener('loadedmetadata', async () => {
+        try {
+          // Basic metadata
+          const metadata = { duration: audio.duration };
+          
+          // Try to do quick analysis
+          try {
+            const analysis = await audioAnalyzer.analyzeAudioFile(file);
+            resolve({ ...metadata, analysis });
+          } catch (analysisError) {
+            console.log('Analysis failed, proceeding with basic metadata:', analysisError);
+            resolve(metadata);
+          }
+        } catch (error) {
+          resolve({ duration: 0 });
+        }
       });
       audio.addEventListener('error', () => {
         resolve({ duration: 0 });
@@ -128,45 +148,90 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
         setUploadedSamples(prev => [...prev, sample]);
         console.log('Added sample to list:', sample.name);
         
-        // Get basic metadata first (faster)
+        // Get metadata and analysis
         try {
           console.log('Extracting metadata for:', file.name);
           const metadata = await extractAudioMetadata(file);
           console.log('Metadata extracted:', metadata);
           
+          // Update sample with metadata
           setUploadedSamples(prev => 
-            prev.map(s => s.id === id ? { ...s, duration: metadata.duration } : s)
+            prev.map(s => s.id === id ? { 
+              ...s, 
+              duration: metadata.duration,
+              analysis: metadata.analysis,
+              bpm: metadata.analysis?.tempo,
+              key: metadata.analysis?.key
+            } : s)
           );
           
           // Simulate upload progress with guaranteed completion
           let progress = 0;
           let attempts = 0;
-          const maxAttempts = 50; // Prevent infinite loops
+          const maxAttempts = 50;
           
           const progressInterval = setInterval(() => {
             attempts++;
-            
-            // Add progress increment (5-15% each time)
             const increment = Math.random() * 10 + 5;
             progress += increment;
             
             console.log(`Upload progress for ${file.name}: ${Math.round(progress)}%`);
             
-            // Force completion conditions
             if (progress >= 100 || attempts >= maxAttempts) {
               progress = 100;
               clearInterval(progressInterval);
               
               console.log('✅ Upload complete for:', file.name);
               
-              // Set final progress to exactly 100%
+              // Set final progress
               setUploadedSamples(prev => 
                 prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
               );
               
-              // Trigger success notification
-              setTimeout(() => {
-                console.log('🎵 File ready for playback:', file.name);
+              // Trigger callbacks after upload completes
+              setTimeout(async () => {
+                console.log('🎵 File ready for processing:', file.name);
+                
+                // Start audio separation if callback provided
+                if (onAudioSeparated) {
+                  try {
+                    setIsSeparating(true);
+                    setSeparationProgress({ progress: 0, stage: 'Initializing...' });
+                    
+                    console.log('🔄 Starting audio separation...');
+                    const separatedAudio = await separationEngine.separateAudio(
+                      file,
+                      (progress, stage) => {
+                        setSeparationProgress({ progress, stage });
+                        console.log(`Separation: ${Math.round(progress)}% - ${stage}`);
+                      }
+                    );
+                    
+                    console.log('✅ Audio separation complete:', separatedAudio);
+                    onAudioSeparated(separatedAudio);
+                    
+                    toast({
+                      title: "🎛️ Stems Ready!",
+                      description: `Extracted ${separatedAudio.stems.length} stems from your audio. Now you can edit each part separately!`
+                    });
+                    
+                  } catch (error) {
+                    console.error('❌ Separation failed:', error);
+                    toast({
+                      title: "Separation Failed",
+                      description: "Couldn't separate audio stems. You can still work with the full track.",
+                      variant: "destructive"
+                    });
+                  } finally {
+                    setIsSeparating(false);
+                    setSeparationProgress(null);
+                  }
+                }
+                
+                // Trigger analysis callback if available
+                if (onAnalysisComplete && metadata.analysis) {
+                  onAnalysisComplete(metadata.analysis);
+                }
               }, 500);
               
             } else {
@@ -175,9 +240,9 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
                 prev.map(s => s.id === id ? { ...s, uploadProgress: Math.round(progress) } : s)
               );
             }
-          }, 150); // Slightly faster updates
+          }, 150);
           
-          // Backup completion after 10 seconds maximum
+          // Backup completion after 10 seconds
           setTimeout(() => {
             clearInterval(progressInterval);
             setUploadedSamples(prev => 
@@ -188,38 +253,10 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
           
         } catch (metadataError) {
           console.error('Error extracting metadata:', metadataError);
-          // Still mark as uploaded even if metadata fails
           setUploadedSamples(prev => 
             prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
           );
         }
-        
-        // Do audio analysis in background (optional)
-        setTimeout(async () => {
-          try {
-            console.log('Starting audio analysis for:', file.name);
-            const analysis = await audioAnalyzer.analyzeAudioFile(file);
-            console.log('Analysis complete:', analysis);
-            
-            setUploadedSamples(prev => 
-              prev.map(s => s.id === id ? { 
-                ...s, 
-                analysis,
-                bpm: analysis.tempo,
-                key: analysis.key
-              } : s)
-            );
-            
-            toast({
-              title: "Audio analyzed!",
-              description: `${file.name}: ${analysis.tempo} BPM, ${analysis.key} ${analysis.mode}`,
-            });
-            
-          } catch (analysisError) {
-            console.error('Error analyzing audio:', analysisError);
-            // Analysis failure is not critical
-          }
-        }, 1000);
         
       } catch (error) {
         console.error('Error processing file:', file.name, error);
@@ -237,7 +274,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
     });
   };
 
-
   const updateSample = (id: string, updates: Partial<AudioSample>) => {
     setUploadedSamples(prev => 
       prev.map(sample => 
@@ -247,18 +283,15 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
   };
 
   const removeSample = (id: string) => {
-    // Clean up audio URL to prevent memory leaks
     const sample = uploadedSamples.find(s => s.id === id);
     if (sample?.audioUrl) {
       URL.revokeObjectURL(sample.audioUrl);
     }
-    
     setUploadedSamples(prev => prev.filter(sample => sample.id !== id));
   };
 
   const addTag = (sampleId: string, tag: string) => {
     if (!tag.trim()) return;
-    
     updateSample(sampleId, {
       tags: [...(uploadedSamples.find(s => s.id === sampleId)?.tags || []), tag.trim()]
     });
@@ -267,7 +300,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
   const removeTag = (sampleId: string, tagIndex: number) => {
     const sample = uploadedSamples.find(s => s.id === sampleId);
     if (!sample) return;
-    
     updateSample(sampleId, {
       tags: sample.tags.filter((_, index) => index !== tagIndex)
     });
@@ -278,6 +310,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
     
     try {
       setSeparationProgress({ progress: 0, stage: 'Starting separation...' });
+      setIsSeparating(true);
       
       const separatedAudio = await separationEngine.separateAudio(
         sample.file,
@@ -287,6 +320,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
       );
       
       setSeparationProgress(null);
+      setIsSeparating(false);
       
       toast({
         title: "Audio separated successfully!",
@@ -297,6 +331,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
       
     } catch (error) {
       setSeparationProgress(null);
+      setIsSeparating(false);
       toast({
         title: "Separation failed",
         description: "Could not separate audio stems. Please try again.",
@@ -309,8 +344,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
     if (uploadedSamples.length === 0) return;
     
     try {
-      // In a real implementation, you would upload to Supabase storage here
-      // For now, we'll just simulate the process
       const processedSamples = uploadedSamples.filter(s => (s.uploadProgress || 0) >= 100);
       
       toast({
@@ -365,7 +398,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
           <p className="text-lg font-medium mb-2">Drop audio files here</p>
           <p className="text-studio-text-secondary mb-2">Supports MP3, WAV, FLAC, M4A, OGG, AAC (up to 100MB)</p>
           <p className="text-sm text-studio-text-secondary mb-4">
-            Having trouble? Try smaller files or check the console for details.
+            Files will be automatically analyzed and separated into stems for editing!
           </p>
           <input
             type="file"
@@ -449,7 +482,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
                           variant="outline"
                           size="sm"
                           onClick={() => separateAudioStems(sample)}
-                          disabled={separationProgress !== null}
+                          disabled={isSeparating}
                         >
                           <Layers className="w-4 h-4 mr-1" />
                           Separate

@@ -1,0 +1,377 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { 
+  Send, 
+  Brain, 
+  User, 
+  Volume2, 
+  Layers, 
+  Zap, 
+  Music, 
+  Wand2,
+  Mic2,
+  Headphones,
+  Play,
+  Pause,
+  RotateCcw
+} from 'lucide-react';
+import { AudioAnalysis } from '@/lib/audioAnalyzer';
+import { SeparatedAudio } from '@/lib/audioSeparation';
+
+interface ChatMessage {
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  audioContext?: {
+    stems?: string[];
+    technique?: string;
+    parameters?: Record<string, any>;
+  };
+}
+
+interface AIChatAssistantProps {
+  audioAnalysis?: AudioAnalysis;
+  separatedAudio?: SeparatedAudio;
+  onApplyEffect?: (effect: string, parameters: any) => void;
+}
+
+const AI_RESPONSES = {
+  greeting: "👋 Hey! I'm Lando, your AI production assistant. I can help you manipulate your audio stems, suggest mixing techniques, and guide you through the production process. What would you like to work on?",
+  
+  stems: {
+    vocals: "🎤 Great choice! For vocals, I recommend:\n• High-pass filter at 80-100Hz to remove rumble\n• Gentle compression (3:1 ratio, slow attack)\n• EQ boost around 2-5kHz for presence\n• Add some reverb for space. Want me to apply any of these?",
+    
+    drums: "🥁 Let's make those drums punch! Try:\n• Compress the kick with fast attack for punch\n• Gate the snare to tighten it up\n• High-pass the hi-hats above 8kHz\n• Parallel compression on the drum bus for glue",
+    
+    bass: "🎸 Bass foundation is key! Here's what I suggest:\n• Low-pass filter around 200Hz to focus the low end\n• Compress with medium attack to preserve transients\n• Boost around 60-80Hz for weight\n• Cut around 500Hz to avoid muddiness",
+    
+    melody: "🎹 For your melody elements:\n• Add some stereo width with subtle chorus\n• EQ to sit in the mix (cut competing frequencies)\n• Layer with reverb for depth\n• Consider doubling in different octaves"
+  },
+  
+  techniques: {
+    separation: "🔄 I've analyzed your track and separated it into stems:\n• Vocals: Clean vocal content\n• Drums: Kick, snare, and percussion\n• Bass: Low-end foundation\n• Melody: Harmonic content\n\nEach stem can now be processed independently!",
+    
+    mixing: "🎛️ Mixing tips for your track:\n• Start with levels and panning\n• Use EQ to create space for each element\n• Add compression for control and character\n• Effects should enhance, not mask the original sound",
+    
+    mastering: "🎚️ For the final polish:\n• Gentle multiband compression\n• EQ for tonal balance\n• Limiting for loudness (but preserve dynamics!)\n• Check your mix on different speakers"
+  }
+};
+
+export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ 
+  audioAnalysis, 
+  separatedAudio,
+  onApplyEffect 
+}) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: '1',
+      type: 'assistant',
+      content: AI_RESPONSES.greeting,
+      timestamp: new Date()
+    }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Respond when separated audio is available
+  useEffect(() => {
+    if (separatedAudio && messages.length === 1) {
+      setTimeout(() => {
+        addAssistantMessage(AI_RESPONSES.techniques.separation);
+      }, 1000);
+    }
+  }, [separatedAudio]);
+
+  const addAssistantMessage = (content: string, audioContext?: ChatMessage['audioContext']) => {
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'assistant',
+      content,
+      timestamp: new Date(),
+      audioContext
+    };
+    setMessages(prev => [...prev, newMessage]);
+  };
+
+  const generateAIResponse = (userMessage: string): string => {
+    const msg = userMessage.toLowerCase();
+    
+    // Stem-specific responses
+    if (msg.includes('vocal') || msg.includes('voice') || msg.includes('sing')) {
+      return AI_RESPONSES.stems.vocals;
+    }
+    if (msg.includes('drum') || msg.includes('kick') || msg.includes('snare') || msg.includes('hat')) {
+      return AI_RESPONSES.stems.drums;
+    }
+    if (msg.includes('bass') || msg.includes('low end') || msg.includes('sub')) {
+      return AI_RESPONSES.stems.bass;
+    }
+    if (msg.includes('melody') || msg.includes('lead') || msg.includes('harmony')) {
+      return AI_RESPONSES.stems.melody;
+    }
+    
+    // Technique-specific responses
+    if (msg.includes('mix') || msg.includes('balance')) {
+      return AI_RESPONSES.techniques.mixing;
+    }
+    if (msg.includes('master') || msg.includes('loud') || msg.includes('final')) {
+      return AI_RESPONSES.techniques.mastering;
+    }
+    if (msg.includes('separate') || msg.includes('stem') || msg.includes('isolate')) {
+      return AI_RESPONSES.techniques.separation;
+    }
+    
+    // EQ and effects
+    if (msg.includes('eq') || msg.includes('frequency')) {
+      return "🎛️ EQ is powerful! Here's my approach:\n• High-pass to remove unnecessary low frequencies\n• Cut problem frequencies\n• Boost to enhance character\n• Always use your ears, not just your eyes on the analyzer!";
+    }
+    if (msg.includes('compress') || msg.includes('dynamic')) {
+      return "🔧 Compression tips:\n• Use attack time to shape transients\n• Release time affects groove and pumping\n• Ratio controls how aggressive the compression is\n• Makeup gain to match levels after compression";
+    }
+    if (msg.includes('reverb') || msg.includes('space') || msg.includes('depth')) {
+      return "🌊 Reverb creates space:\n• Pre-delay to separate the reverb from the dry signal\n• High-cut to avoid muddy reverb tails\n• Different reverb types for different sounds\n• Less is often more!";
+    }
+    
+    // Analysis-based responses
+    if (audioAnalysis) {
+      if (msg.includes('tempo') || msg.includes('bpm')) {
+        return `🎵 Your track is ${audioAnalysis.tempo} BPM. This tempo works great for ${audioAnalysis.tempo < 100 ? 'intimate, emotional content' : audioAnalysis.tempo > 130 ? 'energetic, danceable vibes' : 'versatile, mid-tempo grooves'}. Want suggestions for complementary elements?`;
+      }
+      if (msg.includes('key') || msg.includes('pitch')) {
+        return `🎹 You're in ${audioAnalysis.key} ${audioAnalysis.mode}. This ${audioAnalysis.mode === 'minor' ? 'minor key has a emotional, introspective quality' : 'major key has a bright, uplifting character'}. Perfect for ${audioAnalysis.mode === 'minor' ? 'adding lush pads or strings' : 'bright leads and uplifting elements'}.`;
+      }
+    }
+    
+    // General production advice
+    if (msg.includes('help') || msg.includes('how') || msg.includes('what')) {
+      return "🎯 I'm here to help! I can assist with:\n• Stem manipulation and processing\n• Mixing and mastering techniques\n• EQ, compression, and effects guidance\n• Creative production ideas\n• Audio analysis insights\n\nJust ask me about any aspect of your production!";
+    }
+    
+    // Default creative response
+    const creativeSuggestions = [
+      "🎨 Try layering your stems with different effects - each one tells a different part of the story!",
+      "⚡ Experiment with automation! Move those faders and knobs to create dynamic interest.",
+      "🔄 Consider reversing some elements for creative transitions and buildup effects.",
+      "🎭 Use stereo imaging to create width - but keep low frequencies centered!",
+      "🌟 Don't forget the power of silence - sometimes what you take away is more important than what you add."
+    ];
+    
+    return creativeSuggestions[Math.floor(Math.random() * creativeSuggestions.length)];
+  };
+
+  const handleSendMessage = () => {
+    if (!inputMessage.trim()) return;
+
+    // Add user message
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
+      type: 'user',
+      content: inputMessage,
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMessage]);
+
+    // Clear input
+    setInputMessage('');
+    
+    // Show typing indicator
+    setIsTyping(true);
+
+    // Generate AI response after a delay
+    setTimeout(() => {
+      const response = generateAIResponse(inputMessage);
+      addAssistantMessage(response);
+      setIsTyping(false);
+    }, 1000 + Math.random() * 1000); // 1-2 second delay for realism
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const clearChat = () => {
+    setMessages([{
+      id: '1',
+      type: 'assistant',
+      content: AI_RESPONSES.greeting,
+      timestamp: new Date()
+    }]);
+  };
+
+  return (
+    <Card className="glass-card h-full flex flex-col">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Brain className="w-5 h-5 text-neon-purple" />
+            Lando AI Chat
+            <Badge variant="outline" className="text-xs">
+              Production Assistant
+            </Badge>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={clearChat}
+            className="text-studio-text-secondary hover:text-studio-text-primary"
+          >
+            <RotateCcw className="w-4 h-4" />
+          </Button>
+        </CardTitle>
+        
+        {/* Context Info */}
+        {(audioAnalysis || separatedAudio) && (
+          <div className="flex flex-wrap gap-2">
+            {audioAnalysis && (
+              <Badge variant="outline" className="text-xs">
+                <Music className="w-3 h-3 mr-1" />
+                Analyzed: {audioAnalysis.tempo} BPM
+              </Badge>
+            )}
+            {separatedAudio && (
+              <Badge variant="outline" className="text-xs">
+                <Layers className="w-3 h-3 mr-1" />
+                {separatedAudio.stems.length} Stems
+              </Badge>
+            )}
+          </div>
+        )}
+      </CardHeader>
+      
+      <CardContent className="flex-1 flex flex-col p-0">
+        {/* Chat Messages */}
+        <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
+          <div className="space-y-4 pb-4">
+            {messages.map(message => (
+              <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
+                <Avatar className="w-8 h-8 flex-shrink-0">
+                  <AvatarFallback className={message.type === 'user' ? 'bg-neon-blue text-black' : 'bg-neon-purple text-black'}>
+                    {message.type === 'user' ? <User className="w-4 h-4" /> : <Brain className="w-4 h-4" />}
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className={`max-w-[80%] ${message.type === 'user' ? 'text-right' : ''}`}>
+                  <div className={`rounded-lg p-3 ${
+                    message.type === 'user' 
+                      ? 'bg-neon-blue/20 text-studio-text-primary ml-auto' 
+                      : 'bg-studio-surface-secondary/50 text-studio-text-primary'
+                  }`}>
+                    <p className="text-sm leading-relaxed whitespace-pre-line">
+                      {message.content}
+                    </p>
+                    
+                    {/* Audio Context Info */}
+                    {message.audioContext && (
+                      <div className="mt-2 pt-2 border-t border-studio-border/50">
+                        <div className="flex gap-2 flex-wrap">
+                          {message.audioContext.stems?.map((stem, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {stem}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="text-xs text-studio-text-secondary mt-1 px-1">
+                    {message.type === 'assistant' ? 'Lando' : 'You'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {/* Typing Indicator */}
+            {isTyping && (
+              <div className="flex gap-3">
+                <Avatar className="w-8 h-8">
+                  <AvatarFallback className="bg-neon-purple text-black">
+                    <Brain className="w-4 h-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="bg-studio-surface-secondary/50 rounded-lg p-3">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-neon-purple rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-neon-purple rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-neon-purple rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+        
+        {/* Input Area */}
+        <div className="p-4 border-t border-studio-border/30">
+          <div className="flex gap-2">
+            <Input
+              ref={inputRef}
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask Lando about mixing, stems, effects..."
+              className="flex-1"
+              disabled={isTyping}
+            />
+            <Button 
+              onClick={handleSendMessage}
+              disabled={!inputMessage.trim() || isTyping}
+              className="px-3"
+            >
+              <Send className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          {/* Quick Actions */}
+          <div className="flex gap-2 mt-2 flex-wrap">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setInputMessage("How do I mix vocals?")}
+              className="text-xs"
+            >
+              <Mic2 className="w-3 h-3 mr-1" />
+              Vocal Tips
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setInputMessage("Help with drum processing")}
+              className="text-xs"
+            >
+              <Volume2 className="w-3 h-3 mr-1" />
+              Drum Help
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setInputMessage("EQ advice")}
+              className="text-xs"
+            >
+              <Zap className="w-3 h-3 mr-1" />
+              EQ Guide
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};

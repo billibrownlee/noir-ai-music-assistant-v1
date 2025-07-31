@@ -9,6 +9,7 @@ import GenerationHistory from "@/components/studio/GenerationHistory";
 import { AudioUpload } from "@/components/studio/AudioUpload";
 import { SampleLibrary } from "@/components/studio/SampleLibrary";
 import { ProductionAssistant } from "@/components/studio/ProductionAssistant";
+import { AIChatAssistant } from "@/components/studio/AIChatAssistant";
 import { DrumPatternGenerator } from "@/components/studio/DrumPatternGenerator";
 import { CounterMelodyGenerator } from "@/components/studio/CounterMelodyGenerator";
 import { RecordingStudio } from "@/components/studio/RecordingStudio";
@@ -176,6 +177,7 @@ const Index = () => {
                     }
                   }}
                   onAudioSeparated={(separated) => setSeparatedAudio(separated)}
+                  onAnalysisComplete={(analysis) => setAudioAnalysis(analysis)}
                 />
                 
                 <AudioOutputSelector onDeviceChange={setAudioOutputDevice} />
@@ -191,9 +193,9 @@ const Index = () => {
                   }}
                 />
                 
-                <ProductionAssistant 
+                <AIChatAssistant 
                   audioAnalysis={audioAnalysis}
-                  currentTrack={currentTrack}
+                  separatedAudio={separatedAudio}
                 />
               </div>
             </div>
