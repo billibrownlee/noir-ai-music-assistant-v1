@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import StudioHeader from "@/components/studio/StudioHeader";
 import PromptBuilder from "@/components/studio/PromptBuilder";
@@ -50,6 +50,41 @@ const Index = () => {
       }
     }
   };
+
+  // Check audio output device
+  useEffect(() => {
+    const checkAudioOutput = async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+          
+          // Find the default or currently selected output
+          const defaultOutput = audioOutputs.find(device => device.deviceId === 'default') || audioOutputs[0];
+          
+          const outputElement = document.getElementById('audio-output-device');
+          if (outputElement && defaultOutput) {
+            outputElement.textContent = defaultOutput.label || 'Default Audio Output';
+            outputElement.className = 'text-neon-green ml-2';
+          } else if (outputElement) {
+            outputElement.textContent = 'System Default Audio Output';
+            outputElement.className = 'text-neon-blue ml-2';
+          }
+        }
+      } catch (error) {
+        console.log('Audio device detection:', error);
+        const outputElement = document.getElementById('audio-output-device');
+        if (outputElement) {
+          outputElement.textContent = 'System Default (AirPods if connected)';
+          outputElement.className = 'text-neon-orange ml-2';
+        }
+      }
+    };
+
+    if (uploadedSamples.length > 0) {
+      checkAudioOutput();
+    }
+  }, [uploadedSamples]);
 
   const handleGenerate = (prompt: string, settings: any) => {
     // Simulate track generation
@@ -105,17 +140,50 @@ const Index = () => {
               uploadedSamples={uploadedSamples}
             />
 
-            {/* Quick Play Button for Latest Upload */}
+            {/* Audio Output Device Checker & Quick Play Section */}
             {uploadedSamples.length > 0 && (
-              <div className="flex justify-center mt-4">
-                <Button 
-                  variant="neon" 
-                  size="lg"
-                  onClick={playLatestUploadedSample}
-                  className="animate-pulse"
-                >
-                  🎵 Play Your Latest Upload: "{uploadedSamples[uploadedSamples.length - 1]?.name}"
-                </Button>
+              <div className="space-y-4 mt-6">
+                <div className="bg-studio-surface-secondary/30 p-4 rounded-lg border border-neon-blue/20">
+                  <h3 className="font-medium mb-3 flex items-center gap-2">
+                    🎧 Audio Output Check
+                  </h3>
+                  <div className="space-y-3">
+                    <p className="text-sm text-studio-text-secondary">
+                      <strong>Current Output Device:</strong> 
+                      <span id="audio-output-device" className="text-neon-blue ml-2">
+                        Checking system audio output...
+                      </span>
+                    </p>
+                    <p className="text-sm text-studio-text-secondary">
+                      Make sure your AirPods are connected and set as the default audio output in your system settings.
+                    </p>
+                    
+                    <div className="flex gap-3">
+                      <Button 
+                        variant="neon" 
+                        size="lg"
+                        onClick={playLatestUploadedSample}
+                        className="animate-pulse"
+                      >
+                        🎵 Play: "{uploadedSamples[uploadedSamples.length - 1]?.name}"
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          // Test system audio with a short beep
+                          const testAudio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaMFbIsNiTNVxcpJtVUWklAAAAAA==');
+                          testAudio.volume = 0.1;
+                          testAudio.play().then(() => {
+                            console.log('Test audio played - check if you heard it in your AirPods');
+                          }).catch(console.error);
+                        }}
+                      >
+                        🔊 Test Audio Output
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
             </div>
