@@ -51,6 +51,31 @@ const Index = () => {
     }
   };
 
+  // Auto-play the latest uploaded sample when available
+  useEffect(() => {
+    if (uploadedSamples.length > 0) {
+      const latestSample = uploadedSamples[uploadedSamples.length - 1];
+      if (latestSample.audioUrl) {
+        // Auto-play after a short delay
+        setTimeout(() => {
+          console.log('🎵 AUTO-PLAYING YOUR UPLOADED SAMPLE 🎵');
+          playTrack({
+            id: latestSample.id,
+            name: latestSample.name,
+            audioUrl: latestSample.audioUrl
+          });
+          
+          // Highlight the playing section
+          const playSection = document.getElementById('auto-play-section');
+          if (playSection) {
+            playSection.classList.add('ring-4', 'ring-neon-green', 'bg-neon-green/10');
+            playSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 1000);
+      }
+    }
+  }, [uploadedSamples, playTrack]);
+
   // Check audio output device
   useEffect(() => {
     const checkAudioOutput = async () => {
@@ -140,48 +165,77 @@ const Index = () => {
               uploadedSamples={uploadedSamples}
             />
 
-            {/* Audio Output Device Checker & Quick Play Section */}
+            {/* AUTO-PLAY SECTION - HIGHLIGHTED */}
             {uploadedSamples.length > 0 && (
-              <div className="space-y-4 mt-6">
-                <div className="bg-studio-surface-secondary/30 p-4 rounded-lg border border-neon-blue/20">
-                  <h3 className="font-medium mb-3 flex items-center gap-2">
-                    🎧 Audio Output Check
-                  </h3>
-                  <div className="space-y-3">
-                    <p className="text-sm text-studio-text-secondary">
-                      <strong>Current Output Device:</strong> 
-                      <span id="audio-output-device" className="text-neon-blue ml-2">
-                        Checking system audio output...
-                      </span>
-                    </p>
-                    <p className="text-sm text-studio-text-secondary">
-                      Make sure your AirPods are connected and set as the default audio output in your system settings.
-                    </p>
-                    
-                    <div className="flex gap-3">
-                      <Button 
-                        variant="neon" 
-                        size="lg"
-                        onClick={playLatestUploadedSample}
-                        className="animate-pulse"
-                      >
-                        🎵 Play: "{uploadedSamples[uploadedSamples.length - 1]?.name}"
-                      </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        onClick={() => {
-                          // Test system audio with a short beep
-                          const testAudio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaMFbIsNiTNVxcpJtVUWklAAAAAA==');
-                          testAudio.volume = 0.1;
-                          testAudio.play().then(() => {
-                            console.log('Test audio played - check if you heard it in your AirPods');
-                          }).catch(console.error);
-                        }}
-                      >
-                        🔊 Test Audio Output
-                      </Button>
+              <div 
+                id="auto-play-section"
+                className="space-y-4 mt-6 transition-all duration-1000 border-2 border-neon-blue animate-pulse"
+              >
+                <div className="bg-gradient-to-br from-neon-blue/20 via-neon-purple/20 to-neon-green/20 p-6 rounded-xl border-2 border-neon-blue/50 shadow-2xl shadow-neon-blue/20">
+                  <div className="flex items-center justify-center mb-4">
+                    <div className="animate-bounce text-4xl">🎵</div>
+                    <h3 className="font-bold text-xl mx-3 text-neon-blue">
+                      AUTO-PLAYING YOUR UPLOADED SAMPLE
+                    </h3>
+                    <div className="animate-bounce text-4xl">🎵</div>
+                  </div>
+                  
+                  <div className="bg-studio-surface/50 p-4 rounded-lg border border-neon-green/30 mb-4">
+                    <h4 className="font-medium mb-3 flex items-center gap-2 text-neon-green">
+                      🎧 Audio Output & Playback Info
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <p className="text-studio-text-secondary">
+                        <strong className="text-neon-blue">Now Playing:</strong> 
+                        <span className="text-neon-green ml-2 font-mono">
+                          {uploadedSamples[uploadedSamples.length - 1]?.name}
+                        </span>
+                      </p>
+                      <p className="text-studio-text-secondary">
+                        <strong className="text-neon-blue">Output Device:</strong> 
+                        <span id="audio-output-device" className="text-neon-orange ml-2">
+                          Detecting your AirPods/speakers...
+                        </span>
+                      </p>
+                      <p className="text-studio-text-secondary">
+                        <strong className="text-neon-blue">Duration:</strong> 
+                        <span className="text-neon-green ml-2">
+                          {uploadedSamples[uploadedSamples.length - 1]?.duration?.toFixed(1)} seconds
+                        </span>
+                      </p>
                     </div>
+                  </div>
+                  
+                  <div className="flex justify-center gap-4">
+                    <div className="text-center">
+                      <div className="w-4 h-4 bg-neon-green rounded-full animate-pulse mx-auto mb-2"></div>
+                      <p className="text-xs text-neon-green font-medium">PLAYING FROM HERE</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-center gap-3 mt-4">
+                    <Button 
+                      variant="neon" 
+                      size="lg"
+                      onClick={playLatestUploadedSample}
+                      className="bg-neon-green text-black hover:bg-neon-green/80 font-bold"
+                    >
+                      🔄 Replay Sample
+                    </Button>
+                    
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        const testAudio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaMFbIsNiTNVxcpJtVUWklAAAAAA==');
+                        testAudio.volume = 0.2;
+                        testAudio.play().then(() => {
+                          console.log('🔊 Test beep played - did you hear it in your AirPods?');
+                        }).catch(console.error);
+                      }}
+                      className="border-neon-blue text-neon-blue hover:bg-neon-blue/10"
+                    >
+                      🔊 Test AirPods
+                    </Button>
                   </div>
                 </div>
               </div>
