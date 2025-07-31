@@ -7,7 +7,9 @@ import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Music, Play, Pause, Download, Sparkles, Zap, Volume2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Music, Play, Pause, Download, Sparkles, Zap, Volume2, Trash2, AlertTriangle, MoreHorizontal } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGlobalAudio } from '@/hooks/useGlobalAudio';
 import { MusicGenerationEngine } from '@/lib/musicGenerationEngine';
@@ -204,6 +206,24 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
     });
   };
 
+  const deleteGeneratedMusic = (musicId: string) => {
+    const music = generatedMusic.find(m => m.id === musicId);
+    if (!music) return;
+    
+    // Clean up the blob URL to free memory
+    if (music.audioUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(music.audioUrl);
+    }
+    
+    // Remove from state
+    setGeneratedMusic(prev => prev.filter(m => m.id !== musicId));
+    
+    toast({
+      title: "🗑️ Music Deleted",
+      description: `"${music.originalPrompt}" has been removed from your generated music.`,
+    });
+  };
+
   const selectedStyle = musicStyles.find(s => s.value === style);
 
   return (
@@ -349,13 +369,57 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
                        <Play className="w-3 h-3 mr-1" />
                        Play
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => downloadMusic(music)}
-                    >
-                      <Download className="w-3 h-3" />
-                    </Button>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                        >
+                          <MoreHorizontal className="w-3 h-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => downloadMusic(music)}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem 
+                              className="text-red-400 hover:text-red-300 hover:bg-red-400/10 focus:bg-red-400/10 focus:text-red-300"
+                              onSelect={(e) => e.preventDefault()}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2">
+                                <AlertTriangle className="w-5 h-5 text-red-400" />
+                                Delete Generated Music
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{music.originalPrompt}"? This action cannot be undone and the music will be permanently removed.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => deleteGeneratedMusic(music.id)}
+                                className="bg-red-500 hover:bg-red-600 text-white"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               ))}
