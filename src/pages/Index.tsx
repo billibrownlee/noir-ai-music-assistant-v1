@@ -140,7 +140,7 @@ const Index = () => {
 
           {/* Upload & Library Tab */}
           <TabsContent value="upload" className="space-y-6">
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               {/* Left Column - Upload Section */}
               <div className="xl:col-span-1 space-y-6">
                 <AudioUpload 
@@ -172,8 +172,8 @@ const Index = () => {
               </div>
               
               {/* Right Column - AI Chat Assistant */}
-              <div className="xl:col-span-1 space-y-6">
-                <div className="h-[600px]"> {/* Fixed height for consistent layout */}
+              <div className="xl:col-span-1">
+                <div className="h-[600px] overflow-hidden"> {/* Fixed height with overflow control */}
                   <AIChatAssistant 
                     audioAnalysis={audioAnalysis}
                     separatedAudio={separatedAudio}
@@ -184,17 +184,6 @@ const Index = () => {
                       );
                     }}
                   />
-                </div>
-                
-                {/* Audio Output Status */}
-                <div className="bg-studio-surface/30 p-3 rounded-lg border border-neon-blue/30">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-neon-green rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium">Audio Output Ready</span>
-                  </div>
-                  <p className="text-xs text-studio-text-secondary mt-1">
-                    All samples will play through your selected audio device (AirPods/speakers)
-                  </p>
                 </div>
               </div>
             </div>

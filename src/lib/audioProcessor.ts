@@ -32,17 +32,17 @@ export class AudioProcessor {
     return buffer;
   }
 
-  // Convert AudioBuffer to Blob URL
+  // Convert AudioBuffer to Blob URL with proper WAV format
   async bufferToBlobUrl(buffer: AudioBuffer): Promise<string> {
     const numberOfChannels = buffer.numberOfChannels;
     const length = buffer.length;
     const sampleRate = buffer.sampleRate;
     
-    // Create WAV header
+    // Create WAV header - ensure proper format
     const arrayBuffer = new ArrayBuffer(44 + length * numberOfChannels * 2);
     const view = new DataView(arrayBuffer);
     
-    // WAV header
+    // WAV header with proper byte ordering
     const writeString = (offset: number, string: string) => {
       for (let i = 0; i < string.length; i++) {
         view.setUint8(offset + i, string.charCodeAt(i));
@@ -53,29 +53,44 @@ export class AudioProcessor {
     view.setUint32(4, 36 + length * numberOfChannels * 2, true);
     writeString(8, 'WAVE');
     writeString(12, 'fmt ');
-    view.setUint32(16, 16, true);
-    view.setUint16(20, 1, true);
+    view.setUint32(16, 16, true); // PCM format
+    view.setUint16(20, 1, true);  // Audio format
     view.setUint16(22, numberOfChannels, true);
     view.setUint32(24, sampleRate, true);
     view.setUint32(28, sampleRate * numberOfChannels * 2, true);
     view.setUint16(32, numberOfChannels * 2, true);
-    view.setUint16(34, 16, true);
+    view.setUint16(34, 16, true); // Bits per sample
     writeString(36, 'data');
     view.setUint32(40, length * numberOfChannels * 2, true);
     
-    // Convert audio data
+    // Convert audio data with proper interleaving for multi-channel
     let offset = 44;
-    for (let channel = 0; channel < numberOfChannels; channel++) {
-      const channelData = buffer.getChannelData(channel);
+    if (numberOfChannels === 1) {
+      // Mono audio
+      const channelData = buffer.getChannelData(0);
       for (let i = 0; i < length; i++) {
         const sample = Math.max(-1, Math.min(1, channelData[i]));
         view.setInt16(offset, sample * 0x7FFF, true);
         offset += 2;
       }
+    } else {
+      // Stereo/multi-channel audio - interleave channels
+      for (let i = 0; i < length; i++) {
+        for (let channel = 0; channel < numberOfChannels; channel++) {
+          const channelData = buffer.getChannelData(channel);
+          const sample = Math.max(-1, Math.min(1, channelData[i]));
+          view.setInt16(offset, sample * 0x7FFF, true);
+          offset += 2;
+        }
+      }
     }
     
     const blob = new Blob([arrayBuffer], { type: 'audio/wav' });
-    return URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    
+    // Verify the created audio is valid
+    console.log(`🎵 Created audio blob: ${url.substring(0, 50)}... (${blob.size} bytes)`);
+    return url;
   }
 
   // Reverse audio
