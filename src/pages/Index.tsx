@@ -210,7 +210,7 @@ const Index = () => {
                   
                   <div className="bg-studio-surface/50 p-4 rounded-lg border border-neon-green/30 mb-4">
                     <h4 className="font-medium mb-3 flex items-center gap-2 text-neon-green">
-                      🎧 Audio Ready for Manual Playback
+                      🎧 Audio Ready for Manual Playback (Same AirPods Routing)
                     </h4>
                     <div className="space-y-2 text-sm">
                       <p className="text-studio-text-secondary">
@@ -220,9 +220,9 @@ const Index = () => {
                         </span>
                       </p>
                       <p className="text-studio-text-secondary">
-                        <strong className="text-neon-blue">Output Device:</strong> 
+                        <strong className="text-neon-blue">Audio Routing:</strong> 
                         <span id="audio-output-device" className="text-neon-orange ml-2">
-                          Detecting your AirPods/speakers...
+                          Same device used by Sample Library & Stem Editor
                         </span>
                       </p>
                       <p className="text-studio-text-secondary">

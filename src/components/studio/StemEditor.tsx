@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AudioPlayButton } from '@/components/ui/audio-play-button';
+import { useGlobalAudio } from '@/hooks/useGlobalAudio';
 import { 
   Layers, 
   Play, 
@@ -31,7 +32,7 @@ interface StemEditorProps {
 
 export const StemEditor: React.FC<StemEditorProps> = ({ separatedAudio, onStemUpdate }) => {
   const { toast } = useToast();
-  const [playingStems, setPlayingStems] = useState<Set<string>>(new Set());
+  const { currentTrack, isPlaying } = useGlobalAudio();
   const [selectedStem, setSelectedStem] = useState<string>('');
   const [globalEffects, setGlobalEffects] = useState({
     masterVolume: 100,
@@ -46,27 +47,13 @@ export const StemEditor: React.FC<StemEditorProps> = ({ separatedAudio, onStemUp
         <CardContent className="p-8 text-center">
           <Layers className="w-12 h-12 mx-auto mb-4 text-studio-text-secondary" />
           <p className="text-studio-text-secondary">No separated audio loaded</p>
+          <p className="text-xs text-studio-text-secondary mt-2">
+            Upload audio to automatically separate into stems for editing
+          </p>
         </CardContent>
       </Card>
     );
   }
-
-  const handlePlayStem = useCallback((stemId: string) => {
-    const newPlayingStems = new Set(playingStems);
-    
-    if (playingStems.has(stemId)) {
-      newPlayingStems.delete(stemId);
-    } else {
-      newPlayingStems.add(stemId);
-    }
-    
-    setPlayingStems(newPlayingStems);
-    
-    toast({
-      title: `${playingStems.has(stemId) ? 'Stopped' : 'Playing'} stem`,
-      description: separatedAudio.stems.find(s => s.id === stemId)?.name || 'Unknown stem'
-    });
-  }, [playingStems, separatedAudio.stems, toast]);
 
   const updateStem = useCallback((stemId: string, updates: Partial<AudioStem>) => {
     onStemUpdate?.(stemId, updates);
@@ -86,275 +73,227 @@ export const StemEditor: React.FC<StemEditorProps> = ({ separatedAudio, onStemUp
 
   const getStemColor = (type: AudioStem['type']) => {
     const colors = {
-      vocals: 'border-neon-purple',
-      drums: 'border-neon-green',
-      bass: 'border-neon-orange',
-      melody: 'border-neon-blue',
-      other: 'border-studio-border'
+      vocals: 'border-neon-purple bg-neon-purple/10',
+      drums: 'border-neon-green bg-neon-green/10',
+      bass: 'border-neon-orange bg-neon-orange/10',
+      melody: 'border-neon-blue bg-neon-blue/10',
+      other: 'border-studio-border bg-studio-surface-secondary/50'
     };
     return colors[type] || colors.other;
   };
 
-  const WaveformDisplay: React.FC<{ waveformData: number[], isPlaying: boolean }> = ({ 
+  const WaveformDisplay: React.FC<{ waveformData: number[], isActive: boolean }> = ({ 
     waveformData, 
-    isPlaying 
+    isActive 
   }) => (
     <div className="h-16 bg-studio-surface-secondary rounded p-2 flex items-end gap-0.5 overflow-hidden">
       {waveformData.map((value, index) => (
         <div
           key={index}
           className={`flex-1 rounded-sm transition-all duration-150 ${
-            isPlaying 
+            isActive 
               ? 'bg-neon-green animate-pulse' 
               : 'bg-neon-blue'
           }`}
           style={{ 
             height: `${Math.max(2, (value / 100) * 48)}px`,
-            opacity: isPlaying ? 0.8 : 0.4
+            opacity: isActive ? 0.8 : 0.4
           }}
         />
       ))}
     </div>
   );
 
-  const StemControls: React.FC<{ stem: AudioStem }> = ({ stem }) => (
-    <Card className={`glass-card-subtle ${getStemColor(stem.type)} border-2`}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            {getStemIcon(stem.type)}
-            <h4 className="font-medium">{stem.name}</h4>
-            <Badge variant="outline" className="text-xs">
-              {stem.type}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handlePlayStem(stem.id)}
-            >
-              {playingStems.has(stem.id) ? (
-                <Pause className="w-4 h-4" />
-              ) : (
-                <Play className="w-4 h-4" />
-              )}
-            </Button>
-            <Button
-              variant={stem.muted ? "destructive" : "outline"}
-              size="sm"
-              onClick={() => updateStem(stem.id, { muted: !stem.muted })}
-            >
-              {stem.muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </Button>
-            <Button
-              variant={stem.soloed ? "neon" : "outline"}
-              size="sm"
-              onClick={() => updateStem(stem.id, { soloed: !stem.soloed })}
-            >
-              S
-            </Button>
-          </div>
-        </div>
+  const StemControls: React.FC<{ stem: AudioStem }> = ({ stem }) => {
+    const isCurrentStem = currentTrack?.id === stem.id;
+    const isStemPlaying = isCurrentStem && isPlaying;
 
-        {/* Waveform */}
-        <WaveformDisplay 
-          waveformData={stem.waveformData} 
-          isPlaying={playingStems.has(stem.id)}
-        />
+    return (
+      <Card className={`glass-card-subtle ${getStemColor(stem.type)} border-2`}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              {getStemIcon(stem.type)}
+              <h4 className="font-medium flex items-center gap-2">
+                {stem.name}
+                {isStemPlaying && (
+                  <div className="w-2 h-2 bg-neon-green rounded-full animate-pulse"></div>
+                )}
+              </h4>
+              <Badge variant="outline" className="text-xs">
+                {stem.type}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <AudioPlayButton
+                audioUrl={stem.audioUrl}
+                trackName={stem.name}
+                trackId={stem.id}
+                variant="outline"
+                size="sm"
+              />
+              <Button
+                variant={stem.muted ? "destructive" : "outline"}
+                size="sm"
+                onClick={() => updateStem(stem.id, { muted: !stem.muted })}
+              >
+                {stem.muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </Button>
+              <Button
+                variant={stem.soloed ? "neon" : "outline"}
+                size="sm"
+                onClick={() => updateStem(stem.id, { soloed: !stem.soloed })}
+              >
+                S
+              </Button>
+            </div>
+          </div>
 
-        {/* Basic Controls */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <div>
-            <Label className="text-xs">Volume: {stem.volume}%</Label>
-            <Slider
-              value={[stem.volume]}
-              onValueChange={([value]) => updateStem(stem.id, { volume: value })}
-              min={0}
-              max={150}
-              step={1}
-              className="mt-1"
-            />
-          </div>
-          
-          <div>
-            <Label className="text-xs">
-              Pan: {stem.pan > 0 ? 'R' : stem.pan < 0 ? 'L' : 'C'}{Math.abs(stem.pan)}
-            </Label>
-            <Slider
-              value={[stem.pan]}
-              onValueChange={([value]) => updateStem(stem.id, { pan: value })}
-              min={-100}
-              max={100}
-              step={1}
-              className="mt-1"
-            />
-          </div>
-        </div>
+          {/* Waveform */}
+          <WaveformDisplay 
+            waveformData={stem.waveformData} 
+            isActive={isStemPlaying}
+          />
 
-        {/* Effects Controls */}
-        <div className="mt-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4" />
-            <Label className="text-sm font-medium">Effects</Label>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-3">
+          {/* Basic Controls */}
+          <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
-              <Label className="text-xs">Reverb: {stem.effects.reverb}%</Label>
+              <Label className="text-xs">Volume: {stem.volume}%</Label>
               <Slider
-                value={[stem.effects.reverb]}
-                onValueChange={([value]) => updateStem(stem.id, { 
-                  effects: { ...stem.effects, reverb: value }
-                })}
+                value={[stem.volume]}
+                onValueChange={([value]) => updateStem(stem.id, { volume: value })}
                 min={0}
-                max={100}
+                max={150}
                 step={1}
                 className="mt-1"
               />
             </div>
             
             <div>
-              <Label className="text-xs">Delay: {stem.effects.delay}%</Label>
+              <Label className="text-xs">
+                Pan: {stem.pan > 0 ? 'R' : stem.pan < 0 ? 'L' : 'C'}{Math.abs(stem.pan)}
+              </Label>
               <Slider
-                value={[stem.effects.delay]}
-                onValueChange={([value]) => updateStem(stem.id, { 
-                  effects: { ...stem.effects, delay: value }
-                })}
-                min={0}
+                value={[stem.pan]}
+                onValueChange={([value]) => updateStem(stem.id, { pan: value })}
+                min={-100}
                 max={100}
                 step={1}
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label className="text-xs">Distortion: {stem.effects.distortion}%</Label>
-              <Slider
-                value={[stem.effects.distortion]}
-                onValueChange={([value]) => updateStem(stem.id, { 
-                  effects: { ...stem.effects, distortion: value }
-                })}
-                min={0}
-                max={100}
-                step={1}
-                className="mt-1"
-              />
-            </div>
-            
-            <div>
-              <Label className="text-xs">Filter: {stem.effects.filter.frequency}Hz</Label>
-              <Slider
-                value={[stem.effects.filter.frequency]}
-                onValueChange={([value]) => updateStem(stem.id, { 
-                  effects: { 
-                    ...stem.effects, 
-                    filter: { ...stem.effects.filter, frequency: value }
-                  }
-                })}
-                min={20}
-                max={20000}
-                step={10}
                 className="mt-1"
               />
             </div>
           </div>
 
-          {/* EQ Section */}
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">3-Band EQ</Label>
-            <div className="grid grid-cols-3 gap-2">
+          {/* Effects Controls */}
+          <div className="mt-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sliders className="w-4 h-4" />
+              <Label className="text-sm font-medium">Effects</Label>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs">Low: {stem.effects.eq.low > 0 ? '+' : ''}{stem.effects.eq.low}dB</Label>
+                <Label className="text-xs">Reverb: {stem.effects.reverb}%</Label>
                 <Slider
-                  value={[stem.effects.eq.low]}
+                  value={[stem.effects.reverb]}
                   onValueChange={([value]) => updateStem(stem.id, { 
-                    effects: { 
-                      ...stem.effects, 
-                      eq: { ...stem.effects.eq, low: value }
-                    }
+                    effects: { ...stem.effects, reverb: value }
                   })}
-                  min={-12}
-                  max={12}
-                  step={0.5}
+                  min={0}
+                  max={100}
+                  step={1}
                   className="mt-1"
                 />
               </div>
               
               <div>
-                <Label className="text-xs">Mid: {stem.effects.eq.mid > 0 ? '+' : ''}{stem.effects.eq.mid}dB</Label>
+                <Label className="text-xs">Delay: {stem.effects.delay}%</Label>
                 <Slider
-                  value={[stem.effects.eq.mid]}
+                  value={[stem.effects.delay]}
                   onValueChange={([value]) => updateStem(stem.id, { 
-                    effects: { 
-                      ...stem.effects, 
-                      eq: { ...stem.effects.eq, mid: value }
-                    }
+                    effects: { ...stem.effects, delay: value }
                   })}
-                  min={-12}
-                  max={12}
-                  step={0.5}
-                  className="mt-1"
-                />
-              </div>
-              
-              <div>
-                <Label className="text-xs">High: {stem.effects.eq.high > 0 ? '+' : ''}{stem.effects.eq.high}dB</Label>
-                <Slider
-                  value={[stem.effects.eq.high]}
-                  onValueChange={([value]) => updateStem(stem.id, { 
-                    effects: { 
-                      ...stem.effects, 
-                      eq: { ...stem.effects.eq, high: value }
-                    }
-                  })}
-                  min={-12}
-                  max={12}
-                  step={0.5}
+                  min={0}
+                  max={100}
+                  step={1}
                   className="mt-1"
                 />
               </div>
             </div>
+
+            {/* EQ Section */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">3-Band EQ</Label>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">Low: {stem.effects.eq.low > 0 ? '+' : ''}{stem.effects.eq.low}dB</Label>
+                  <Slider
+                    value={[stem.effects.eq.low]}
+                    onValueChange={([value]) => updateStem(stem.id, { 
+                      effects: { 
+                        ...stem.effects, 
+                        eq: { ...stem.effects.eq, low: value }
+                      }
+                    })}
+                    min={-12}
+                    max={12}
+                    step={0.5}
+                    className="mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-xs">Mid: {stem.effects.eq.mid > 0 ? '+' : ''}{stem.effects.eq.mid}dB</Label>
+                  <Slider
+                    value={[stem.effects.eq.mid]}
+                    onValueChange={([value]) => updateStem(stem.id, { 
+                      effects: { 
+                        ...stem.effects, 
+                        eq: { ...stem.effects.eq, mid: value }
+                      }
+                    })}
+                    min={-12}
+                    max={12}
+                    step={0.5}
+                    className="mt-1"
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-xs">High: {stem.effects.eq.high > 0 ? '+' : ''}{stem.effects.eq.high}dB</Label>
+                  <Slider
+                    value={[stem.effects.eq.high]}
+                    onValueChange={([value]) => updateStem(stem.id, { 
+                      effects: { 
+                        ...stem.effects, 
+                        eq: { ...stem.effects.eq, high: value }
+                      }
+                    })}
+                    min={-12}
+                    max={12}
+                    step={0.5}
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Filter Type */}
-          <div>
-            <Label className="text-xs">Filter Type</Label>
-            <Select 
-              value={stem.effects.filter.type}
-              onValueChange={(value: any) => updateStem(stem.id, { 
-                effects: { 
-                  ...stem.effects, 
-                  filter: { ...stem.effects.filter, type: value }
-                }
-              })}
-            >
-              <SelectTrigger className="mt-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="lowpass">Low Pass</SelectItem>
-                <SelectItem value="highpass">High Pass</SelectItem>
-                <SelectItem value="bandpass">Band Pass</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Quick Actions */}
+          <div className="flex gap-2 mt-4">
+            <Button variant="outline" size="sm" className="flex-1">
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Reset
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1">
+              <Download className="w-3 h-3 mr-1" />
+              Export
+            </Button>
           </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex gap-2 mt-4">
-          <Button variant="outline" size="sm" className="flex-1">
-            <RotateCcw className="w-3 h-3 mr-1" />
-            Reset
-          </Button>
-          <Button variant="outline" size="sm" className="flex-1">
-            <Download className="w-3 h-3 mr-1" />
-            Export
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <Card className="glass-card">
@@ -362,19 +301,13 @@ export const StemEditor: React.FC<StemEditorProps> = ({ separatedAudio, onStemUp
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-neon-blue" />
-            Stem Editor
+            Stem Editor - Same AirPods Audio Routing
             <Badge variant="outline">
               {separatedAudio.stems.length} stems
             </Badge>
             <Badge variant="outline" className="bg-neon-green/20 text-neon-green">
               {separatedAudio.separationQuality}% quality
             </Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Settings className="w-4 h-4 mr-1" />
-              Global FX
-            </Button>
           </div>
         </CardTitle>
       </CardHeader>
@@ -384,93 +317,14 @@ export const StemEditor: React.FC<StemEditorProps> = ({ separatedAudio, onStemUp
           <div>
             <h4 className="font-medium">{separatedAudio.originalFileName}</h4>
             <p className="text-sm text-studio-text-secondary">
-              Processed in {(separatedAudio.processingTime / 1000).toFixed(1)}s
+              Processed in {(separatedAudio.processingTime / 1000).toFixed(1)}s • Audio routes to same device as Sample Library
             </p>
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                const allPlaying = separatedAudio.stems.every(stem => playingStems.has(stem.id));
-                if (allPlaying) {
-                  setPlayingStems(new Set());
-                } else {
-                  setPlayingStems(new Set(separatedAudio.stems.map(stem => stem.id)));
-                }
-              }}
-            >
-              {separatedAudio.stems.every(stem => playingStems.has(stem.id)) ? (
-                <>
-                  <Pause className="w-4 h-4 mr-1" />
-                  Stop All
-                </>
-              ) : (
-                <>
-                  <Play className="w-4 h-4 mr-1" />
-                  Play All
-                </>
-              )}
-            </Button>
           </div>
         </div>
 
-        {/* Master Controls */}
-        <Card className="glass-card-subtle">
-          <CardHeader>
-            <CardTitle className="text-base">Master Controls</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <Label className="text-xs">Master Volume: {globalEffects.masterVolume}%</Label>
-              <Slider
-                value={[globalEffects.masterVolume]}
-                onValueChange={([value]) => setGlobalEffects(prev => ({ ...prev, masterVolume: value }))}
-                min={0}
-                max={150}
-                step={1}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Master Pan: {globalEffects.masterPan}</Label>
-              <Slider
-                value={[globalEffects.masterPan]}
-                onValueChange={([value]) => setGlobalEffects(prev => ({ ...prev, masterPan: value }))}
-                min={-100}
-                max={100}
-                step={1}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Room Size: {globalEffects.roomSize}%</Label>
-              <Slider
-                value={[globalEffects.roomSize]}
-                onValueChange={([value]) => setGlobalEffects(prev => ({ ...prev, roomSize: value }))}
-                min={0}
-                max={100}
-                step={1}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Ambience: {globalEffects.ambience}%</Label>
-              <Slider
-                value={[globalEffects.ambience]}
-                onValueChange={([value]) => setGlobalEffects(prev => ({ ...prev, ambience: value }))}
-                min={0}
-                max={100}
-                step={1}
-                className="mt-1"
-              />
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Individual Stem Controls */}
         <div className="space-y-4">
-          <h3 className="font-medium">Individual Stems</h3>
+          <h3 className="font-medium">Individual Stems (Click play buttons to hear through AirPods)</h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {separatedAudio.stems.map(stem => (
               <StemControls key={stem.id} stem={stem} />
