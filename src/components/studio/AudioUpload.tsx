@@ -12,6 +12,7 @@ import { AudioAnalyzer, AudioAnalysis } from '@/lib/audioAnalyzer';
 import { AudioSeparationEngine, SeparatedAudio } from '@/lib/audioSeparation';
 import { AudioPlayButton } from '@/components/ui/audio-play-button';
 import { useGlobalAudio } from '@/hooks/useGlobalAudio';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AudioSample {
   id: string;
@@ -181,9 +182,72 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     handleFiles(files);
   }, []);
 
+  const uploadToSupabase = async (file: File, sampleId: string): Promise<string> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${sampleId}.${fileExt}`;
+      const filePath = `audio/${fileName}`;
+
+      console.log('☁️ Starting Supabase upload:', file.name, 'Size:', (file.size / (1024 * 1024)).toFixed(1), 'MB');
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('audio-uploads')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('❌ Supabase upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('✅ File uploaded to Supabase storage:', uploadData.path);
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('audio-uploads')
+        .getPublicUrl(filePath);
+
+      console.log('✅ Public URL obtained:', publicUrl);
+
+      // Save metadata to database
+      const metadata = await extractAudioMetadata(file);
+      
+      const { data: dbData, error: dbError } = await supabase
+        .from('audio_samples')
+        .insert({
+          id: sampleId,
+          filename: file.name,
+          file_size: file.size,
+          file_type: file.type,
+          storage_path: filePath,
+          public_url: publicUrl,
+          duration: metadata.duration,
+          bpm: metadata.analysis?.tempo,
+          key: metadata.analysis?.key,
+          upload_status: 'completed'
+        })
+        .select()
+        .single();
+
+      if (dbError) {
+        console.error('❌ Database save error:', dbError);
+        throw dbError;
+      }
+
+      console.log('✅ Metadata saved to database:', dbData);
+      return publicUrl;
+
+    } catch (error) {
+      console.error('❌ Cloud upload failed:', error);
+      throw error;
+    }
+  };
+
   const handleFiles = async (files: File[]) => {
     console.log('🔍 UPLOAD DEBUG: Processing files:', files.length);
-    console.log('🔍 UPLOAD DEBUG: Files array:', files);
     
     if (!files || files.length === 0) {
       console.log('❌ UPLOAD DEBUG: No files provided to handleFiles');
@@ -199,7 +263,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     
     if (audioFiles.length === 0) {
       console.log('❌ UPLOAD DEBUG: No valid audio files found');
-      console.log('🔍 UPLOAD DEBUG: Original files were:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
       toast({
         title: "No valid audio files",
         description: "Please select MP3, WAV, FLAC, M4A, OGG, or AAC files.",
@@ -211,21 +274,16 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     console.log('✅ UPLOAD DEBUG: Valid audio files found:', audioFiles.length);
 
     for (const file of audioFiles) {
-      const id = Math.random().toString(36).substr(2, 9);
+      const id = crypto.randomUUID();
       console.log('🎯 PROCESSING FILE:', file.name, 'ID:', id);
       
       try {
-        // Create audio URL with memory optimization for large files
-        const audioUrl = URL.createObjectURL(file);
-        console.log('✅ Audio URL created for:', file.name, `(${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
-        
         const sample: AudioSample = {
           id,
           name: file.name.replace(/\.[^/.]+$/, ""),
           genre: '',
           tags: [],
           file,
-          audioUrl,
           uploadProgress: 0,
           isPlaying: false
         };
@@ -234,82 +292,53 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         setUploadedSamples(prev => [...prev, sample]);
         console.log('✅ Sample added to list:', sample.name);
         
-        // BULLETPROOF PROGRESS SYSTEM - OPTIMIZED FOR LARGE FILES
-        const guaranteedProgress = (() => {
-          let step = 0;
-          const isLargeFile = file.size > 50 * 1024 * 1024;
-          
-          // Faster progress for large files to prevent hanging
-          const intervals = isLargeFile ? [50, 100] : [25, 50, 75, 100];
-          const stepDelay = isLargeFile ? 100 : 150;
-          
-          const runStep = () => {
-            if (step < intervals.length) {
-              const progress = intervals[step];
-              console.log(`🚀 PROGRESS ${step + 1}/${intervals.length}: ${progress}% (${isLargeFile ? 'LARGE FILE' : 'NORMAL'})`);
-              
-              setUploadedSamples(prev => 
-                prev.map(s => s.id === id ? { ...s, uploadProgress: progress } : s)
-              );
-              
-              if (progress === 100) {
-                console.log('🎯 UPLOAD COMPLETE - IMMEDIATE LIBRARY SAVE');
-                // Force immediate save to library
-                setTimeout(() => {
-                  setUploadedSamples(currentSamples => {
-                    const thisample = currentSamples.find(s => s.id === id);
-                    if (thisample && thisample.uploadProgress === 100) {
-                      onSamplesUploaded([thisample]);
-                      console.log('✅ INDIVIDUAL SAMPLE SAVED TO LIBRARY:', thisample.name);
-                    }
-                    return currentSamples;
-                  });
-                }, 25);
-              } else {
-                step++;
-                setTimeout(runStep, stepDelay);
-              }
-            }
-          };
-          
-          return runStep;
-        })();
-        
-        // Start progress immediately
-        setTimeout(guaranteedProgress, 50);
-        
-        // OPTIMIZED METADATA EXTRACTION (NON-BLOCKING)
+        // Start cloud upload
         (async () => {
           try {
-            console.log('🔍 Starting optimized metadata extraction...');
-            const metadata = await extractAudioMetadata(file);
-            console.log('✅ Metadata extracted:', metadata);
+            setUploadedSamples(prev => 
+              prev.map(s => s.id === id ? { ...s, uploadProgress: 10 } : s)
+            );
+
+            const publicUrl = await uploadToSupabase(file, id);
             
-            // Update sample with metadata
             setUploadedSamples(prev => 
               prev.map(s => s.id === id ? { 
                 ...s, 
-                duration: metadata.duration,
-                analysis: metadata.analysis,
-                bpm: metadata.analysis?.tempo,
-                key: metadata.analysis?.key
+                uploadProgress: 100,
+                audioUrl: publicUrl
               } : s)
             );
-            
-            // Trigger callbacks (non-blocking)
-            if (onAnalysisComplete && metadata.analysis) {
-              setTimeout(() => onAnalysisComplete(metadata.analysis), 0);
-            }
-            
+
+            // Save to library immediately when upload completes
+            setUploadedSamples(currentSamples => {
+              const completedSample = currentSamples.find(s => s.id === id);
+              if (completedSample) {
+                onSamplesUploaded([{ ...completedSample, audioUrl: publicUrl }]);
+                console.log('✅ SAMPLE SAVED TO LIBRARY:', completedSample.name);
+              }
+              return currentSamples;
+            });
+
             // Skip separation for very large files to prevent crashes
             if (onAudioSeparated && file.size < 75 * 1024 * 1024) {
               setTimeout(() => startSimplifiedSeparation(file, id), 100);
-            } else if (file.size >= 75 * 1024 * 1024) {
-              console.log('⚠️ Skipping separation for very large file:', file.name);
             }
-            
+
           } catch (error) {
-            console.log('⚠️ Metadata extraction failed (upload still successful):', error);
+            console.error('❌ Cloud upload failed for:', file.name, error);
+            setUploadedSamples(prev => 
+              prev.map(s => s.id === id ? { 
+                ...s, 
+                uploadProgress: 100,
+                audioUrl: URL.createObjectURL(file) // Fallback to local URL
+              } : s)
+            );
+            
+            toast({
+              title: "Upload Warning",
+              description: `${file.name} saved locally. Cloud backup failed.`,
+              variant: "destructive"
+            });
           }
         })();
         
@@ -322,41 +351,10 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         });
       }
     }
-
-    // ULTIMATE SAFETY NET - Adaptive timeout based on total file size
-    const totalSize = audioFiles.reduce((sum, file) => sum + file.size, 0);
-    const hasLargeFiles = audioFiles.some(file => file.size > 50 * 1024 * 1024);
-    const safetyTimeout = hasLargeFiles ? 1500 : 1000; // Faster timeout for large files
-    
-    setTimeout(() => {
-      console.log('🚨 SAFETY NET ACTIVATED - FORCING ALL UPLOADS TO 100%');
-      
-      setUploadedSamples(currentSamples => {
-        const incomplete = currentSamples.filter(s => (s.uploadProgress || 0) < 100);
-        
-        if (incomplete.length > 0) {
-          console.log('🔒 FORCING COMPLETION FOR:', incomplete.map(s => s.name));
-          
-          const forcedComplete = currentSamples.map(s => ({
-            ...s, 
-            uploadProgress: 100,
-            isComplete: true
-          }));
-          
-          // EMERGENCY SAVE ALL TO LIBRARY
-          onSamplesUploaded(forcedComplete);
-          console.log('🚨 EMERGENCY LIBRARY SAVE COMPLETE');
-          
-          return forcedComplete;
-        }
-        
-        return currentSamples;
-      });
-    }, safetyTimeout);
     
     toast({
-      title: "✅ Files uploaded successfully!",
-      description: `${audioFiles.length} audio file(s) will reach 100% and be saved to library.`,
+      title: "✅ Upload started!",
+      description: `${audioFiles.length} file(s) uploading to cloud storage...`,
     });
   };
 
