@@ -393,8 +393,42 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
       console.log('🧹 Cleaned up audio URL for removed sample:', sample.name);
     }
     
-    setUploadedSamples(prev => prev.filter(sample => sample.id !== id));
-    console.log('✅ Sample removed successfully');
+    const updatedSamples = uploadedSamples.filter(sample => sample.id !== id);
+    setUploadedSamples(updatedSamples);
+    
+    // Update parent component immediately
+    onSamplesUploaded(updatedSamples);
+    
+    console.log('✅ Sample removed successfully and parent updated');
+    
+    toast({
+      title: "Sample removed",
+      description: `${sample?.name || 'Sample'} was removed from the upload queue.`,
+    });
+  };
+
+  const clearAllSamples = () => {
+    console.log('🗑️ Clearing all samples');
+    
+    // Clean up all audio URLs
+    uploadedSamples.forEach(sample => {
+      if (sample.audioUrl) {
+        URL.revokeObjectURL(sample.audioUrl);
+      }
+    });
+    
+    // Clear local state
+    setUploadedSamples([]);
+    
+    // Update parent component with empty array
+    onSamplesUploaded([]);
+    
+    console.log('✅ All samples cleared and parent updated');
+    
+    toast({
+      title: "All samples cleared",
+      description: "Upload queue has been reset. You can now upload new files.",
+    });
   };
 
   const addTag = (sampleId: string, tag: string) => {
@@ -490,9 +524,22 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   return (
     <Card className="glass-card">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Music className="w-5 h-5 text-neon-blue" />
-          Upload Training Samples
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Music className="w-5 h-5 text-neon-blue" />
+            Upload Training Samples
+          </div>
+          {uploadedSamples.length > 0 && (
+            <Button 
+              onClick={clearAllSamples}
+              variant="destructive"
+              size="sm"
+              className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50"
+            >
+              <X className="w-4 h-4 mr-1" />
+              Clear All
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -511,10 +558,15 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           onDragLeave={() => setIsDragging(false)}
         >
           <Upload className="w-12 h-12 mx-auto mb-4 text-studio-text-secondary" />
-          <p className="text-lg font-medium mb-2">Drop audio files here</p>
+          <p className="text-lg font-medium mb-2">
+            {uploadedSamples.length > 0 ? "Add more files or reupload" : "Drop audio files here"}
+          </p>
           <p className="text-studio-text-secondary mb-2">Supports MP3, WAV, FLAC, M4A, OGG, AAC (up to 100MB)</p>
           <p className="text-sm text-studio-text-secondary mb-4">
-            Files will be automatically analyzed and separated into stems for editing!
+            {uploadedSamples.length > 0 
+              ? `${uploadedSamples.length} file(s) uploaded. You can add more or clear all to start over.`
+              : "Files will be automatically analyzed and separated into stems for editing!"
+            }
           </p>
           <input
             type="file"
@@ -742,28 +794,24 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                 variant="neon"
                 disabled={uploadedSamples.length === 0 || uploadedSamples.some(s => (s.uploadProgress || 0) < 99)}
               >
-                Add {uploadedSamples.filter(s => (s.uploadProgress || 0) >= 99).length} Sample(s) to Library
+                Refresh Library ({uploadedSamples.filter(s => (s.uploadProgress || 0) >= 99).length} Sample(s))
               </Button>
               
-              {uploadedSamples.length > 0 && (
-                <Button 
-                  onClick={() => {
-                    console.log('🗑️ Clearing all samples before upload');
-                    uploadedSamples.forEach(sample => {
-                      if (sample.audioUrl) {
-                        URL.revokeObjectURL(sample.audioUrl);
-                      }
-                    });
-                    setUploadedSamples([]);
-                  }}
-                  variant="destructive"
-                  size="lg"
-                  className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Clear All
-                </Button>
-              )}
+              <Button 
+                onClick={clearAllSamples}
+                variant="destructive"
+                size="lg"
+                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Clear All
+              </Button>
+            </div>
+            
+            <div className="bg-studio-surface/30 p-3 rounded-lg border border-neon-green/30">
+              <p className="text-xs text-studio-text-secondary">
+                💡 <strong>Tip:</strong> Use "Clear All" to remove all uploads and start fresh. Individual samples can be removed with the red X button.
+              </p>
             </div>
           </div>
         )}
