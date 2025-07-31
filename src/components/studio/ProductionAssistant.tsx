@@ -285,13 +285,15 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
           
           <TabsContent value="suggestions" className="space-y-4">
             {/* AI Status & Filter Controls */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               {audioAnalysis && (
                 <Card className="glass-card-subtle border-neon-purple/30">
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2 text-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-2">
                       <Brain className="w-4 h-4 text-neon-purple animate-pulse" />
                       <span className="font-medium">Lando analyzed your track:</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs">
                         {audioAnalysis.tempo} BPM
                       </Badge>
@@ -301,17 +303,20 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                       <Badge variant="outline" className="text-xs">
                         {Math.round(audioAnalysis.energy * 100)}% Energy
                       </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {Math.round(audioAnalysis.danceability * 100)}% Danceability
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
               )}
               
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-3">
                 <Select value={selectedType} onValueChange={setSelectedType}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-48">
                     <SelectValue placeholder="Filter by type" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-studio-surface border border-studio-border">
                     <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="mixing">Mixing</SelectItem>
                     <SelectItem value="arrangement">Arrangement</SelectItem>
@@ -326,8 +331,9 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                   variant="outline" 
                   size="sm"
                   disabled={isAnalyzing}
+                  className="whitespace-nowrap"
                 >
-                  <TrendingUp className="w-4 h-4 mr-1" />
+                  <TrendingUp className="w-4 h-4 mr-2" />
                   {isAnalyzing ? 'Analyzing...' : 'Re-analyze'}
                 </Button>
               </div>
@@ -337,42 +343,54 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
             <div className="space-y-3">
               {filteredSuggestions.map(suggestion => (
                 <Card key={suggestion.id} className="glass-card-subtle">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        {getTypeIcon(suggestion.type, suggestion.instrument)}
-                        <h4 className="font-medium">{suggestion.title}</h4>
-                        <Badge className={`text-xs ${getTypeColor(suggestion.type)}`}>
-                          {suggestion.type}
-                        </Badge>
-                        {suggestion.instrument && (
-                          <Badge variant="outline" className="text-xs">
-                            {suggestion.instrument}
-                          </Badge>
-                        )}
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="mt-1">
+                          {getTypeIcon(suggestion.type, suggestion.instrument)}
+                        </div>
+                        <div className="space-y-2 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="font-medium text-base">{suggestion.title}</h4>
+                            <Badge className={`text-xs ${getTypeColor(suggestion.type)}`}>
+                              {suggestion.type}
+                            </Badge>
+                            {suggestion.instrument && (
+                              <Badge variant="outline" className="text-xs">
+                                {suggestion.instrument}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-studio-text-secondary">
+                      <div className="flex items-center gap-3 ml-4">
+                        <span className="text-sm text-studio-text-secondary whitespace-nowrap">
                           {suggestion.confidence}% match
                         </span>
                         {suggestion.actionable && (
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" className="whitespace-nowrap">
                             Apply
                           </Button>
                         )}
                       </div>
                     </div>
-                    <p className="text-sm text-studio-text-secondary mb-2">
-                      {suggestion.description}
-                    </p>
-                    {suggestion.reasoning && (
-                      <div className="flex items-start gap-2 mt-2 p-2 bg-studio-surface-secondary/50 rounded text-xs">
-                        <Brain className="w-3 h-3 text-neon-purple mt-0.5 flex-shrink-0" />
-                        <span className="text-studio-text-secondary italic">
-                          Lando's insight: {suggestion.reasoning}
-                        </span>
-                      </div>
-                    )}
+                    
+                    <div className="pl-7 space-y-3">
+                      <p className="text-sm text-studio-text-secondary leading-relaxed">
+                        {suggestion.description}
+                      </p>
+                      {suggestion.reasoning && (
+                        <div className="flex items-start gap-3 p-3 bg-studio-surface-secondary/30 rounded-lg">
+                          <Brain className="w-4 h-4 text-neon-purple mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium text-neon-purple mb-1">Lando's Insight:</p>
+                            <p className="text-xs text-studio-text-secondary italic leading-relaxed">
+                              {suggestion.reasoning}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
