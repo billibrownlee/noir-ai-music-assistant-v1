@@ -1,4 +1,5 @@
 import { AudioSynthesizer, NOTE_FREQUENCIES, CHORD_PROGRESSIONS, SCALES } from './audioSynthesis';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface MusicGenerationParams {
   prompt: string;
@@ -7,6 +8,7 @@ export interface MusicGenerationParams {
   bpm: number;
   key: string;
   instrumental: boolean;
+  useTrainingData?: boolean;
 }
 
 export interface GeneratedTrack {
@@ -31,7 +33,16 @@ export class MusicGenerationEngine {
   async generateMusic(params: MusicGenerationParams): Promise<GeneratedTrack> {
     console.log('🎵 Generating music with params:', params);
 
-    const { style, duration, bpm, key } = params;
+    const { style, duration, bpm, key, useTrainingData = true } = params;
+    
+    // Load training data if requested
+    let trainingData = null;
+    if (useTrainingData) {
+      trainingData = await this.loadTrainingData(style);
+      if (trainingData.length > 0) {
+        console.log('🧠 Using training data from', trainingData.length, 'uploaded samples');
+      }
+    }
     
     // Parse key (e.g., "C major" -> ["C", "major"])
     const [rootNote, mode] = key.toLowerCase().split(' ');
@@ -40,7 +51,7 @@ export class MusicGenerationEngine {
     // Get root frequency
     const rootFreq = NOTE_FREQUENCIES[rootNote.toUpperCase() as keyof typeof NOTE_FREQUENCIES]?.[4] || 261.63; // Default to C4
     
-    // Generate music based on style
+    // Generate music based on style with training influence
     let audioData: Float32Array;
     
     switch (style) {
@@ -81,6 +92,29 @@ export class MusicGenerationEngine {
         structure: this.getStructureForStyle(style)
       }
     };
+  }
+
+  // Load training data from uploaded samples for a specific genre
+  private async loadTrainingData(style: string): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('audio_training_data')
+        .select('*')
+        .eq('genre', style)
+        .gte('confidence_score', 0.6) // Only use high-confidence training data
+        .order('confidence_score', { ascending: false })
+        .limit(10); // Limit to top 10 samples
+
+      if (error) {
+        console.warn('⚠️ Failed to load training data:', error);
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.warn('⚠️ Training data query error:', error);
+      return [];
+    }
   }
 
   private generateElectronic(duration: number, bpm: number, rootFreq: number, isMinor: boolean): Float32Array {

@@ -221,8 +221,26 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
       console.log('✅ Step 3: Public URL obtained:', publicUrl);
 
-      // Skip metadata extraction and DB insertion for now to identify the bottleneck
-      console.log('ℹ️ Skipping metadata extraction and DB insertion for debugging');
+      // Save to database
+      const { error: dbError } = await supabase
+        .from('audio_samples')
+        .insert({
+          id: sampleId,
+          filename: file.name,
+          file_type: file.type || 'audio/unknown',
+          file_size: file.size,
+          storage_path: filePath,
+          public_url: publicUrl,
+          upload_status: 'completed',
+          training_extracted: false
+        });
+
+      if (dbError) {
+        console.warn('⚠️ Failed to save to database:', dbError);
+        // Continue anyway - the file is still uploaded
+      } else {
+        console.log('✅ Step 4: Sample saved to database');
+      }
 
       return publicUrl;
 
@@ -310,6 +328,26 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               prev.map(s => s.id === id ? { ...s, uploadProgress: 90 } : s)
             );
             console.log('📊 Progress: 90% - Finalizing...');
+
+            // Analyze audio for training data
+            try {
+              console.log('🧠 Starting audio training analysis...');
+              const analysisResponse = await supabase.functions.invoke('analyze-audio-training', {
+                body: { 
+                  sampleId: id,
+                  audioUrl: publicUrl,
+                  genre: '' // Let the system detect the genre
+                }
+              });
+              
+              if (analysisResponse.error) {
+                console.warn('⚠️ Training analysis failed:', analysisResponse.error);
+              } else {
+                console.log('✅ Training analysis complete:', analysisResponse.data);
+              }
+            } catch (analysisError) {
+              console.warn('⚠️ Training analysis error:', analysisError);
+            }
 
             // Small delay before completion for user feedback
             setTimeout(() => {

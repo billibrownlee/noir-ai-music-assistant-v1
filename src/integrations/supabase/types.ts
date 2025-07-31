@@ -29,6 +29,7 @@ export type Database = {
           public_url: string | null
           storage_path: string
           tags: string[] | null
+          training_extracted: boolean | null
           updated_at: string | null
           upload_status: string | null
         }
@@ -46,6 +47,7 @@ export type Database = {
           public_url?: string | null
           storage_path: string
           tags?: string[] | null
+          training_extracted?: boolean | null
           updated_at?: string | null
           upload_status?: string | null
         }
@@ -63,10 +65,49 @@ export type Database = {
           public_url?: string | null
           storage_path?: string
           tags?: string[] | null
+          training_extracted?: boolean | null
           updated_at?: string | null
           upload_status?: string | null
         }
         Relationships: []
+      }
+      audio_training_data: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          genre: string
+          id: string
+          musical_features: Json
+          sample_id: string
+          updated_at: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          genre: string
+          id?: string
+          musical_features: Json
+          sample_id: string
+          updated_at?: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          genre?: string
+          id?: string
+          musical_features?: Json
+          sample_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_audio_training_data_sample_id"
+            columns: ["sample_id"]
+            isOneToOne: false
+            referencedRelation: "audio_samples"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
