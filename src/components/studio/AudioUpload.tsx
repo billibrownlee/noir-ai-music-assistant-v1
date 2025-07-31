@@ -175,15 +175,28 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           console.log('🚀 IMMEDIATE: Setting upload to 100% instantly');
           
           // Set progress to 100% immediately
-          setUploadedSamples(prev => 
-            prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
-          );
+          const updatedSamples = prev => 
+            prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s);
+          setUploadedSamples(updatedSamples);
           
           console.log('✅ GUARANTEED: Upload set to 100% for:', file.name);
           
-          // Trigger callbacks immediately
+          // Trigger callbacks and auto-upload to library immediately
           setTimeout(() => {
             console.log('🎵 INSTANT: File ready for processing:', file.name);
+            
+            // Auto-upload to library immediately
+            setUploadedSamples(currentSamples => {
+              const readySamples = currentSamples.filter(s => (s.uploadProgress || 0) >= 99);
+              if (readySamples.length > 0) {
+                console.log('🤖 AUTO-UPLOAD: Automatically adding', readySamples.length, 'samples to library');
+                setTimeout(() => {
+                  onSamplesUploaded(readySamples);
+                  console.log('✅ AUTO-UPLOAD: Samples sent to library callback');
+                }, 100);
+              }
+              return currentSamples;
+            });
             
             // Only try separation if specifically requested
             if (onAudioSeparated) {
@@ -196,7 +209,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               console.log('📊 INSTANT: Triggering analysis callback');
               onAnalysisComplete(metadata.analysis);
             }
-          }, 100); // Almost immediate
+          }, 200); // Small delay to ensure state update
           
         } catch (metadataError) {
           console.error('Error extracting metadata:', metadataError);
@@ -420,28 +433,37 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     try {
       const processedSamples = uploadedSamples.filter(s => (s.uploadProgress || 0) >= 99);
       
+      console.log('🚀 UPLOADING TO LIBRARY:', processedSamples.length, 'samples');
+      console.log('🚀 SAMPLES DATA:', processedSamples.map(s => ({ name: s.name, id: s.id, audioUrl: s.audioUrl })));
+      
+      // Trigger the callback immediately 
+      onSamplesUploaded(processedSamples);
+      console.log('✅ onSamplesUploaded callback triggered with:', processedSamples.length, 'samples');
+      
       toast({
         title: "Samples added to library!",
         description: `${processedSamples.length} audio samples are now available in your library.`,
       });
       
-      onSamplesUploaded(processedSamples);
-      
-      // Clean up URLs
-      uploadedSamples.forEach(sample => {
-        if (sample.audioUrl) {
-          URL.revokeObjectURL(sample.audioUrl);
-        }
-      });
-      
-      setUploadedSamples([]);
+      // Don't clear the uploaded samples here - let them stay until user decides
+      console.log('📚 Samples successfully added to library, keeping in upload area');
       
     } catch (error) {
+      console.error('❌ Upload to library failed:', error);
       toast({
         title: "Upload failed",
         description: "Could not add samples to library. Please try again.",
         variant: "destructive"
       });
+    }
+  };
+
+  // Auto-upload feature - automatically add to library when upload completes
+  const autoUploadToLibrary = (samples: AudioSample[]) => {
+    const readySamples = samples.filter(s => (s.uploadProgress || 0) >= 99);
+    if (readySamples.length > 0) {
+      console.log('🤖 AUTO-UPLOAD: Automatically adding', readySamples.length, 'samples to library');
+      onSamplesUploaded(readySamples);
     }
   };
 
