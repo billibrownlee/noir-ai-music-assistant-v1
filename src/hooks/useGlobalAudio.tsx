@@ -19,6 +19,7 @@ interface GlobalAudioContextType {
   stopTrack: () => void;
   setVolume: (volume: number) => void;
   seekTo: (time: number) => void;
+  setAudioOutputDevice: (deviceId: string) => void;
 }
 
 const GlobalAudioContext = createContext<GlobalAudioContextType | undefined>(undefined);
@@ -31,6 +32,7 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timeUpdateRef = useRef<NodeJS.Timeout>();
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('');
 
   const createAudioElement = useCallback(async (track: AudioTrack) => {
     if (audioRef.current) {
@@ -40,6 +42,16 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
     const audio = new Audio(track.audioUrl);
     audio.volume = volume;
+    
+    // Set specific audio output device if selected
+    if (selectedAudioDevice && 'setSinkId' in audio) {
+      try {
+        await (audio as any).setSinkId(selectedAudioDevice);
+        console.log('Audio routed to selected device:', selectedAudioDevice);
+      } catch (error) {
+        console.log('Could not set audio device, using default:', error);
+      }
+    }
     
     // Ensure audio uses default system output device
     audio.setAttribute('crossorigin', 'anonymous');
@@ -164,6 +176,11 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, []);
 
+  const setAudioOutputDevice = useCallback((deviceId: string) => {
+    setSelectedAudioDevice(deviceId);
+    console.log('Audio output device set to:', deviceId);
+  }, []);
+
   const value: GlobalAudioContextType = {
     currentTrack,
     isPlaying,
@@ -174,7 +191,8 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
     pauseTrack,
     stopTrack,
     setVolume,
-    seekTo
+    seekTo,
+    setAudioOutputDevice
   };
 
   return (

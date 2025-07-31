@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { AudioOutputSelector } from "@/components/ui/audio-output-selector";
 import StudioHeader from "@/components/studio/StudioHeader";
 import PromptBuilder from "@/components/studio/PromptBuilder";
 import AudioPlayer from "@/components/studio/AudioPlayer";
@@ -35,7 +36,7 @@ const Index = () => {
   const [separatedAudio, setSeparatedAudio] = useState<SeparatedAudio | null>(null);
   const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysis | null>(null);
   const [uploadedSamples, setUploadedSamples] = useState<any[]>([]);
-  const { playTrack } = useGlobalAudio();
+  const { playTrack, setAudioOutputDevice } = useGlobalAudio();
 
   // Auto-play the most recent uploaded sample
   const playLatestUploadedSample = () => {
@@ -160,7 +161,11 @@ const Index = () => {
             </div>
             <div className="space-y-8">
               <GenerationHistory onTrackSelect={handleTrackSelect} />
-            <SampleLibrary 
+            
+            {/* AUDIO OUTPUT DEVICE SELECTOR */}
+            <AudioOutputSelector onDeviceChange={setAudioOutputDevice} />
+
+            <SampleLibrary
               onSampleSelect={(sample) => console.log('Selected sample:', sample)}
               uploadedSamples={uploadedSamples}
             />
