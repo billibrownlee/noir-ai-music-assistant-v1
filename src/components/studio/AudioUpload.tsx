@@ -334,7 +334,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
           <p className="text-sm text-studio-text-secondary mb-4">
             Having trouble? Try smaller files or check the console for details.
           </p>
-          <Input
+          <input
             type="file"
             multiple
             accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,audio/*"
@@ -342,14 +342,14 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
               console.log('File input changed:', e.target.files);
               handleFiles(Array.from(e.target.files || []));
             }}
-            className="hidden"
+            style={{ display: 'none' }}
             id="audio-upload"
           />
-          <Label htmlFor="audio-upload" className="cursor-pointer">
-            <Button variant="neon" size="lg">
-              Browse Files
+          <label htmlFor="audio-upload" style={{ cursor: 'pointer' }}>
+            <Button variant="neon" size="lg" asChild>
+              <span>Browse Files</span>
             </Button>
-          </Label>
+          </label>
         </div>
 
         {/* Separation Progress */}
