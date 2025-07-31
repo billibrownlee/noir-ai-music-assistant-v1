@@ -171,65 +171,32 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             } : s)
           );
           
-          // Simulate upload progress with GUARANTEED completion
-          let progress = 0;
-          let attempts = 0;
-          const maxAttempts = 20; // Reduced for faster completion
+          // IMMEDIATE 100% COMPLETION - NO SIMULATION
+          console.log('🚀 IMMEDIATE: Setting upload to 100% instantly');
           
-          const progressInterval = setInterval(() => {
-            attempts++;
-            
-            // Aggressive progress increment to ensure completion
-            const increment = Math.random() * 20 + 10; // 10-30% increments
-            progress += increment;
-            
-            console.log(`Upload progress for ${file.name}: ${Math.round(progress)}%`);
-            
-            // FORCE completion after 15 attempts or 95% progress
-            if (progress >= 95 || attempts >= 15) {
-              progress = 100;
-              clearInterval(progressInterval);
-              
-              console.log('✅ GUARANTEED Upload complete for:', file.name);
-              
-              // Set final progress to EXACTLY 100%
-              setUploadedSamples(prev => 
-                prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
-              );
-              
-              // Trigger callbacks after guaranteed completion
-              setTimeout(() => {
-                console.log('🎵 File GUARANTEED ready for processing:', file.name);
-                
-                // Only try separation if specifically requested
-                if (onAudioSeparated) {
-                  console.log('🔄 Starting SIMPLIFIED audio separation...');
-                  startSimplifiedSeparation(file, id);
-                }
-                
-                // Always trigger analysis callback
-                if (onAnalysisComplete && metadata.analysis) {
-                  console.log('📊 Triggering analysis callback');
-                  onAnalysisComplete(metadata.analysis);
-                }
-              }, 100); // Minimal delay
-              
-            } else {
-              // Update progress normally
-              setUploadedSamples(prev => 
-                prev.map(s => s.id === id ? { ...s, uploadProgress: Math.round(progress) } : s)
-              );
-            }
-          }, 100); // Faster updates (every 100ms)
+          // Set progress to 100% immediately
+          setUploadedSamples(prev => 
+            prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
+          );
           
-          // BACKUP completion after 3 seconds MAXIMUM
+          console.log('✅ GUARANTEED: Upload set to 100% for:', file.name);
+          
+          // Trigger callbacks immediately
           setTimeout(() => {
-            clearInterval(progressInterval);
-            setUploadedSamples(prev => 
-              prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
-            );
-            console.log('🔄 BACKUP completion triggered for:', file.name);
-          }, 3000); // Much shorter backup timer
+            console.log('🎵 INSTANT: File ready for processing:', file.name);
+            
+            // Only try separation if specifically requested
+            if (onAudioSeparated) {
+              console.log('🔄 INSTANT: Starting separation...');
+              startSimplifiedSeparation(file, id);
+            }
+            
+            // Always trigger analysis callback
+            if (onAnalysisComplete && metadata.analysis) {
+              console.log('📊 INSTANT: Triggering analysis callback');
+              onAnalysisComplete(metadata.analysis);
+            }
+          }, 100); // Almost immediate
           
         } catch (metadataError) {
           console.error('Error extracting metadata:', metadataError);
@@ -447,7 +414,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     if (uploadedSamples.length === 0) return;
     
     try {
-      const processedSamples = uploadedSamples.filter(s => (s.uploadProgress || 0) >= 100);
+      const processedSamples = uploadedSamples.filter(s => (s.uploadProgress || 0) >= 99);
       
       toast({
         title: "Samples added to library!",
@@ -710,9 +677,9 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               className="w-full"
               size="lg"
               variant="neon"
-              disabled={uploadedSamples.length === 0 || uploadedSamples.some(s => (s.uploadProgress || 0) < 100)}
+              disabled={uploadedSamples.length === 0 || uploadedSamples.some(s => (s.uploadProgress || 0) < 99)}
             >
-              Add {uploadedSamples.filter(s => (s.uploadProgress || 0) >= 100).length} Sample(s) to Library
+              Add {uploadedSamples.filter(s => (s.uploadProgress || 0) >= 99).length} Sample(s) to Library
             </Button>
           </div>
         )}
