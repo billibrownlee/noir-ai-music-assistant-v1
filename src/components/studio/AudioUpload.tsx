@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Upload, X, Music, FileAudio, Layers } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { AudioAnalyzer, AudioAnalysis } from '@/lib/audioAnalyzer';
 import { AudioSeparationEngine, SeparatedAudio } from '@/lib/audioSeparation';
@@ -46,6 +47,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   const [separationEngine] = useState(() => new AudioSeparationEngine());
   const [separationProgress, setSeparationProgress] = useState<{ progress: number, stage: string } | null>(null);
   const [isSeparating, setIsSeparating] = useState(false);
+  const [autoSeparateStems, setAutoSeparateStems] = useState(false);
   const { toast } = useToast();
   const { currentTrack, isPlaying } = useGlobalAudio();
 
@@ -374,8 +376,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               }, 100);
             }, 300);
 
-            // Skip separation for very large files to prevent crashes
-            if (onAudioSeparated && file.size < 75 * 1024 * 1024) {
+            // Only separate stems if user has enabled auto-separation
+            if (autoSeparateStems && onAudioSeparated && file.size < 75 * 1024 * 1024) {
               setTimeout(() => startSimplifiedSeparation(file, id), 500);
             }
 
@@ -703,6 +705,21 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             </Button>
           )}
         </CardTitle>
+        
+        {/* Auto STEM Separation Toggle */}
+        <div className="flex items-center justify-between mt-4 p-3 bg-studio-surface/30 rounded-lg border border-studio-border/30">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-neon-blue" />
+            <span className="text-sm font-medium">Auto-separate stems on upload</span>
+            <span className="text-xs text-studio-text-secondary">
+              (Saves screen space when disabled)
+            </span>
+          </div>
+          <Switch
+            checked={autoSeparateStems}
+            onCheckedChange={setAutoSeparateStems}
+          />
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Drop Zone */}
