@@ -620,7 +620,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
   };
 
   return (
-    <Card className="glass-card h-full flex flex-col min-h-[600px]">
+    <Card className="glass-card h-full flex flex-col max-h-[600px] overflow-hidden">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -659,9 +659,9 @@ Be conversational, helpful, and provide specific production advice. You can use 
         )}
       </CardHeader>
       
-      <CardContent className="flex-1 flex flex-col p-0">
-        {/* Chat Messages */}
-        <ScrollArea className="flex-1 px-4 min-h-[400px]" ref={scrollAreaRef}>
+      <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
+        {/* Chat Messages - Constrained ScrollArea */}
+        <ScrollArea className="flex-1 px-4 max-h-[300px] overflow-y-auto" ref={scrollAreaRef}>
           <div className="space-y-4 pb-4">
             {messages.map(message => (
               <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
