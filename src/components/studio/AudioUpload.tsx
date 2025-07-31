@@ -108,9 +108,17 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     
     console.log('🔍 UPLOAD DEBUG: Drop event triggered');
     console.log('🔍 UPLOAD DEBUG: dataTransfer.files:', e.dataTransfer.files);
+    console.log('🔍 UPLOAD DEBUG: dataTransfer.files.length:', e.dataTransfer.files.length);
     
     const files = Array.from(e.dataTransfer.files);
     console.log('🔍 UPLOAD DEBUG: Converted to files array:', files);
+    console.log('🔍 UPLOAD DEBUG: Files array length:', files.length);
+    
+    if (files.length === 0) {
+      console.log('❌ UPLOAD DEBUG: No files in drop event');
+      return;
+    }
+    
     handleFiles(files);
   }, []);
 
@@ -118,14 +126,26 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     console.log('🔍 UPLOAD DEBUG: Processing files:', files.length);
     console.log('🔍 UPLOAD DEBUG: Files array:', files);
     
+    if (!files || files.length === 0) {
+      console.log('❌ UPLOAD DEBUG: No files provided to handleFiles');
+      return;
+    }
+    
     const audioFiles = files.filter(file => {
       console.log('🔍 UPLOAD DEBUG: Checking file:', file.name, file.type, file.size);
-      return validateAudioFile(file);
+      const isValid = validateAudioFile(file);
+      console.log('🔍 UPLOAD DEBUG: File validation result:', isValid);
+      return isValid;
     });
     
     if (audioFiles.length === 0) {
       console.log('❌ UPLOAD DEBUG: No valid audio files found');
       console.log('🔍 UPLOAD DEBUG: Original files were:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
+      toast({
+        title: "No valid audio files",
+        description: "Please select MP3, WAV, FLAC, M4A, OGG, or AAC files.",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -502,14 +522,25 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,audio/*"
             onChange={(e) => {
               console.log('🔍 UPLOAD DEBUG: File input onChange triggered');
+              console.log('🔍 UPLOAD DEBUG: e.target:', e.target);
               console.log('🔍 UPLOAD DEBUG: e.target.files:', e.target.files);
               console.log('🔍 UPLOAD DEBUG: Files length:', e.target.files?.length || 0);
               
               if (e.target.files && e.target.files.length > 0) {
+                console.log('🔍 UPLOAD DEBUG: Files found, details:');
+                Array.from(e.target.files).forEach((file, index) => {
+                  console.log(`🔍 UPLOAD DEBUG: File ${index}:`, {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size
+                  });
+                });
+                
                 console.log('🔍 UPLOAD DEBUG: About to call handleFiles with:', Array.from(e.target.files));
                 handleFiles(Array.from(e.target.files || []));
               } else {
                 console.log('❌ UPLOAD DEBUG: No files selected or files array is empty');
+                console.log('❌ UPLOAD DEBUG: e.target.files:', e.target.files);
               }
             }}
             style={{ display: 'none' }}
