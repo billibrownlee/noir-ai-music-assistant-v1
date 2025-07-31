@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AudioPlayButton } from '@/components/ui/audio-play-button';
 import { 
   Library, 
   Search, 
-  Play, 
-  Pause, 
+  Play,
   Download, 
   MoreHorizontal,
   Filter,
@@ -18,6 +18,7 @@ import {
   Hash
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useGlobalAudio } from '@/hooks/useGlobalAudio';
 
 interface AudioSample {
   id: string;
@@ -85,13 +86,13 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
   onSampleSelect, 
   uploadedSamples = [] 
 }) => {
+  const { currentTrack, isPlaying } = useGlobalAudio();
+  
   // Combine default samples with uploaded samples
   const allSamples = [...SAMPLE_LIBRARY, ...uploadedSamples];
   const [samples, setSamples] = useState<AudioSample[]>(allSamples);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState<string>('all');
-  const [playingId, setPlayingId] = useState<string | null>(null);
-  const [audioPlayer, setAudioPlayer] = useState<HTMLAudioElement | null>(null);
 
   // Update samples when new ones are uploaded
   React.useEffect(() => {
@@ -105,68 +106,6 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
     const matchesGenre = selectedGenre === 'all' || sample.genre === selectedGenre;
     return matchesSearch && matchesGenre;
   });
-
-  const handlePlay = async (sample: AudioSample) => {
-    try {
-      // Stop current audio if playing
-      if (audioPlayer) {
-        audioPlayer.pause();
-        audioPlayer.currentTime = 0;
-      }
-
-      // If clicking the same sample that's playing, stop it
-      if (playingId === sample.id) {
-        setPlayingId(null);
-        setAudioPlayer(null);
-        setSamples(prev => prev.map(s => ({ ...s, isPlaying: false })));
-        return;
-      }
-
-      // Only play if we have an audio URL
-      if (!sample.audioUrl) {
-        console.log('No audio URL available for sample:', sample.name);
-        return;
-      }
-
-      // Create new audio player
-      const audio = new Audio(sample.audioUrl);
-      
-      audio.addEventListener('loadstart', () => {
-        console.log('Loading audio:', sample.name);
-      });
-
-      audio.addEventListener('canplay', () => {
-        console.log('Audio ready to play:', sample.name);
-      });
-
-      audio.addEventListener('ended', () => {
-        setPlayingId(null);
-        setAudioPlayer(null);
-        setSamples(prev => prev.map(s => ({ ...s, isPlaying: false })));
-      });
-
-      audio.addEventListener('error', (e) => {
-        console.error('Audio playback error:', e);
-        setPlayingId(null);
-        setAudioPlayer(null);
-        setSamples(prev => prev.map(s => ({ ...s, isPlaying: false })));
-      });
-
-      await audio.play();
-      
-      setAudioPlayer(audio);
-      setPlayingId(sample.id);
-      setSamples(prev => prev.map(s => ({ 
-        ...s, 
-        isPlaying: s.id === sample.id 
-      })));
-
-    } catch (error) {
-      console.error('Error playing audio:', error);
-      setPlayingId(null);
-      setAudioPlayer(null);
-    }
-  };
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -251,7 +190,7 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="flex-shrink-0 relative">
                         <Music2 className="w-8 h-8 text-neon-purple p-1.5 bg-neon-purple/20 rounded" />
-                        {sample.isPlaying && (
+                        {currentTrack?.id === sample.id && isPlaying && (
                           <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-pulse"></div>
                         )}
                         {sample.audioUrl && !SAMPLE_LIBRARY.some(s => s.id === sample.id) && (
@@ -302,22 +241,24 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                     
                     {/* Action Buttons */}
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handlePlay(sample);
-                        }}
-                        className={sample.isPlaying ? "text-neon-green" : ""}
-                        disabled={!sample.audioUrl && !SAMPLE_LIBRARY.some(s => s.id === sample.id)}
-                      >
-                        {sample.isPlaying ? (
-                          <Pause className="w-4 h-4" />
-                        ) : (
+                      {sample.audioUrl ? (
+                        <AudioPlayButton
+                          audioUrl={sample.audioUrl}
+                          trackName={sample.name}
+                          trackId={sample.id}
+                          variant="ghost"
+                          size="sm"
+                        />
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled
+                          className="opacity-50"
+                        >
                           <Play className="w-4 h-4" />
-                        )}
-                      </Button>
+                        </Button>
+                      )}
                       
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

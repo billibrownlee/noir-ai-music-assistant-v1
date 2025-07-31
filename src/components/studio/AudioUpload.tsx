@@ -6,10 +6,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Upload, X, Music, FileAudio, Play, Pause, Layers } from 'lucide-react';
+import { Upload, X, Music, FileAudio, Layers } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AudioAnalyzer, AudioAnalysis } from '@/lib/audioAnalyzer';
 import { AudioSeparationEngine, SeparatedAudio } from '@/lib/audioSeparation';
+import { AudioPlayButton } from '@/components/ui/audio-play-button';
+import { useGlobalAudio } from '@/hooks/useGlobalAudio';
 
 interface AudioSample {
   id: string;
@@ -34,12 +36,11 @@ interface AudioUploadProps {
 export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onAudioSeparated }) => {
   const [uploadedSamples, setUploadedSamples] = useState<AudioSample[]>([]);
   const [isDragging, setIsDragging] = useState(false);
-  const [playingAudio, setPlayingAudio] = useState<HTMLAudioElement | null>(null);
-  const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
   const [audioAnalyzer] = useState(() => new AudioAnalyzer());
   const [separationEngine] = useState(() => new AudioSeparationEngine());
   const [separationProgress, setSeparationProgress] = useState<{ progress: number, stage: string } | null>(null);
   const { toast } = useToast();
+  const { currentTrack, isPlaying } = useGlobalAudio();
 
   const validateAudioFile = (file: File): boolean => {
     const validTypes = ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/m4a', 'audio/ogg', 'audio/mp3', 'audio/x-wav', 'audio/aac'];
@@ -203,57 +204,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
     });
   };
 
-  const playAudio = useCallback(async (sample: AudioSample) => {
-    try {
-      // Stop currently playing audio
-      if (playingAudio) {
-        playingAudio.pause();
-        playingAudio.currentTime = 0;
-      }
-
-      if (playingSampleId === sample.id) {
-        // Stop current sample
-        setPlayingAudio(null);
-        setPlayingSampleId(null);
-        setUploadedSamples(prev => 
-          prev.map(s => ({ ...s, isPlaying: false }))
-        );
-        return;
-      }
-
-      // Play new sample
-      const audio = new Audio(sample.audioUrl);
-      audio.addEventListener('ended', () => {
-        setPlayingAudio(null);
-        setPlayingSampleId(null);
-        setUploadedSamples(prev => 
-          prev.map(s => ({ ...s, isPlaying: false }))
-        );
-      });
-
-      audio.addEventListener('error', () => {
-        toast({
-          title: "Playback error",
-          description: "Could not play the audio file.",
-          variant: "destructive"
-        });
-      });
-
-      await audio.play();
-      setPlayingAudio(audio);
-      setPlayingSampleId(sample.id);
-      setUploadedSamples(prev => 
-        prev.map(s => ({ ...s, isPlaying: s.id === sample.id }))
-      );
-
-    } catch (error) {
-      toast({
-        title: "Playback failed",
-        description: "Could not play the audio file.",
-        variant: "destructive"
-      });
-    }
-  }, [playingAudio, playingSampleId, toast]);
 
   const updateSample = (id: string, updates: Partial<AudioSample>) => {
     setUploadedSamples(prev => 
@@ -268,13 +218,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
     const sample = uploadedSamples.find(s => s.id === id);
     if (sample?.audioUrl) {
       URL.revokeObjectURL(sample.audioUrl);
-    }
-    
-    // Stop playing audio if it's the current sample
-    if (playingSampleId === id && playingAudio) {
-      playingAudio.pause();
-      setPlayingAudio(null);
-      setPlayingSampleId(null);
     }
     
     setUploadedSamples(prev => prev.filter(sample => sample.id !== id));
@@ -352,8 +295,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
       });
       
       setUploadedSamples([]);
-      setPlayingAudio(null);
-      setPlayingSampleId(null);
       
     } catch (error) {
       toast({
@@ -436,12 +377,12 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
                 <CardContent className="p-4">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <FileAudio className="w-6 h-6 text-neon-purple" />
-                      {sample.isPlaying && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-pulse" />
-                      )}
-                    </div>
+                      <div className="relative">
+                        <FileAudio className="w-6 h-6 text-neon-purple" />
+                        {currentTrack?.id === sample.id && isPlaying && (
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-pulse" />
+                        )}
+                      </div>
                     <div>
                       <h4 className="font-medium">{sample.name}</h4>
                       <div className="flex items-center gap-2 text-sm text-studio-text-secondary">
@@ -463,18 +404,13 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
                   </div>
                       <div className="flex items-center gap-2">
                         {sample.audioUrl && (
-                          <Button
+                          <AudioPlayButton
+                            audioUrl={sample.audioUrl}
+                            trackName={sample.name}
+                            trackId={sample.id}
                             variant="outline"
                             size="sm"
-                            onClick={() => playAudio(sample)}
-                            className="flex items-center gap-1"
-                          >
-                            {sample.isPlaying ? (
-                              <Pause className="w-4 h-4" />
-                            ) : (
-                              <Play className="w-4 h-4" />
-                            )}
-                          </Button>
+                          />
                         )}
                         <Button
                           variant="outline"
