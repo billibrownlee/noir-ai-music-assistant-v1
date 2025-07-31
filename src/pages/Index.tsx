@@ -16,6 +16,7 @@ import { RecordingStudio } from "@/components/studio/RecordingStudio";
 import { MixingConsole } from "@/components/studio/MixingConsole";
 import { MasteringSuite } from "@/components/studio/MasteringSuite";
 import { StemEditor } from "@/components/studio/StemEditor";
+import { TempoControl } from "@/components/studio/TempoControl";
 import { MusicProductionWorkflow } from "@/components/studio/MusicProductionWorkflow";
 import { SeparatedAudio } from "@/lib/audioSeparation";
 import { AudioAnalysis } from "@/lib/audioAnalyzer";
@@ -157,6 +158,19 @@ const Index = () => {
                 />
                 
                 <AudioOutputSelector onDeviceChange={setAudioOutputDevice} />
+                
+                {/* Tempo Control */}
+                <TempoControl 
+                  uploadedSamples={uploadedSamples}
+                  onUpdateSample={(sampleId, updates) => {
+                    setUploadedSamples(prev => 
+                      prev.map(sample => sample.id === sampleId ? { ...sample, ...updates } : sample)
+                    );
+                  }}
+                  onTempoChange={(bpm) => {
+                    console.log('Tempo changed to:', bpm);
+                  }}
+                />
               </div>
               
               {/* Middle Column - Sample Library */}
