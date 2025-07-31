@@ -106,24 +106,30 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     e.preventDefault();
     setIsDragging(false);
     
+    console.log('🔍 UPLOAD DEBUG: Drop event triggered');
+    console.log('🔍 UPLOAD DEBUG: dataTransfer.files:', e.dataTransfer.files);
+    
     const files = Array.from(e.dataTransfer.files);
+    console.log('🔍 UPLOAD DEBUG: Converted to files array:', files);
     handleFiles(files);
   }, []);
 
   const handleFiles = async (files: File[]) => {
-    console.log('Processing files:', files.length);
+    console.log('🔍 UPLOAD DEBUG: Processing files:', files.length);
+    console.log('🔍 UPLOAD DEBUG: Files array:', files);
     
     const audioFiles = files.filter(file => {
-      console.log('Checking file:', file.name, file.type, file.size);
+      console.log('🔍 UPLOAD DEBUG: Checking file:', file.name, file.type, file.size);
       return validateAudioFile(file);
     });
     
     if (audioFiles.length === 0) {
-      console.log('No valid audio files found');
+      console.log('❌ UPLOAD DEBUG: No valid audio files found');
+      console.log('🔍 UPLOAD DEBUG: Original files were:', files.map(f => ({ name: f.name, type: f.type, size: f.size })));
       return;
     }
 
-    console.log('Valid audio files:', audioFiles.length);
+    console.log('✅ UPLOAD DEBUG: Valid audio files found:', audioFiles.length);
 
     for (const file of audioFiles) {
       const id = Math.random().toString(36).substr(2, 9);
@@ -502,8 +508,16 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             multiple
             accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,audio/*"
             onChange={(e) => {
-              console.log('File input changed:', e.target.files);
-              handleFiles(Array.from(e.target.files || []));
+              console.log('🔍 UPLOAD DEBUG: File input onChange triggered');
+              console.log('🔍 UPLOAD DEBUG: e.target.files:', e.target.files);
+              console.log('🔍 UPLOAD DEBUG: Files length:', e.target.files?.length || 0);
+              
+              if (e.target.files && e.target.files.length > 0) {
+                console.log('🔍 UPLOAD DEBUG: About to call handleFiles with:', Array.from(e.target.files));
+                handleFiles(Array.from(e.target.files || []));
+              } else {
+                console.log('❌ UPLOAD DEBUG: No files selected or files array is empty');
+              }
             }}
             style={{ display: 'none' }}
             id="audio-upload"
