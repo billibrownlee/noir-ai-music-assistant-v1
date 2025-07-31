@@ -48,6 +48,7 @@ const Index = () => {
   const [isSampleLibraryOpen, setIsSampleLibraryOpen] = useState(true);
   const [isAIChatOpen, setIsAIChatOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isStemEditorOpen, setIsStemEditorOpen] = useState(false);
   const { playTrack, setAudioOutputDevice } = useGlobalAudio();
 
 
@@ -186,6 +187,27 @@ const Index = () => {
                     />
                   </CollapsibleContent>
                 </Collapsible>
+
+                {/* Stem Editor Section - Only show when separated audio is available */}
+                {separatedAudio && (
+                  <Collapsible open={isStemEditorOpen} onOpenChange={setIsStemEditorOpen}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                        <span className="font-medium text-lg text-white">🎚️ Stem Editor</span>
+                        {isStemEditorOpen ? <ChevronUp className="h-4 w-4 text-white" /> : <ChevronDown className="h-4 w-4 text-white" />}
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2">
+                      <StemEditor 
+                        separatedAudio={separatedAudio}
+                        onStemUpdate={(stemId, updates) => {
+                          // Handle stem updates if needed
+                          console.log('Stem updated:', stemId, updates);
+                        }}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
 
                 {/* Settings Section */}
                 <Collapsible open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
@@ -427,12 +449,6 @@ const Index = () => {
           </div>
         )}
         
-        {/* Stem Editor (if separated audio available) */}
-        {separatedAudio && (
-          <div className="mt-6">
-            <StemEditor separatedAudio={separatedAudio} />
-          </div>
-        )}
       </div>
     </div>
   );
