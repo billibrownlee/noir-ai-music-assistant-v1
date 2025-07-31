@@ -188,11 +188,11 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
     for (const file of audioFiles) {
       const id = Math.random().toString(36).substr(2, 9);
-      console.log('Processing file:', file.name, 'ID:', id);
+      console.log('🎯 PROCESSING FILE:', file.name, 'ID:', id);
       
       try {
         const audioUrl = URL.createObjectURL(file);
-        console.log('Created audio URL for:', file.name);
+        console.log('✅ Audio URL created for:', file.name);
         
         const sample: AudioSample = {
           id,
@@ -205,94 +205,81 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           isPlaying: false
         };
 
-        // Add sample to list immediately with 0% progress
+        // Add sample immediately
         setUploadedSamples(prev => [...prev, sample]);
-        console.log('✅ UPLOAD STARTED:', sample.name);
+        console.log('✅ Sample added to list:', sample.name);
         
-        // SIMPLE 100% PROGRESS SYSTEM
-        console.log('🚀 Starting simple progress for:', sample.name);
-        
-        // Step 1: 25%
-        setTimeout(() => {
-          console.log('📊 Progress: 25%');
-          setUploadedSamples(prev => 
-            prev.map(s => s.id === id ? { ...s, uploadProgress: 25 } : s)
-          );
-        }, 100);
-        
-        // Step 2: 50%
-        setTimeout(() => {
-          console.log('📊 Progress: 50%');
-          setUploadedSamples(prev => 
-            prev.map(s => s.id === id ? { ...s, uploadProgress: 50 } : s)
-          );
-        }, 300);
-        
-        // Step 3: 75%
-        setTimeout(() => {
-          console.log('📊 Progress: 75%');
-          setUploadedSamples(prev => 
-            prev.map(s => s.id === id ? { ...s, uploadProgress: 75 } : s)
-          );
-        }, 500);
-        
-        // Step 4: 100% COMPLETE
-        setTimeout(() => {
-          console.log('🎯 Progress: 100% COMPLETE!');
-          setUploadedSamples(prev => 
-            prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
-          );
+        // BULLETPROOF PROGRESS SYSTEM - CANNOT BE INTERRUPTED
+        const guaranteedProgress = (() => {
+          let step = 0;
+          const steps = [25, 50, 75, 100];
           
-          // Save to library immediately
-          setTimeout(() => {
-            setUploadedSamples(currentSamples => {
-              const completedSamples = currentSamples.filter(s => s.uploadProgress === 100);
-              if (completedSamples.length > 0) {
-                console.log('🏦 Auto-saving', completedSamples.length, 'samples to library');
-                onSamplesUploaded(completedSamples);
+          const runStep = () => {
+            if (step < steps.length) {
+              const progress = steps[step];
+              console.log(`🚀 FORCE PROGRESS ${step + 1}/4: ${progress}%`);
+              
+              setUploadedSamples(prev => 
+                prev.map(s => s.id === id ? { ...s, uploadProgress: progress } : s)
+              );
+              
+              if (progress === 100) {
+                console.log('🎯 UPLOAD COMPLETE - SAVING TO LIBRARY');
+                // Immediate save to library
+                setTimeout(() => {
+                  setUploadedSamples(currentSamples => {
+                    const completed = currentSamples.filter(s => s.uploadProgress === 100);
+                    if (completed.length > 0) {
+                      onSamplesUploaded(completed);
+                      console.log('✅ SAVED TO LIBRARY:', completed.length, 'samples');
+                    }
+                    return currentSamples;
+                  });
+                }, 50);
+              } else {
+                step++;
+                setTimeout(runStep, 200);
               }
-              return currentSamples;
-            });
-          }, 100);
-        }, 700);
+            }
+          };
+          
+          return runStep;
+        })();
         
+        // Start progress immediately
+        setTimeout(guaranteedProgress, 100);
         
-        // Get metadata and analysis
-        try {
-          console.log('Extracting metadata for:', file.name);
-          const metadata = await extractAudioMetadata(file);
-          console.log('Metadata extracted:', metadata);
-          
-          // Update sample with metadata
-          setUploadedSamples(prev => 
-            prev.map(s => s.id === id ? { 
-              ...s, 
-              duration: metadata.duration,
-              analysis: metadata.analysis,
-              bpm: metadata.analysis?.tempo,
-              key: metadata.analysis?.key
-            } : s)
-          );
-          
-          // Trigger analysis callback if available
-          if (onAnalysisComplete && metadata.analysis) {
-            console.log('📊 INSTANT: Triggering analysis callback');
-            onAnalysisComplete(metadata.analysis);
+        // BACKGROUND METADATA EXTRACTION (DOESN'T AFFECT PROGRESS)
+        (async () => {
+          try {
+            console.log('🔍 Starting background metadata extraction...');
+            const metadata = await extractAudioMetadata(file);
+            console.log('✅ Metadata extracted:', metadata);
+            
+            // Update sample with metadata (but don't affect progress)
+            setUploadedSamples(prev => 
+              prev.map(s => s.id === id ? { 
+                ...s, 
+                duration: metadata.duration,
+                analysis: metadata.analysis,
+                bpm: metadata.analysis?.tempo,
+                key: metadata.analysis?.key
+              } : s)
+            );
+            
+            // Trigger callbacks
+            if (onAnalysisComplete && metadata.analysis) {
+              onAnalysisComplete(metadata.analysis);
+            }
+            
+            if (onAudioSeparated) {
+              startSimplifiedSeparation(file, id);
+            }
+            
+          } catch (error) {
+            console.log('⚠️ Metadata extraction failed (upload still successful):', error);
           }
-          
-          // Start separation if requested
-          if (onAudioSeparated) {
-            console.log('🔄 Starting separation...');
-            startSimplifiedSeparation(file, id);
-          }
-          
-        } catch (metadataError) {
-          console.error('Error extracting metadata:', metadataError);
-          // Still mark as complete even if metadata fails
-          setUploadedSamples(prev => 
-            prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
-          );
-        }
+        })();
         
       } catch (error) {
         console.error('Error processing file:', file.name, error);
