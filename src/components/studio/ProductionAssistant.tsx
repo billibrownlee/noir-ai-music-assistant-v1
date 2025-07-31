@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { 
   Brain, 
   Volume2, 
-  BarChart3, 
+  BarChart3,
   Layers, 
   Zap, 
   Target,
