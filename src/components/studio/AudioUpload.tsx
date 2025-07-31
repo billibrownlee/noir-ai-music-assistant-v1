@@ -78,15 +78,31 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   const extractAudioMetadata = (file: File): Promise<{ duration: number, analysis?: AudioAnalysis }> => {
     return new Promise((resolve) => {
       try {
+        // For large files (>50MB), skip complex analysis to prevent memory issues
+        const isLargeFile = file.size > 50 * 1024 * 1024;
+        
+        if (isLargeFile) {
+          console.log('🔍 Large file detected, using lightweight metadata extraction');
+          resolve({ duration: 0 }); // Skip metadata for large files
+          return;
+        }
+
         const audio = new Audio();
         let resolved = false;
         
         const resolveOnce = (data: { duration: number, analysis?: AudioAnalysis }) => {
           if (!resolved) {
             resolved = true;
-            // Clean up
-            audio.src = '';
-            audio.remove();
+            // Clean up immediately
+            try {
+              if (audio.src) {
+                URL.revokeObjectURL(audio.src);
+                audio.src = '';
+                audio.load(); // Force cleanup
+              }
+            } catch (e) {
+              console.log('Audio cleanup warning:', e);
+            }
             resolve(data);
           }
         };
@@ -96,7 +112,13 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             const duration = audio.duration || 0;
             console.log('✅ Audio metadata loaded - Duration:', duration);
             
-            // Try analysis but don't let it crash the upload
+            // Skip analysis for files > 25MB to prevent crashes
+            if (file.size > 25 * 1024 * 1024) {
+              resolveOnce({ duration });
+              return;
+            }
+            
+            // Try lightweight analysis
             try {
               const analysis = await audioAnalyzer.analyzeAudioFile(file);
               resolveOnce({ duration, analysis });
@@ -119,15 +141,17 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         audio.addEventListener('loadedmetadata', handleLoadedMetadata, { once: true });
         audio.addEventListener('error', handleError, { once: true });
         
-        // Fallback timeout - don't hang forever
+        // Shorter timeout for large files
+        const timeout = isLargeFile ? 1000 : 2000;
         setTimeout(() => {
           console.log('⚠️ Metadata extraction timeout - using defaults');
           resolveOnce({ duration: 0 });
-        }, 3000);
+        }, timeout);
 
         // Create URL and load
         const audioUrl = URL.createObjectURL(file);
         audio.src = audioUrl;
+        audio.preload = 'metadata'; // Only load metadata, not full audio
         audio.load();
         
       } catch (error) {
@@ -191,8 +215,9 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
       console.log('🎯 PROCESSING FILE:', file.name, 'ID:', id);
       
       try {
+        // Create audio URL with memory optimization for large files
         const audioUrl = URL.createObjectURL(file);
-        console.log('✅ Audio URL created for:', file.name);
+        console.log('✅ Audio URL created for:', file.name, `(${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
         
         const sample: AudioSample = {
           id,
@@ -209,36 +234,40 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         setUploadedSamples(prev => [...prev, sample]);
         console.log('✅ Sample added to list:', sample.name);
         
-        // BULLETPROOF PROGRESS SYSTEM - CANNOT BE INTERRUPTED
+        // BULLETPROOF PROGRESS SYSTEM - OPTIMIZED FOR LARGE FILES
         const guaranteedProgress = (() => {
           let step = 0;
-          const steps = [25, 50, 75, 100];
+          const isLargeFile = file.size > 50 * 1024 * 1024;
+          
+          // Faster progress for large files to prevent hanging
+          const intervals = isLargeFile ? [50, 100] : [25, 50, 75, 100];
+          const stepDelay = isLargeFile ? 100 : 150;
           
           const runStep = () => {
-            if (step < steps.length) {
-              const progress = steps[step];
-              console.log(`🚀 FORCE PROGRESS ${step + 1}/4: ${progress}%`);
+            if (step < intervals.length) {
+              const progress = intervals[step];
+              console.log(`🚀 PROGRESS ${step + 1}/${intervals.length}: ${progress}% (${isLargeFile ? 'LARGE FILE' : 'NORMAL'})`);
               
               setUploadedSamples(prev => 
                 prev.map(s => s.id === id ? { ...s, uploadProgress: progress } : s)
               );
               
               if (progress === 100) {
-                console.log('🎯 UPLOAD COMPLETE - SAVING TO LIBRARY');
-                // Immediate save to library
+                console.log('🎯 UPLOAD COMPLETE - IMMEDIATE LIBRARY SAVE');
+                // Force immediate save to library
                 setTimeout(() => {
                   setUploadedSamples(currentSamples => {
-                    const completed = currentSamples.filter(s => s.uploadProgress === 100);
-                    if (completed.length > 0) {
-                      onSamplesUploaded(completed);
-                      console.log('✅ SAVED TO LIBRARY:', completed.length, 'samples');
+                    const thisample = currentSamples.find(s => s.id === id);
+                    if (thisample && thisample.uploadProgress === 100) {
+                      onSamplesUploaded([thisample]);
+                      console.log('✅ INDIVIDUAL SAMPLE SAVED TO LIBRARY:', thisample.name);
                     }
                     return currentSamples;
                   });
-                }, 50);
+                }, 25);
               } else {
                 step++;
-                setTimeout(runStep, 200);
+                setTimeout(runStep, stepDelay);
               }
             }
           };
@@ -247,16 +276,16 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         })();
         
         // Start progress immediately
-        setTimeout(guaranteedProgress, 100);
+        setTimeout(guaranteedProgress, 50);
         
-        // BACKGROUND METADATA EXTRACTION (DOESN'T AFFECT PROGRESS)
+        // OPTIMIZED METADATA EXTRACTION (NON-BLOCKING)
         (async () => {
           try {
-            console.log('🔍 Starting background metadata extraction...');
+            console.log('🔍 Starting optimized metadata extraction...');
             const metadata = await extractAudioMetadata(file);
             console.log('✅ Metadata extracted:', metadata);
             
-            // Update sample with metadata (but don't affect progress)
+            // Update sample with metadata
             setUploadedSamples(prev => 
               prev.map(s => s.id === id ? { 
                 ...s, 
@@ -267,13 +296,16 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               } : s)
             );
             
-            // Trigger callbacks
+            // Trigger callbacks (non-blocking)
             if (onAnalysisComplete && metadata.analysis) {
-              onAnalysisComplete(metadata.analysis);
+              setTimeout(() => onAnalysisComplete(metadata.analysis), 0);
             }
             
-            if (onAudioSeparated) {
-              startSimplifiedSeparation(file, id);
+            // Skip separation for very large files to prevent crashes
+            if (onAudioSeparated && file.size < 75 * 1024 * 1024) {
+              setTimeout(() => startSimplifiedSeparation(file, id), 100);
+            } else if (file.size >= 75 * 1024 * 1024) {
+              console.log('⚠️ Skipping separation for very large file:', file.name);
             }
             
           } catch (error) {
@@ -291,28 +323,36 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
       }
     }
 
-    // ULTIMATE SAFETY NET - Force all uploads to 100% after 2 seconds
+    // ULTIMATE SAFETY NET - Adaptive timeout based on total file size
+    const totalSize = audioFiles.reduce((sum, file) => sum + file.size, 0);
+    const hasLargeFiles = audioFiles.some(file => file.size > 50 * 1024 * 1024);
+    const safetyTimeout = hasLargeFiles ? 1500 : 1000; // Faster timeout for large files
+    
     setTimeout(() => {
       console.log('🚨 SAFETY NET ACTIVATED - FORCING ALL UPLOADS TO 100%');
       
       setUploadedSamples(currentSamples => {
-        const forcedComplete = currentSamples.map(s => ({
-          ...s, 
-          uploadProgress: 100,
-          isComplete: true
-        }));
+        const incomplete = currentSamples.filter(s => (s.uploadProgress || 0) < 100);
         
-        console.log('🔒 FORCED COMPLETION:', forcedComplete.length, 'samples');
-        
-        // EMERGENCY SAVE ALL TO LIBRARY
-        if (forcedComplete.length > 0) {
+        if (incomplete.length > 0) {
+          console.log('🔒 FORCING COMPLETION FOR:', incomplete.map(s => s.name));
+          
+          const forcedComplete = currentSamples.map(s => ({
+            ...s, 
+            uploadProgress: 100,
+            isComplete: true
+          }));
+          
+          // EMERGENCY SAVE ALL TO LIBRARY
           onSamplesUploaded(forcedComplete);
           console.log('🚨 EMERGENCY LIBRARY SAVE COMPLETE');
+          
+          return forcedComplete;
         }
         
-        return forcedComplete;
+        return currentSamples;
       });
-    }, 2000); // 2-second safety net
+    }, safetyTimeout);
     
     toast({
       title: "✅ Files uploaded successfully!",

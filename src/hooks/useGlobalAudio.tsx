@@ -39,11 +39,17 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const createAudioElement = useCallback(async (track: AudioTrack) => {
     try {
-      // Clean up existing audio first
+      // Clean up existing audio first with comprehensive cleanup
       if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-        audioRef.current.remove();
+        try {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+          audioRef.current.src = '';
+          audioRef.current.load(); // Force cleanup
+          audioRef.current.remove();
+        } catch (cleanupError) {
+          console.log('Audio cleanup warning:', cleanupError);
+        }
         audioRef.current = null;
       }
 
@@ -53,7 +59,7 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
         throw new Error('Invalid audio track');
       }
 
-      console.log('🎵 Creating audio element for:', track.name);
+      console.log('🎵 Creating optimized audio element for:', track.name);
       const audio = new Audio();
       
       // Set volume safely
@@ -74,9 +80,14 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
       }
       
-      // Set crossorigin for better compatibility
+      // Optimize attributes for large files
       audio.setAttribute('crossorigin', 'anonymous');
-      audio.setAttribute('preload', 'metadata');
+      audio.setAttribute('preload', 'metadata'); // Only metadata for large files
+      audio.setAttribute('controlsList', 'nodownload noremoteplayback');
+      
+      // Additional optimizations for stability
+      audio.loop = false;
+      audio.autoplay = false;
       
       // Enhanced audio context setup for better device compatibility
       try {
@@ -128,21 +139,50 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
           }
         });
 
-        // Error handling
+        // Enhanced error handling for large files
         audio.addEventListener('error', (e) => {
-          console.error('❌ Audio playback error:', e);
+          const audioElement = e.target as HTMLAudioElement;
+          const error = audioElement.error;
+          
+          console.error('❌ Audio playback error:', {
+            code: error?.code,
+            message: error?.message,
+            track: track.name
+          });
+          
+          // Handle specific error codes
+          let errorAction = 'Reset audio';
+          if (error?.code === 4) errorAction = 'Unsupported format';
+          if (error?.code === 3) errorAction = 'Corrupted file';
+          if (error?.code === 2) errorAction = 'Network error';
+          
+          console.log('🔧 Error action:', errorAction);
+          
           setIsPlaying(false);
           setCurrentTrack(null);
           
-          // Don't crash on errors - just reset
+          // Graceful cleanup without crashing
           try {
             if (audioRef.current) {
               audioRef.current.pause();
+              audioRef.current.currentTime = 0;
               audioRef.current.src = '';
+              audioRef.current.load();
             }
           } catch (cleanupError) {
             console.log('Error cleanup warning:', cleanupError);
           }
+        });
+
+        // Handle stalling for large files
+        audio.addEventListener('stalled', () => {
+          console.log('⚠️ Audio stalled (large file) - continuing...');
+          // Don't error out, large files may stall briefly
+        });
+
+        // Handle waiting events
+        audio.addEventListener('waiting', () => {
+          console.log('⏳ Audio buffering (large file) - please wait...');
         });
 
         // Can play through (ready to play)
@@ -196,14 +236,34 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
       const audio = await createAudioElement(track);
       setCurrentTrack(track);
       
-      // Play with explicit promise handling
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        await playPromise;
-        console.log('🔊 Audio now playing through selected output!');
+      // Enhanced play with large file handling
+      try {
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+          console.log('🔊 Audio now playing through selected output!');
+        }
+        setIsPlaying(true);
+      } catch (playError) {
+        console.error('❌ Play promise failed:', playError);
+        
+        // Try alternative playback method for large files
+        setTimeout(() => {
+          try {
+            audio.load();
+            audio.play().then(() => {
+              setIsPlaying(true);
+              console.log('🔊 Audio started after retry');
+            }).catch(retryError => {
+              console.error('❌ Retry play failed:', retryError);
+              setIsPlaying(false);
+            });
+          } catch (retryError) {
+            console.error('❌ Audio retry setup failed:', retryError);
+            setIsPlaying(false);
+          }
+        }, 100);
       }
-      
-      setIsPlaying(true);
 
     } catch (error) {
       console.error('❌ Error playing track:', error);
