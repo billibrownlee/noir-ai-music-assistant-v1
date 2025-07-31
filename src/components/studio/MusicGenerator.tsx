@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Music, Play, Pause, Download, Sparkles, Zap, Volume2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useGlobalAudio } from '@/hooks/useGlobalAudio';
+import { MusicGenerationEngine } from '@/lib/musicGenerationEngine';
 import { supabase } from '@/integrations/supabase/client';
 
 interface GeneratedMusic {
@@ -43,6 +44,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
   const [generatedMusic, setGeneratedMusic] = useState<GeneratedMusic[]>([]);
   const { toast } = useToast();
   const { currentTrack, isPlaying, playTrack } = useGlobalAudio();
+  const [musicEngine] = useState(() => new MusicGenerationEngine());
 
   const musicStyles = [
     { value: 'electronic', label: 'Electronic/EDM', description: 'Synthesizers, digital beats, modern sounds' },
@@ -76,52 +78,81 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
     }
 
     setIsGenerating(true);
-    console.log('🎵 Starting music generation...');
+    console.log('🎵 Starting real audio generation...');
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-music', {
-        body: {
-          prompt: prompt.trim(),
-          duration: duration[0],
-          style,
-          instrumental
-        }
+      const startTime = Date.now();
+
+      // Parse key from style-appropriate defaults
+      const keyDefaults = {
+        'electronic': 'C minor',
+        'hip-hop': 'F minor', 
+        'pop': 'C major',
+        'rock': 'A minor',
+        'jazz': 'Bb major',
+        'classical': 'C major',
+        'ambient': 'D minor',
+        'funk': 'E minor',
+        'experimental': 'F# minor'
+      };
+
+      const defaultKey = keyDefaults[style as keyof typeof keyDefaults] || 'C major';
+      
+      // Generate BPM based on style
+      const bpmRanges = {
+        'electronic': { min: 120, max: 140 },
+        'hip-hop': { min: 70, max: 100 },
+        'pop': { min: 100, max: 130 },
+        'rock': { min: 110, max: 150 },
+        'jazz': { min: 80, max: 120 },
+        'classical': { min: 60, max: 100 },
+        'ambient': { min: 60, max: 90 },
+        'funk': { min: 100, max: 130 },
+        'experimental': { min: 80, max: 140 }
+      };
+
+      const bpmRange = bpmRanges[style as keyof typeof bpmRanges] || { min: 80, max: 140 };
+      const bpm = Math.floor(Math.random() * (bpmRange.max - bpmRange.min + 1)) + bpmRange.min;
+
+      // Generate actual audio using our synthesis engine
+      console.log('🎛️ Synthesizing audio:', { style, duration: duration[0], bpm, key: defaultKey });
+      
+      const generatedTrack = await musicEngine.generateMusic({
+        prompt: prompt.trim(),
+        style,
+        duration: duration[0],
+        bpm,
+        key: defaultKey,
+        instrumental
       });
 
-      if (error) {
-        console.error('❌ Music generation error:', error);
-        throw error;
-      }
-
-      if (!data?.success) {
-        throw new Error(data?.error || 'Music generation failed');
-      }
-
-      // For demo purposes, create a more realistic audio URL
-      // In production, this would be the actual generated audio
-      const demoAudioUrl = 'data:audio/wav;base64,' + btoa(
-        JSON.stringify({
-          type: 'generated_music',
-          prompt: prompt,
-          style: style,
-          duration: duration[0],
-          timestamp: Date.now()
-        })
-      );
+      const generationTime = (Date.now() - startTime) / 1000;
 
       const generatedMusic: GeneratedMusic = {
-        ...data.audio,
-        audioUrl: demoAudioUrl, // Use demo URL for now
+        id: `gen_${Date.now()}`,
+        prompt: `${prompt.trim()} - ${style} style, ${duration[0]}s, ${bpm} BPM, ${defaultKey}`,
+        originalPrompt: prompt.trim(),
+        audioUrl: generatedTrack.audioUrl,
+        duration: duration[0],
+        style,
+        instrumental,
+        metadata: {
+          bpm,
+          key: defaultKey,
+          genre: style,
+          energy: Math.random() * 0.5 + 0.5
+        },
+        generationTime,
         timestamp: new Date()
       };
 
       setGeneratedMusic(prev => [generatedMusic, ...prev]);
       setPrompt(''); // Clear prompt for next generation
 
-      console.log('✅ Music generated successfully!');
+      console.log('✅ Real audio generated successfully!', generatedTrack);
       toast({
         title: "🎵 Music Generated!",
-        description: `Created ${duration[0]}s ${style} track: "${generatedMusic.originalPrompt}"`,
+        description: `Created ${duration[0]}s ${style} track with real audio (${generationTime.toFixed(1)}s)`,
       });
 
       // Callback for parent component
@@ -142,33 +173,32 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
   };
 
   const playGeneratedMusic = async (music: GeneratedMusic) => {
-    // For demo, we'll show a placeholder since we don't have real audio
-    toast({
-      title: "🎵 Demo Mode",
-      description: `Would play: "${music.originalPrompt}" (${music.metadata.bpm} BPM in ${music.metadata.key})`,
+    // Now plays the actual generated audio
+    await playTrack({
+      id: music.id,
+      name: music.originalPrompt,
+      audioUrl: music.audioUrl
     });
     
-    // In production, this would play the actual generated audio:
-    // await playTrack({
-    //   id: music.id,
-    //   name: music.originalPrompt,
-    //   audioUrl: music.audioUrl
-    // });
+    toast({
+      title: "🎵 Playing Generated Music",
+      description: `Now playing: "${music.originalPrompt}" (${music.metadata.bpm} BPM in ${music.metadata.key})`,
+    });
   };
 
   const downloadMusic = (music: GeneratedMusic) => {
-    toast({
-      title: "🎵 Demo Mode",
-      description: `Would download: "${music.originalPrompt}.wav"`,
-    });
+    // Download the actual generated audio file
+    const link = document.createElement('a');
+    link.href = music.audioUrl;
+    link.download = `${music.originalPrompt.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.wav`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
-    // In production, this would download the actual file:
-    // const link = document.createElement('a');
-    // link.href = music.audioUrl;
-    // link.download = `${music.originalPrompt}.wav`;
-    // document.body.appendChild(link);
-    // link.click();
-    // document.body.removeChild(link);
+    toast({
+      title: "🎵 Download Started",
+      description: `Downloading: "${music.originalPrompt}.wav"`,
+    });
   };
 
   const selectedStyle = musicStyles.find(s => s.value === style);
@@ -313,8 +343,8 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
                       onClick={() => playGeneratedMusic(music)}
                       className="flex-1"
                     >
-                      <Play className="w-3 h-3 mr-1" />
-                      Play (Demo)
+                       <Play className="w-3 h-3 mr-1" />
+                       Play
                     </Button>
                     <Button
                       variant="outline"
@@ -331,10 +361,10 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
         )}
 
         {/* Info Note */}
-        <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-          <p className="text-sm text-blue-400">
+        <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+          <p className="text-sm text-green-400">
             <Sparkles className="w-4 h-4 inline mr-1" />
-            <strong>Demo Mode:</strong> This shows the music generation interface. In production, this would connect to AI music generation services like Suno AI, ElevenLabs Music, or similar platforms to create actual audio files.
+            <strong>Self-Contained Audio Generation:</strong> This system generates real audio files using Web Audio API and programmatic synthesis. No external services required - creates actual playable WAV files with different musical styles, rhythms, and harmonies.
           </p>
         </div>
       </CardContent>
