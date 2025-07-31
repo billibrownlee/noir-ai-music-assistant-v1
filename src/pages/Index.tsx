@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import StudioHeader from "@/components/studio/StudioHeader";
 import PromptBuilder from "@/components/studio/PromptBuilder";
 import AudioPlayer from "@/components/studio/AudioPlayer";
@@ -15,6 +16,7 @@ import { StemEditor } from "@/components/studio/StemEditor";
 import { MusicProductionWorkflow } from "@/components/studio/MusicProductionWorkflow";
 import { SeparatedAudio } from "@/lib/audioSeparation";
 import { AudioAnalysis } from "@/lib/audioAnalyzer";
+import { useGlobalAudio } from "@/hooks/useGlobalAudio";
 
 interface Track {
   id: string;
@@ -33,6 +35,21 @@ const Index = () => {
   const [separatedAudio, setSeparatedAudio] = useState<SeparatedAudio | null>(null);
   const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysis | null>(null);
   const [uploadedSamples, setUploadedSamples] = useState<any[]>([]);
+  const { playTrack } = useGlobalAudio();
+
+  // Auto-play the most recent uploaded sample
+  const playLatestUploadedSample = () => {
+    if (uploadedSamples.length > 0) {
+      const latestSample = uploadedSamples[uploadedSamples.length - 1];
+      if (latestSample.audioUrl) {
+        playTrack({
+          id: latestSample.id,
+          name: latestSample.name,
+          audioUrl: latestSample.audioUrl
+        });
+      }
+    }
+  };
 
   const handleGenerate = (prompt: string, settings: any) => {
     // Simulate track generation
@@ -83,10 +100,24 @@ const Index = () => {
             </div>
             <div className="space-y-8">
               <GenerationHistory onTrackSelect={handleTrackSelect} />
-              <SampleLibrary 
-                onSampleSelect={(sample) => console.log('Selected sample:', sample)}
-                uploadedSamples={uploadedSamples}
-              />
+            <SampleLibrary 
+              onSampleSelect={(sample) => console.log('Selected sample:', sample)}
+              uploadedSamples={uploadedSamples}
+            />
+
+            {/* Quick Play Button for Latest Upload */}
+            {uploadedSamples.length > 0 && (
+              <div className="flex justify-center mt-4">
+                <Button 
+                  variant="neon" 
+                  size="lg"
+                  onClick={playLatestUploadedSample}
+                  className="animate-pulse"
+                >
+                  🎵 Play Your Latest Upload: "{uploadedSamples[uploadedSamples.length - 1]?.name}"
+                </Button>
+              </div>
+            )}
             </div>
           </div>
 
