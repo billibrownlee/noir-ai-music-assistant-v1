@@ -127,8 +127,14 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     if (await handleAudioProcessingCommand(msg)) {
       return ""; // Response handled by processing function
     }
+
+    // Check current audio state for contextual responses
+    const currentSample = uploadedSamples[uploadedSamples.length - 1];
+    const hasProcessedAudio = currentSample?.tags?.includes('processed') || currentSample?.tags?.includes('tempo-adjusted');
     
-    // Existing AI responses...
+    if (hasProcessedAudio && (msg.includes('more') || msg.includes('further') || msg.includes('continue') || msg.includes('also'))) {
+      return `🎛️ **Ready for more editing!**\n\nYour current sample: **${currentSample.name}**\n\n✨ **Available commands:**\n• "reverse the audio" - flip it backwards\n• "add distortion" - add grit and character\n• "normalize the volume" - balance the levels\n• "speed up by 1.5x" or "slow down" - adjust playback speed\n• "fade in" or "fade out" - smooth transitions\n\n💡 **Pro tip**: You can chain multiple effects! Try "add distortion then normalize"`;
+    }
     
     
     // Stem-specific responses
@@ -179,7 +185,12 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     
     // General production advice
     if (msg.includes('help') || msg.includes('how') || msg.includes('what')) {
-      return "🎯 I can help with:\n• **Audio Processing**: reverse, speed up/slow down, change tempo, normalize, add distortion\n• **Stem manipulation** and processing\n• **Mixing and mastering** techniques\n• **EQ, compression, and effects** guidance\n• **Creative production** ideas\n\n💡 **Try saying**: \"slow the tempo down\", \"speed up by 1.5x\", \"reverse the audio\", \"normalize the volume\", \"add distortion\"";
+      const currentSample = uploadedSamples[uploadedSamples.length - 1];
+      const processingHistory = currentSample?.processHistory?.length > 0 
+        ? `\n\n📜 **Current Sample History**: ${currentSample.processHistory.map(h => h.effect).join(' → ')}`
+        : '';
+      
+      return "🎯 I can help with:\n• **Audio Processing**: reverse, speed up/slow down, change tempo, normalize, add distortion\n• **Stem manipulation** and processing\n• **Mixing and mastering** techniques\n• **EQ, compression, and effects** guidance\n• **Creative production** ideas\n\n💡 **Try saying**: \"slow the tempo down\", \"speed up by 1.5x\", \"reverse the audio\", \"normalize the volume\", \"add distortion\"" + processingHistory;
     }
     
     // Default creative response
@@ -208,6 +219,12 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     const latestSample = uploadedSamples[uploadedSamples.length - 1];
     if (!latestSample || !latestSample.file) {
       return false;
+    }
+
+    // Check if this is a processed sample and inform user
+    const isProcessed = latestSample.tags?.includes('processed') || latestSample.tags?.includes('tempo-adjusted');
+    if (isProcessed) {
+      console.log(`🎵 Processing further edits on: ${latestSample.name}`);
     }
 
     setIsProcessing(true);
@@ -279,22 +296,30 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
           const processedSample = {
             ...latestSample,
             audioUrl: result.processedAudioUrl,
-            name: `${latestSample.name} (Processed)`,
-            tags: [...latestSample.tags, 'processed']
+            name: `${latestSample.name.replace(' (Processed)', '').replace(/\s*\(\d+\s*BPM\)/, '')} (Processed)`,
+            tags: [...(latestSample.tags || []), 'processed'],
+            processHistory: [
+              ...(latestSample.processHistory || []),
+              {
+                effect: processingDescription.replace('...', ''),
+                timestamp: new Date(),
+                processingTime: result.processingTime
+              }
+            ]
           };
           
           onUpdateSample?.(latestSample.id, processedSample);
+          
+          const historyText = processedSample.processHistory?.length > 1 
+            ? `\n📜 **Processing History**: ${processedSample.processHistory.map(h => h.effect).join(' → ')}`
+            : '';
           
           addAssistantMessage(
             `✅ **Processing Complete!**\n\n` +
             `🎵 Applied: ${processingDescription.replace('...', '')}\n` +
             `⏱️ Processing time: ${result.processingTime}ms\n` +
-            `🎧 **Your processed audio is ready to play!**\n\n` +
-            `You can find it in the sample list above. Click the play button to hear the result through your AirPods.`,
-            {
-              technique: processingDescription,
-              processingTime: result.processingTime
-            }
+            `🎧 **Your processed audio is ready to play!**${historyText}\n\n` +
+            `💡 **Want to do more?** Try: "add distortion", "reverse it", "normalize volume", or "slow it down"`
           );
           
           toast({
