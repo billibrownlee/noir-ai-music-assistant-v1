@@ -221,8 +221,19 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [volume, selectedAudioDevice]);
   const playTrack = useCallback(async (track: AudioTrack) => {
     try {
+      // Enhanced validation for empty or invalid URLs
+      if (!track.audioUrl || track.audioUrl.trim() === '') {
+        console.error('❌ Cannot play track - empty audioUrl:', {
+          name: track.name,
+          id: track.id,
+          audioUrl: track.audioUrl
+        });
+        return;
+      }
+
       console.log('🎵 Playing track through selected output:', track.name);
       console.log('🎧 Selected device:', selectedAudioDevice || 'System Default');
+      console.log('🔗 Audio URL:', track.audioUrl?.substring(0, 100) + '...');
       
       // If same track is playing, just pause/unpause
       if (currentTrack?.id === track.id && audioRef.current) {
