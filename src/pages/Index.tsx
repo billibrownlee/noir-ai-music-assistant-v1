@@ -3,6 +3,8 @@ import StudioHeader from "@/components/studio/StudioHeader";
 import PromptBuilder from "@/components/studio/PromptBuilder";
 import AudioPlayer from "@/components/studio/AudioPlayer";
 import GenerationHistory from "@/components/studio/GenerationHistory";
+import { AudioUpload } from "@/components/studio/AudioUpload";
+import { SampleLibrary } from "@/components/studio/SampleLibrary";
 
 interface Track {
   id: string;
@@ -46,14 +48,16 @@ const Index = () => {
       
       <main className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Prompt Builder */}
-          <div className="lg:col-span-2">
+          {/* Left Column - Prompt Builder & Upload */}
+          <div className="lg:col-span-2 space-y-8">
             <PromptBuilder onGenerate={handleGenerate} />
+            <AudioUpload onSamplesUploaded={(samples) => console.log('Uploaded samples:', samples)} />
           </div>
           
-          {/* Right Column - History */}
-          <div>
+          {/* Right Column - History & Sample Library */}
+          <div className="space-y-8">
             <GenerationHistory onTrackSelect={handleTrackSelect} />
+            <SampleLibrary onSampleSelect={(sample) => console.log('Selected sample:', sample)} />
           </div>
         </div>
         
