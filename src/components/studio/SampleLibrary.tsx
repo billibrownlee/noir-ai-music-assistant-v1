@@ -15,9 +15,13 @@ import {
   Filter,
   Music2,
   Clock,
-  Hash
+  Hash,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 import { useGlobalAudio } from '@/hooks/useGlobalAudio';
 
 interface AudioSample {
@@ -89,6 +93,7 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
   onDeleteSample
 }) => {
   const { currentTrack, isPlaying } = useGlobalAudio();
+  const { toast } = useToast();
   
   // Combine default samples with uploaded samples
   const allSamples = [...SAMPLE_LIBRARY, ...uploadedSamples];
@@ -273,7 +278,30 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (sample.audioUrl) {
+                                const link = document.createElement('a');
+                                link.href = sample.audioUrl;
+                                link.download = `${sample.name}.${sample.audioUrl.includes('.wav') ? 'wav' : 'mp3'}`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                                
+                                toast({
+                                  title: "⬇️ Download Started",
+                                  description: `Downloading "${sample.name}"...`,
+                                });
+                              } else {
+                                toast({
+                                  title: "Download Failed",
+                                  description: "Audio file not available for download.",
+                                  variant: "destructive"
+                                });
+                              }
+                            }}
+                          >
                             <Download className="w-4 h-4 mr-2" />
                             Download
                           </DropdownMenuItem>
@@ -282,15 +310,46 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                           </DropdownMenuItem>
                           {/* Only show delete for uploaded samples */}
                           {!SAMPLE_LIBRARY.some(s => s.id === sample.id) && (
-                            <DropdownMenuItem 
-                              className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDeleteSample?.(sample.id);
-                              }}
-                            >
-                              Delete
-                            </DropdownMenuItem>
+                            <>
+                              <DropdownMenuSeparator />
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem 
+                                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                                    onSelect={(e) => e.preventDefault()}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Delete Sample
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle className="flex items-center gap-2">
+                                      <AlertTriangle className="w-5 h-5 text-red-400" />
+                                      Delete Sample
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete "{sample.name}"? This action cannot be undone and the sample will be permanently removed from your library.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => {
+                                        onDeleteSample?.(sample.id);
+                                        toast({
+                                          title: "🗑️ Sample Deleted",
+                                          description: `"${sample.name}" has been removed from your library.`,
+                                        });
+                                      }}
+                                      className="bg-red-500 hover:bg-red-600"
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
