@@ -578,6 +578,7 @@ export class MusicGenerationEngine {
   }
 
   private generateRnBChords(duration: number, beatDuration: number, rootFreq: number, isMinor: boolean): Float32Array {
+    console.log('🎹 Generating R&B chords:', { duration, beatDuration, rootFreq, isMinor });
     const tracks: Float32Array[] = [];
     
     // R&B chord progressions with extensions (7ths, 9ths)
@@ -585,12 +586,17 @@ export class MusicGenerationEngine {
     
     for (const tone of chordTones) {
       const freq = rootFreq * Math.pow(2, tone / 12);
+      console.log('🎵 Generating chord tone at:', freq, 'Hz');
       const chord = this.synthesizer.generateSineWave(freq, duration, 0.06);
+      console.log('🎵 Generated sine wave with length:', chord.length);
       const chordEnv = this.synthesizer.applyEnvelope(chord, 0.5, 0.3, 0.9, 1);
+      console.log('🎵 Applied envelope, length:', chordEnv.length);
       const chordReverb = this.synthesizer.addReverb(chordEnv, 0.4, 0.3);
+      console.log('🎵 Applied reverb, length:', chordReverb.length);
       tracks.push(chordReverb);
     }
     
+    console.log('🎹 Combining', tracks.length, 'chord tracks...');
     return this.synthesizer.combineWaves(tracks);
   }
 

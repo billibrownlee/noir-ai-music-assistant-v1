@@ -91,12 +91,20 @@ export class AudioSynthesizer {
 
   // Combine multiple waves
   combineWaves(waves: Float32Array[]): Float32Array {
+    console.log('🔊 Combining waves:', waves.length, 'tracks');
     if (waves.length === 0) return new Float32Array(0);
     
-    const maxLength = Math.max(...waves.map(w => w.length));
+    // Find max length without using spread operator to avoid stack overflow
+    let maxLength = 0;
+    for (const wave of waves) {
+      if (wave.length > maxLength) maxLength = wave.length;
+    }
+    console.log('🔊 Max length found:', maxLength);
     const combined = new Float32Array(maxLength);
     
+    console.log('🔊 Starting wave combination...');
     for (const wave of waves) {
+      console.log('🔊 Processing wave with length:', wave.length);
       for (let i = 0; i < wave.length; i++) {
         combined[i] += wave[i];
       }
