@@ -30,9 +30,20 @@ export const AudioPlayButton: React.FC<AudioPlayButtonProps> = ({
   const handlePlay = async (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    if (!audioUrl || disabled) return;
+    if (!audioUrl || disabled) {
+      console.warn('🔇 AudioPlayButton: Cannot play - missing audioUrl or disabled:', { 
+        audioUrl: audioUrl?.substring(0, 50), 
+        disabled, 
+        trackName 
+      });
+      return;
+    }
 
-    console.log('🎵 AudioPlayButton: Playing sample through selected audio output:', trackName);
+    console.log('🎵 AudioPlayButton: Playing sample through selected audio output:', {
+      trackName,
+      trackId,
+      audioUrl: audioUrl.substring(0, 50) + '...'
+    });
     
     // Use global audio system which handles AirPods routing automatically
     await playTrack({

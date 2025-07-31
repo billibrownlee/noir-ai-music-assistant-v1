@@ -88,19 +88,24 @@ export const TempoControl: React.FC<TempoControlProps> = ({
       const result = await audioProcessor.current.changeSpeed(latestSample.file, speedFactor);
       
       if (result.success && result.processedAudioUrl) {
-        // Update the sample with new tempo
-        const processedSample = {
-          ...latestSample,
+        // Update the sample with new tempo - only pass the changes
+        const updates = {
           audioUrl: result.processedAudioUrl,
-          name: `${latestSample.name} (${targetBPM} BPM)`,
-          tags: [...latestSample.tags, 'tempo-adjusted'],
+          name: `${latestSample.name.replace(/ \(\d+ BPM\)$/, '')} (${targetBPM} BPM)`,
+          tags: [...(latestSample.tags || []), 'tempo-adjusted'],
           analysis: {
             ...latestSample.analysis,
             tempo: targetBPM
           }
         };
         
-        onUpdateSample?.(latestSample.id, processedSample);
+        console.log('🎵 Updating sample with new audio URL:', {
+          sampleId: latestSample.id,
+          oldUrl: latestSample.audioUrl?.substring(0, 50),
+          newUrl: result.processedAudioUrl?.substring(0, 50)
+        });
+        
+        onUpdateSample?.(latestSample.id, updates);
         
         toast({
           title: "🎛️ Tempo Adjusted!",
