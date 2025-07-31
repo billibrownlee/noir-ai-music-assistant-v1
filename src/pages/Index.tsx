@@ -154,9 +154,9 @@ const Index = () => {
                 {/* Audio Upload Section */}
                 <Collapsible open={isUploadOpen} onOpenChange={setIsUploadOpen}>
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                      <span className="font-medium text-lg">📤 Audio Upload</span>
-                      {isUploadOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">📤 Audio Upload</span>
+                      {isUploadOpen ? <ChevronUp className="h-4 w-4 text-white" /> : <ChevronDown className="h-4 w-4 text-white" />}
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
@@ -178,9 +178,9 @@ const Index = () => {
                 {/* Tempo Control Section */}
                 <Collapsible open={isTempoOpen} onOpenChange={setIsTempoOpen}>
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                      <span className="font-medium text-lg">🎛️ Tempo Control</span>
-                      {isTempoOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">🎛️ Tempo Control</span>
+                      {isTempoOpen ? <ChevronUp className="h-4 w-4 text-white" /> : <ChevronDown className="h-4 w-4 text-white" />}
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
@@ -201,9 +201,9 @@ const Index = () => {
                 {/* Settings Section */}
                 <Collapsible open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                      <span className="font-medium text-lg">⚙️ Audio Settings</span>
-                      {isSettingsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">⚙️ Audio Settings</span>
+                      {isSettingsOpen ? <ChevronUp className="h-4 w-4 text-white" /> : <ChevronDown className="h-4 w-4 text-white" />}
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
@@ -216,9 +216,9 @@ const Index = () => {
               <div className="xl:col-span-1 space-y-4">
                 <Collapsible open={isSampleLibraryOpen} onOpenChange={setIsSampleLibraryOpen}>
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                      <span className="font-medium text-lg">🎵 Sample Library</span>
-                      {isSampleLibraryOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">🎵 Sample Library</span>
+                      {isSampleLibraryOpen ? <ChevronUp className="h-4 w-4 text-white" /> : <ChevronDown className="h-4 w-4 text-white" />}
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
@@ -238,9 +238,9 @@ const Index = () => {
               <div className="xl:col-span-1 space-y-4">
                 <Collapsible open={isAIChatOpen} onOpenChange={setIsAIChatOpen}>
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                      <span className="font-medium text-lg">🤖 Lando AI Chat</span>
-                      {isAIChatOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">🤖 Lando AI Chat</span>
+                      {isAIChatOpen ? <ChevronUp className="h-4 w-4 text-white" /> : <ChevronDown className="h-4 w-4 text-white" />}
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
@@ -344,9 +344,9 @@ const Index = () => {
               <div className="space-y-6">
                 <Collapsible defaultOpen={true}>
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                      <span className="font-medium text-lg">🎯 Prompt Builder</span>
-                      <ChevronDown className="h-4 w-4" />
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">🎯 Prompt Builder</span>
+                      <ChevronDown className="h-4 w-4 text-white" />
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
@@ -356,9 +356,9 @@ const Index = () => {
                 
                 <Collapsible defaultOpen={false}>
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                      <span className="font-medium text-lg">🥁 Drum Patterns</span>
-                      <ChevronDown className="h-4 w-4" />
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">🥁 Drum Patterns</span>
+                      <ChevronDown className="h-4 w-4 text-white" />
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
@@ -370,9 +370,9 @@ const Index = () => {
               <div className="space-y-6">
                 <Collapsible defaultOpen={false}>
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                      <span className="font-medium text-lg">🎹 Counter Melody</span>
-                      <ChevronDown className="h-4 w-4" />
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">🎹 Counter Melody</span>
+                      <ChevronDown className="h-4 w-4 text-white" />
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
@@ -382,9 +382,9 @@ const Index = () => {
                 
                 <Collapsible defaultOpen={true}>
                   <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                      <span className="font-medium text-lg">📚 Generation History</span>
-                      <ChevronDown className="h-4 w-4" />
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">📚 Generation History</span>
+                      <ChevronDown className="h-4 w-4 text-white" />
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
@@ -399,9 +399,9 @@ const Index = () => {
           <TabsContent value="record" className="space-y-6">
             <Collapsible defaultOpen={true}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                  <span className="font-medium text-lg">🎤 Recording Studio</span>
-                  <ChevronDown className="h-4 w-4" />
+                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                  <span className="font-medium text-lg text-white">🎤 Recording Studio</span>
+                  <ChevronDown className="h-4 w-4 text-white" />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2">
@@ -414,9 +414,9 @@ const Index = () => {
           <TabsContent value="mix" className="space-y-6">
             <Collapsible defaultOpen={true}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                  <span className="font-medium text-lg">🎛️ Mixing Console</span>
-                  <ChevronDown className="h-4 w-4" />
+                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                  <span className="font-medium text-lg text-white">🎛️ Mixing Console</span>
+                  <ChevronDown className="h-4 w-4 text-white" />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2">
@@ -429,9 +429,9 @@ const Index = () => {
           <TabsContent value="master" className="space-y-6">
             <Collapsible defaultOpen={true}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                  <span className="font-medium text-lg">🎚️ Mastering Suite</span>
-                  <ChevronDown className="h-4 w-4" />
+                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                  <span className="font-medium text-lg text-white">🎚️ Mastering Suite</span>
+                  <ChevronDown className="h-4 w-4 text-white" />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2">
@@ -444,9 +444,9 @@ const Index = () => {
           <TabsContent value="workflow" className="space-y-6">
             <Collapsible defaultOpen={true}>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70">
-                  <span className="font-medium text-lg">⚡ Production Workflow</span>
-                  <ChevronDown className="h-4 w-4" />
+                <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                  <span className="font-medium text-lg text-white">⚡ Production Workflow</span>
+                  <ChevronDown className="h-4 w-4 text-white" />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2">
