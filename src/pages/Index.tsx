@@ -177,6 +177,12 @@ const Index = () => {
                   <AIChatAssistant 
                     audioAnalysis={audioAnalysis}
                     separatedAudio={separatedAudio}
+                    uploadedSamples={uploadedSamples}
+                    onUpdateSample={(sampleId, updates) => {
+                      setUploadedSamples(prev => 
+                        prev.map(sample => sample.id === sampleId ? { ...sample, ...updates } : sample)
+                      );
+                    }}
                   />
                 </div>
                 

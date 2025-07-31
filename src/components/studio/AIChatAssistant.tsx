@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
+import { AudioProcessor, AudioProcessingResult } from '@/lib/audioProcessor';
 import { 
   Send, 
   Brain, 
@@ -18,7 +20,9 @@ import {
   Headphones,
   Play,
   Pause,
-  RotateCcw
+  RotateCcw,
+  Cog,
+  Download
 } from 'lucide-react';
 import { AudioAnalysis } from '@/lib/audioAnalyzer';
 import { SeparatedAudio } from '@/lib/audioSeparation';
@@ -32,6 +36,7 @@ interface ChatMessage {
     stems?: string[];
     technique?: string;
     parameters?: Record<string, any>;
+    processingTime?: number;
   };
 }
 
@@ -39,6 +44,8 @@ interface AIChatAssistantProps {
   audioAnalysis?: AudioAnalysis;
   separatedAudio?: SeparatedAudio;
   onApplyEffect?: (effect: string, parameters: any) => void;
+  uploadedSamples?: any[];
+  onUpdateSample?: (sampleId: string, updates: any) => void;
 }
 
 const AI_RESPONSES = {
@@ -66,7 +73,9 @@ const AI_RESPONSES = {
 export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({ 
   audioAnalysis, 
   separatedAudio,
-  onApplyEffect 
+  onApplyEffect,
+  uploadedSamples = [],
+  onUpdateSample 
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -78,8 +87,11 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const audioProcessor = useRef(new AudioProcessor());
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -108,8 +120,16 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     setMessages(prev => [...prev, newMessage]);
   };
 
-  const generateAIResponse = (userMessage: string): string => {
+  const generateAIResponse = async (userMessage: string): Promise<string> => {
     const msg = userMessage.toLowerCase();
+    
+    // Check for audio processing commands
+    if (await handleAudioProcessingCommand(msg)) {
+      return ""; // Response handled by processing function
+    }
+    
+    // Existing AI responses...
+    
     
     // Stem-specific responses
     if (msg.includes('vocal') || msg.includes('voice') || msg.includes('sing')) {
@@ -159,7 +179,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     
     // General production advice
     if (msg.includes('help') || msg.includes('how') || msg.includes('what')) {
-      return "🎯 I'm here to help! I can assist with:\n• Stem manipulation and processing\n• Mixing and mastering techniques\n• EQ, compression, and effects guidance\n• Creative production ideas\n• Audio analysis insights\n\nJust ask me about any aspect of your production!";
+      return "🎯 I can help with:\n• **Audio Processing**: reverse, speed up/slow down, normalize, add distortion\n• **Stem manipulation** and processing\n• **Mixing and mastering** techniques\n• **EQ, compression, and effects** guidance\n• **Creative production** ideas\n\n💡 **Try saying**: \"reverse the audio\", \"speed up by 1.5x\", \"normalize the volume\", \"add distortion\"";
     }
     
     // Default creative response
@@ -168,10 +188,146 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
       "⚡ Experiment with automation! Move those faders and knobs to create dynamic interest.",
       "🔄 Consider reversing some elements for creative transitions and buildup effects.",
       "🎭 Use stereo imaging to create width - but keep low frequencies centered!",
-      "🌟 Don't forget the power of silence - sometimes what you take away is more important than what you add."
+      "🌟 Don't forget the power of silence - sometimes what you take away is more important than what you add.",
+      "🎛️ **Try audio processing commands!** Say 'reverse the audio', 'speed up 2x', 'normalize', or 'add distortion'"
     ];
     
     return creativeSuggestions[Math.floor(Math.random() * creativeSuggestions.length)];
+  };
+
+  // Handle audio processing commands
+  const handleAudioProcessingCommand = async (msg: string): Promise<boolean> => {
+    if (uploadedSamples.length === 0) {
+      if (msg.includes('reverse') || msg.includes('speed') || msg.includes('normalize') || msg.includes('distortion')) {
+        addAssistantMessage("❌ No audio uploaded yet! Please upload an audio file first before I can process it.");
+        return true;
+      }
+      return false;
+    }
+
+    const latestSample = uploadedSamples[uploadedSamples.length - 1];
+    if (!latestSample || !latestSample.file) {
+      return false;
+    }
+
+    setIsProcessing(true);
+    let result: AudioProcessingResult | null = null;
+    let processingDescription = "";
+
+    try {
+      // Reverse audio
+      if (msg.includes('reverse')) {
+        processingDescription = "Reversing your audio...";
+        addAssistantMessage(`🔄 ${processingDescription}`);
+        result = await audioProcessor.current.reverseAudio(latestSample.file);
+      }
+      
+      // Speed change
+      else if (msg.includes('speed') || msg.includes('slow') || msg.includes('fast')) {
+        let speedFactor = 1;
+        
+        // Extract speed factor from message
+        const speedMatch = msg.match(/(\d*\.?\d+)x?/);
+        if (speedMatch) {
+          speedFactor = parseFloat(speedMatch[1]);
+        } else if (msg.includes('slow')) {
+          speedFactor = 0.5;
+        } else if (msg.includes('fast')) {
+          speedFactor = 2.0;
+        }
+        
+        processingDescription = `Changing speed to ${speedFactor}x...`;
+        addAssistantMessage(`🎛️ ${processingDescription}`);
+        result = await audioProcessor.current.changeSpeed(latestSample.file, speedFactor);
+      }
+      
+      // Normalize
+      else if (msg.includes('normalize') || msg.includes('loud')) {
+        processingDescription = "Normalizing volume...";
+        addAssistantMessage(`📈 ${processingDescription}`);
+        result = await audioProcessor.current.normalizeAudio(latestSample.file);
+      }
+      
+      // Add distortion
+      else if (msg.includes('distortion') || msg.includes('distort')) {
+        let amount = 0.5;
+        const amountMatch = msg.match(/(\d+)%/);
+        if (amountMatch) {
+          amount = parseInt(amountMatch[1]) / 100;
+        }
+        
+        processingDescription = `Adding ${Math.round(amount * 100)}% distortion...`;
+        addAssistantMessage(`🎸 ${processingDescription}`);
+        result = await audioProcessor.current.addDistortion(latestSample.file, amount);
+      }
+      
+      // Fade in/out
+      else if (msg.includes('fade')) {
+        const fadeIn = msg.includes('fade in') ? 2 : 0;
+        const fadeOut = msg.includes('fade out') ? 2 : 0;
+        
+        processingDescription = `Applying fade effects...`;
+        addAssistantMessage(`🎚️ ${processingDescription}`);
+        result = await audioProcessor.current.applyFade(latestSample.file, fadeIn, fadeOut);
+      }
+
+      // Process result
+      if (result) {
+        if (result.success && result.processedAudioUrl) {
+          // Update the sample with processed audio
+          const processedSample = {
+            ...latestSample,
+            audioUrl: result.processedAudioUrl,
+            name: `${latestSample.name} (Processed)`,
+            tags: [...latestSample.tags, 'processed']
+          };
+          
+          onUpdateSample?.(latestSample.id, processedSample);
+          
+          addAssistantMessage(
+            `✅ **Processing Complete!**\n\n` +
+            `🎵 Applied: ${processingDescription.replace('...', '')}\n` +
+            `⏱️ Processing time: ${result.processingTime}ms\n` +
+            `🎧 **Your processed audio is ready to play!**\n\n` +
+            `You can find it in the sample list above. Click the play button to hear the result through your AirPods.`,
+            {
+              technique: processingDescription,
+              processingTime: result.processingTime
+            }
+          );
+          
+          toast({
+            title: "🎛️ Audio Processing Complete!",
+            description: `Successfully processed your audio in ${result.processingTime}ms`,
+          });
+          
+        } else {
+          addAssistantMessage(`❌ **Processing Failed**\n\nError: ${result.error}\nPlease try again or upload a different audio file.`);
+          
+          toast({
+            title: "Processing Failed",
+            description: result.error || "Unknown error occurred",
+            variant: "destructive"
+          });
+        }
+        
+        setIsProcessing(false);
+        return true;
+      }
+      
+    } catch (error) {
+      console.error('Audio processing error:', error);
+      addAssistantMessage(`❌ **Processing Error**\n\nSomething went wrong while processing your audio. Please try again.`);
+      
+      toast({
+        title: "Processing Error",
+        description: "Failed to process audio",
+        variant: "destructive"
+      });
+    }
+    
+    setIsProcessing(false);
+    return false;
   };
 
   const handleSendMessage = () => {
@@ -193,9 +349,11 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     setIsTyping(true);
 
     // Generate AI response after a delay
-    setTimeout(() => {
-      const response = generateAIResponse(inputMessage);
-      addAssistantMessage(response);
+    setTimeout(async () => {
+      const response = await generateAIResponse(inputMessage);
+      if (response) { // Only add response if it's not empty (processing commands return empty)
+        addAssistantMessage(response);
+      }
       setIsTyping(false);
     }, 1000 + Math.random() * 1000); // 1-2 second delay for realism
   };
@@ -300,7 +458,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             ))}
             
             {/* Typing Indicator */}
-            {isTyping && (
+            {(isTyping || isProcessing) && (
               <div className="flex gap-3">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className="bg-neon-purple text-black">
@@ -308,10 +466,13 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
                   </AvatarFallback>
                 </Avatar>
                 <div className="bg-studio-surface-secondary/50 rounded-lg p-3">
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 items-center">
                     <div className="w-2 h-2 bg-neon-purple rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-neon-purple rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                     <div className="w-2 h-2 bg-neon-purple rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    {isProcessing && (
+                      <span className="ml-2 text-xs text-neon-orange">Processing audio...</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -333,7 +494,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             />
             <Button 
               onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isTyping}
+              disabled={!inputMessage.trim() || isTyping || isProcessing}
               className="px-3"
             >
               <Send className="w-4 h-4" />
@@ -345,29 +506,42 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("How do I mix vocals?")}
+              onClick={() => setInputMessage("reverse the audio")}
               className="text-xs"
+              disabled={isProcessing}
             >
-              <Mic2 className="w-3 h-3 mr-1" />
-              Vocal Tips
+              <Cog className="w-3 h-3 mr-1" />
+              Reverse Audio
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => setInputMessage("Help with drum processing")}
+              onClick={() => setInputMessage("speed up 2x")}
               className="text-xs"
-            >
-              <Volume2 className="w-3 h-3 mr-1" />
-              Drum Help
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setInputMessage("EQ advice")}
-              className="text-xs"
+              disabled={isProcessing}
             >
               <Zap className="w-3 h-3 mr-1" />
-              EQ Guide
+              Speed Up
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setInputMessage("normalize volume")}
+              className="text-xs"
+              disabled={isProcessing}
+            >
+              <Volume2 className="w-3 h-3 mr-1" />
+              Normalize
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setInputMessage("add distortion")}
+              className="text-xs"
+              disabled={isProcessing}
+            >
+              <Wand2 className="w-3 h-3 mr-1" />
+              Add FX
             </Button>
           </div>
         </div>
