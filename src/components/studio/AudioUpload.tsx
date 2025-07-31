@@ -42,13 +42,15 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
   const { toast } = useToast();
 
   const validateAudioFile = (file: File): boolean => {
-    const validTypes = ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/m4a', 'audio/ogg'];
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    const validTypes = ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/m4a', 'audio/ogg', 'audio/mp3', 'audio/x-wav', 'audio/aac'];
+    const maxSize = 100 * 1024 * 1024; // Increased to 100MB
     
-    if (!validTypes.includes(file.type)) {
+    console.log('Validating file:', file.name, 'Type:', file.type, 'Size:', file.size);
+    
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|flac|m4a|ogg|aac)$/i)) {
       toast({
         title: "Invalid file type",
-        description: "Please upload MP3, WAV, FLAC, M4A, or OGG files only.",
+        description: `File type: ${file.type}. Please upload MP3, WAV, FLAC, M4A, OGG, or AAC files.`,
         variant: "destructive"
       });
       return false;
@@ -57,7 +59,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
     if (file.size > maxSize) {
       toast({
         title: "File too large",
-        description: "Please upload files smaller than 50MB.",
+        description: `File size: ${(file.size / (1024 * 1024)).toFixed(1)}MB. Please upload files smaller than 100MB.`,
         variant: "destructive"
       });
       return false;
@@ -88,75 +90,111 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
   }, []);
 
   const handleFiles = async (files: File[]) => {
-    const audioFiles = files.filter(file => validateAudioFile(file));
+    console.log('Processing files:', files.length);
     
-    if (audioFiles.length === 0) return;
+    const audioFiles = files.filter(file => {
+      console.log('Checking file:', file.name, file.type, file.size);
+      return validateAudioFile(file);
+    });
+    
+    if (audioFiles.length === 0) {
+      console.log('No valid audio files found');
+      return;
+    }
+
+    console.log('Valid audio files:', audioFiles.length);
 
     for (const file of audioFiles) {
       const id = Math.random().toString(36).substr(2, 9);
-      const audioUrl = URL.createObjectURL(file);
+      console.log('Processing file:', file.name, 'ID:', id);
       
-      const sample: AudioSample = {
-        id,
-        name: file.name.replace(/\.[^/.]+$/, ""),
-        genre: '',
-        tags: [],
-        file,
-        audioUrl,
-        uploadProgress: 0,
-        isPlaying: false
-      };
-
-      // Add sample to list immediately
-      setUploadedSamples(prev => [...prev, sample]);
-      
-      // Get audio metadata and analysis
       try {
-        const metadata = await extractAudioMetadata(file);
-        const analysis = await audioAnalyzer.analyzeAudioFile(file);
+        const audioUrl = URL.createObjectURL(file);
+        console.log('Created audio URL for:', file.name);
         
-        setUploadedSamples(prev => 
-          prev.map(s => s.id === id ? { 
-            ...s, 
-            duration: metadata.duration,
-            analysis,
-            // Auto-populate fields from analysis
-            bpm: analysis.tempo,
-            key: analysis.key
-          } : s)
-        );
+        const sample: AudioSample = {
+          id,
+          name: file.name.replace(/\.[^/.]+$/, ""),
+          genre: '',
+          tags: [],
+          file,
+          audioUrl,
+          uploadProgress: 0,
+          isPlaying: false
+        };
+
+        // Add sample to list immediately
+        setUploadedSamples(prev => [...prev, sample]);
+        console.log('Added sample to list:', sample.name);
         
-        toast({
-          title: "Audio analyzed!",
-          description: `Detected: ${analysis.tempo} BPM, ${analysis.key} ${analysis.mode}`,
-        });
-        
-      } catch (error) {
-        console.error('Error analyzing audio:', error);
-        // Still get basic metadata
+        // Get basic metadata first (faster)
         try {
+          console.log('Extracting metadata for:', file.name);
           const metadata = await extractAudioMetadata(file);
+          console.log('Metadata extracted:', metadata);
+          
           setUploadedSamples(prev => 
             prev.map(s => s.id === id ? { ...s, duration: metadata.duration } : s)
           );
+          
+          // Simulate upload progress
+          let progress = 0;
+          const interval = setInterval(() => {
+            progress += Math.random() * 20 + 10;
+            if (progress >= 100) {
+              progress = 100;
+              clearInterval(interval);
+              console.log('Upload complete for:', file.name);
+            }
+            
+            setUploadedSamples(prev => 
+              prev.map(s => s.id === id ? { ...s, uploadProgress: progress } : s)
+            );
+          }, 300);
+          
         } catch (metadataError) {
           console.error('Error extracting metadata:', metadataError);
-        }
-      }
-      
-      // Simulate upload progress
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.random() * 15;
-        if (progress >= 100) {
-          progress = 100;
-          clearInterval(interval);
+          // Still mark as uploaded even if metadata fails
+          setUploadedSamples(prev => 
+            prev.map(s => s.id === id ? { ...s, uploadProgress: 100 } : s)
+          );
         }
         
-        setUploadedSamples(prev => 
-          prev.map(s => s.id === id ? { ...s, uploadProgress: progress } : s)
-        );
-      }, 200);
+        // Do audio analysis in background (optional)
+        setTimeout(async () => {
+          try {
+            console.log('Starting audio analysis for:', file.name);
+            const analysis = await audioAnalyzer.analyzeAudioFile(file);
+            console.log('Analysis complete:', analysis);
+            
+            setUploadedSamples(prev => 
+              prev.map(s => s.id === id ? { 
+                ...s, 
+                analysis,
+                bpm: analysis.tempo,
+                key: analysis.key
+              } : s)
+            );
+            
+            toast({
+              title: "Audio analyzed!",
+              description: `${file.name}: ${analysis.tempo} BPM, ${analysis.key} ${analysis.mode}`,
+            });
+            
+          } catch (analysisError) {
+            console.error('Error analyzing audio:', analysisError);
+            // Analysis failure is not critical
+          }
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Error processing file:', file.name, error);
+        toast({
+          title: "Upload failed",
+          description: `Could not process ${file.name}. Please try again.`,
+          variant: "destructive"
+        });
+      }
     }
 
     toast({
@@ -351,12 +389,18 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded, onA
         >
           <Upload className="w-12 h-12 mx-auto mb-4 text-studio-text-secondary" />
           <p className="text-lg font-medium mb-2">Drop audio files here</p>
-          <p className="text-studio-text-secondary mb-4">Supports WAV, MP3, FLAC, and other audio formats</p>
+          <p className="text-studio-text-secondary mb-2">Supports MP3, WAV, FLAC, M4A, OGG, AAC (up to 100MB)</p>
+          <p className="text-sm text-studio-text-secondary mb-4">
+            Having trouble? Try smaller files or check the console for details.
+          </p>
           <Input
             type="file"
             multiple
-            accept="audio/*"
-            onChange={(e) => handleFiles(Array.from(e.target.files || []))}
+            accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,audio/*"
+            onChange={(e) => {
+              console.log('File input changed:', e.target.files);
+              handleFiles(Array.from(e.target.files || []));
+            }}
             className="hidden"
             id="audio-upload"
           />
