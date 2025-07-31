@@ -185,6 +185,10 @@ const Index = () => {
                 <SampleLibrary 
                   onSampleSelect={(sample) => console.log('Selected sample:', sample)}
                   uploadedSamples={uploadedSamples}
+                  onDeleteSample={(sampleId) => {
+                    setUploadedSamples(prev => prev.filter(sample => sample.id !== sampleId));
+                    console.log('Deleted sample:', sampleId);
+                  }}
                 />
                 
                 <ProductionAssistant 

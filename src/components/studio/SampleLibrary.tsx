@@ -80,11 +80,13 @@ const SAMPLE_LIBRARY: AudioSample[] = [
 interface SampleLibraryProps {
   onSampleSelect?: (sample: AudioSample) => void;
   uploadedSamples?: AudioSample[];
+  onDeleteSample?: (sampleId: string) => void;
 }
 
 export const SampleLibrary: React.FC<SampleLibraryProps> = ({ 
   onSampleSelect, 
-  uploadedSamples = [] 
+  uploadedSamples = [],
+  onDeleteSample
 }) => {
   const { currentTrack, isPlaying } = useGlobalAudio();
   
@@ -278,9 +280,18 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                           <DropdownMenuItem>
                             Use in Prompt
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-400">
-                            Delete
-                          </DropdownMenuItem>
+                          {/* Only show delete for uploaded samples */}
+                          {!SAMPLE_LIBRARY.some(s => s.id === sample.id) && (
+                            <DropdownMenuItem 
+                              className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteSample?.(sample.id);
+                              }}
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
