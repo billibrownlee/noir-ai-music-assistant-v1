@@ -368,20 +368,34 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     };
     setMessages(prev => [...prev, userMessage]);
 
-    // Clear input
+    // Store the current input for processing
+    const currentInput = inputMessage;
+    
+    // Clear input immediately so user can continue typing
     setInputMessage('');
     
-    // Show typing indicator
-    setIsTyping(true);
+    // Focus input for immediate typing
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 100);
+    
+    // Show typing indicator only for AI responses (not processing)
+    if (!currentInput.toLowerCase().includes('reverse') && 
+        !currentInput.toLowerCase().includes('speed') && 
+        !currentInput.toLowerCase().includes('tempo') && 
+        !currentInput.toLowerCase().includes('normalize') && 
+        !currentInput.toLowerCase().includes('distortion')) {
+      setIsTyping(true);
+    }
 
     // Generate AI response after a delay
     setTimeout(async () => {
-      const response = await generateAIResponse(inputMessage);
+      const response = await generateAIResponse(currentInput);
       if (response) { // Only add response if it's not empty (processing commands return empty)
         addAssistantMessage(response);
       }
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000); // 1-2 second delay for realism
+    }, 800 + Math.random() * 400); // Shorter delay for faster interaction
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -514,27 +528,26 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder="Ask Lando about mixing, stems, effects..."
+              placeholder={isProcessing ? "Processing... you can still type your next command!" : "Ask Lando about mixing, stems, effects..."}
               className="flex-1"
-              disabled={isTyping}
+              disabled={false}
             />
             <Button 
               onClick={handleSendMessage}
-              disabled={!inputMessage.trim() || isTyping || isProcessing}
+              disabled={!inputMessage.trim()}
               className="px-3"
             >
               <Send className="w-4 h-4" />
             </Button>
           </div>
           
-          {/* Quick Actions */}
+          {/* Quick Actions - Always Available */}
           <div className="flex gap-2 mt-2 flex-wrap">
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => setInputMessage("reverse the audio")}
               className="text-xs"
-              disabled={isProcessing}
             >
               <Cog className="w-3 h-3 mr-1" />
               Reverse Audio
@@ -544,7 +557,6 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
               size="sm" 
               onClick={() => setInputMessage("speed up 2x")}
               className="text-xs"
-              disabled={isProcessing}
             >
               <Zap className="w-3 h-3 mr-1" />
               Speed Up
@@ -554,7 +566,6 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
               size="sm" 
               onClick={() => setInputMessage("normalize volume")}
               className="text-xs"
-              disabled={isProcessing}
             >
               <Volume2 className="w-3 h-3 mr-1" />
               Normalize
@@ -564,10 +575,18 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
               size="sm" 
               onClick={() => setInputMessage("add distortion")}
               className="text-xs"
-              disabled={isProcessing}
             >
               <Wand2 className="w-3 h-3 mr-1" />
               Add FX
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setInputMessage("slow the tempo down")}
+              className="text-xs"
+            >
+              <Music className="w-3 h-3 mr-1" />
+              Slow Down
             </Button>
           </div>
         </div>
