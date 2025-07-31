@@ -108,7 +108,12 @@ export class AudioSeparationEngine {
     const normalizedData = new Float32Array(channelData.length);
     
     // Find peak for normalization
-    const peak = Math.max(...Array.from(channelData).map(Math.abs));
+    let peak = 0;
+    for (let i = 0; i < channelData.length; i++) {
+      const abs = Math.abs(channelData[i]);
+      if (abs > peak) peak = abs;
+    }
+    
     const normalizationFactor = peak > 0 ? 0.95 / peak : 1;
     
     for (let i = 0; i < channelData.length; i++) {
