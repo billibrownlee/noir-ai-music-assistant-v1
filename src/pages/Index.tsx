@@ -20,6 +20,7 @@ import { MasteringSuite } from "@/components/studio/MasteringSuite";
 import { StemEditor } from "@/components/studio/StemEditor";
 import { TempoControl } from "@/components/studio/TempoControl";
 import { MusicProductionWorkflow } from "@/components/studio/MusicProductionWorkflow";
+import { AudioGenerator } from "@/components/studio/AudioGenerator";
 import { SeparatedAudio } from "@/lib/audioSeparation";
 import { AudioAnalysis } from "@/lib/audioAnalyzer";
 import { useGlobalAudio } from "@/hooks/useGlobalAudio";
@@ -351,6 +352,30 @@ const Index = () => {
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
                     <PromptBuilder onGenerate={handleGenerate} />
+                  </CollapsibleContent>
+                </Collapsible>
+                
+                <Collapsible defaultOpen={true}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-studio-surface/50 border border-studio-border/30 rounded-lg hover:bg-studio-surface/70 text-white hover:text-white">
+                      <span className="font-medium text-lg text-white">🎤 AI Audio Generator</span>
+                      <ChevronDown className="h-4 w-4 text-white" />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2">
+                    <AudioGenerator onAudioGenerated={(audio) => {
+                      console.log('Generated audio:', audio);
+                      // Add to uploaded samples so it appears in the library
+                      setUploadedSamples(prev => [...prev, {
+                        id: audio.id,
+                        name: audio.text.substring(0, 30) + '...',
+                        audioUrl: audio.audioUrl,
+                        genre: 'Generated',
+                        tags: ['AI', 'TTS', audio.voice],
+                        duration: 0, // Will be updated when played
+                        analysis: null
+                      }]);
+                    }} />
                   </CollapsibleContent>
                 </Collapsible>
                 
