@@ -542,7 +542,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
   return (
     <Card className="glass-card">
-      <CardHeader>
+      <CardHeader className="relative z-10">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Music className="w-5 h-5 text-neon-blue" />
@@ -614,14 +614,26 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                 console.log('❌ UPLOAD DEBUG: e.target.files:', e.target.files);
               }
             }}
-            style={{ display: 'none' }}
+            className="hidden"
             id="audio-upload"
           />
-          <label htmlFor="audio-upload" style={{ cursor: 'pointer' }}>
-            <Button variant="neon" size="lg" asChild>
-              <span>Browse Files</span>
-            </Button>
-          </label>
+          <Button 
+            variant="neon" 
+            size="lg" 
+            onClick={() => {
+              console.log('🖱️ BUTTON CLICK: Browse Files button clicked');
+              const input = document.getElementById('audio-upload') as HTMLInputElement;
+              if (input) {
+                input.click();
+                console.log('🖱️ BUTTON CLICK: File input triggered');
+              } else {
+                console.log('❌ BUTTON CLICK: File input not found');
+              }
+            }}
+            className="bg-neon-purple hover:bg-neon-purple/80 text-white font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
+          >
+            Browse Files
+          </Button>
         </div>
 
         {/* Separation Progress */}
@@ -687,8 +699,12 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => separateAudioStems(sample)}
+                          onClick={() => {
+                            console.log('🔄 SEPARATE BUTTON: Clicked for', sample.name);
+                            separateAudioStems(sample);
+                          }}
                           disabled={isSeparating}
+                          className="pointer-events-auto cursor-pointer z-10"
                         >
                           <Layers className="w-4 h-4 mr-1" />
                           Separate
@@ -697,10 +713,10 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                           variant="destructive"
                           size="sm"
                           onClick={() => {
-                            console.log('🗑️ Removing sample before upload:', sample.name);
+                            console.log('🗑️ REMOVE BUTTON: Clicked for', sample.name);
                             removeSample(sample.id);
                           }}
-                          className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50"
+                          className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50 pointer-events-auto cursor-pointer z-10"
                         >
                           <X className="w-4 h-4 mr-1" />
                           Remove
@@ -818,10 +834,13 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               </Card>
             ))}
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 relative z-10">
               <Button 
-                onClick={handleUploadToLibrary}
-                className="flex-1"
+                onClick={() => {
+                  console.log('🏦 FORCE SAVE BUTTON: Clicked');
+                  handleUploadToLibrary();
+                }}
+                className="flex-1 bg-neon-purple hover:bg-neon-purple/80 text-white font-medium pointer-events-auto cursor-pointer"
                 size="lg"
                 variant="neon"
                 disabled={uploadedSamples.length === 0}
@@ -830,10 +849,13 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               </Button>
               
               <Button 
-                onClick={clearAllSamples}
+                onClick={() => {
+                  console.log('🗑️ CLEAR ALL BUTTON: Clicked');
+                  clearAllSamples();
+                }}
                 variant="destructive"
                 size="lg"
-                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50"
+                className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50 pointer-events-auto cursor-pointer"
               >
                 <X className="w-4 h-4 mr-2" />
                 Clear All
