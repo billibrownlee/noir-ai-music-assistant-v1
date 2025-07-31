@@ -102,8 +102,13 @@ export class AudioSynthesizer {
       }
     }
     
-    // Normalize to prevent clipping
-    const max = Math.max(...combined.map(Math.abs));
+    // Normalize to prevent clipping - use iterative approach to avoid stack overflow
+    let max = 0;
+    for (let i = 0; i < combined.length; i++) {
+      const abs = Math.abs(combined[i]);
+      if (abs > max) max = abs;
+    }
+    
     if (max > 1) {
       for (let i = 0; i < combined.length; i++) {
         combined[i] /= max;
