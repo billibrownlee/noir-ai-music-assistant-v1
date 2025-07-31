@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Upload, X, Music, FileAudio, Play, Pause } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AudioAnalyzer, AudioAnalysis } from '@/lib/audioAnalyzer';
 
 interface AudioSample {
   id: string;
@@ -21,6 +22,7 @@ interface AudioSample {
   duration?: number;
   uploadProgress?: number;
   isPlaying?: boolean;
+  analysis?: AudioAnalysis;
 }
 
 interface AudioUploadProps {
@@ -32,6 +34,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
   const [isDragging, setIsDragging] = useState(false);
   const [playingAudio, setPlayingAudio] = useState<HTMLAudioElement | null>(null);
   const [playingSampleId, setPlayingSampleId] = useState<string | null>(null);
+  const [audioAnalyzer] = useState(() => new AudioAnalyzer());
   const { toast } = useToast();
 
   const validateAudioFile = (file: File): boolean => {
@@ -103,14 +106,38 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
       // Add sample to list immediately
       setUploadedSamples(prev => [...prev, sample]);
       
-      // Get audio metadata
+      // Get audio metadata and analysis
       try {
         const metadata = await extractAudioMetadata(file);
+        const analysis = await audioAnalyzer.analyzeAudioFile(file);
+        
         setUploadedSamples(prev => 
-          prev.map(s => s.id === id ? { ...s, duration: metadata.duration } : s)
+          prev.map(s => s.id === id ? { 
+            ...s, 
+            duration: metadata.duration,
+            analysis,
+            // Auto-populate fields from analysis
+            bpm: analysis.tempo,
+            key: analysis.key
+          } : s)
         );
+        
+        toast({
+          title: "Audio analyzed!",
+          description: `Detected: ${analysis.tempo} BPM, ${analysis.key} ${analysis.mode}`,
+        });
+        
       } catch (error) {
-        console.error('Error extracting metadata:', error);
+        console.error('Error analyzing audio:', error);
+        // Still get basic metadata
+        try {
+          const metadata = await extractAudioMetadata(file);
+          setUploadedSamples(prev => 
+            prev.map(s => s.id === id ? { ...s, duration: metadata.duration } : s)
+          );
+        } catch (metadataError) {
+          console.error('Error extracting metadata:', metadataError);
+        }
       }
       
       // Simulate upload progress
@@ -327,6 +354,14 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
                         )}
                         <span>•</span>
                         <span>{(sample.file.size / (1024 * 1024)).toFixed(1)} MB</span>
+                        {sample.analysis && (
+                          <>
+                            <span>•</span>
+                            <span>{sample.analysis.tempo} BPM</span>
+                            <span>•</span>
+                            <span>{sample.analysis.key} {sample.analysis.mode}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -369,7 +404,10 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                       <Label htmlFor={`genre-${sample.id}`}>Genre</Label>
-                      <Select onValueChange={(value) => updateSample(sample.id, { genre: value })}>
+                      <Select 
+                        value={sample.genre}
+                        onValueChange={(value) => updateSample(sample.id, { genre: value })}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select genre" />
                         </SelectTrigger>
@@ -389,13 +427,17 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({ onSamplesUploaded }) =
                       <Input
                         id={`bpm-${sample.id}`}
                         type="number"
+                        value={sample.bpm || ''}
                         placeholder="120"
-                        onChange={(e) => updateSample(sample.id, { bpm: parseInt(e.target.value) })}
+                        onChange={(e) => updateSample(sample.id, { bpm: parseInt(e.target.value) || undefined })}
                       />
                     </div>
                     <div>
                       <Label htmlFor={`key-${sample.id}`}>Key</Label>
-                      <Select onValueChange={(value) => updateSample(sample.id, { key: value })}>
+                      <Select 
+                        value={sample.key || ''}
+                        onValueChange={(value) => updateSample(sample.id, { key: value })}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select key" />
                         </SelectTrigger>
