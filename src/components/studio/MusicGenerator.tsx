@@ -47,6 +47,23 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
   const { toast } = useToast();
   const { currentTrack, isPlaying, playTrack } = useGlobalAudio();
   const [musicEngine] = useState(() => new MusicGenerationEngine());
+  
+  // Authentication state
+  const [user, setUser] = useState(null);
+  
+  React.useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const musicStyles = [
     { value: 'hip-hop', label: 'Hip-Hop/Trap', description: '808s, hard drums, urban vibes' },
@@ -225,10 +242,21 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
   };
 
   const saveGeneratedMusic = async (music: GeneratedMusic) => {
+    // Check if user is authenticated
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save your generated music.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('saved_generated_music')
         .insert({
+          user_id: user.id,
           original_id: music.id,
           prompt: music.prompt,
           original_prompt: music.originalPrompt,

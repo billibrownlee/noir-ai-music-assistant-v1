@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Music, Sparkles, Settings, User, Bell, Search } from "lucide-react";
+import { AuthButton } from "@/components/ui/auth-button";
+import { Music, Sparkles, Settings, Bell, Search } from "lucide-react";
 
 export default function StudioHeader() {
   return (
@@ -50,10 +51,7 @@ export default function StudioHeader() {
             <span className="hidden sm:inline ml-2">Settings</span>
           </Button>
           
-          <Button variant="studio" size="sm">
-            <User className="w-4 h-4" />
-            <span className="hidden sm:inline ml-2">Profile</span>
-          </Button>
+          <AuthButton />
         </div>
       </div>
     </header>

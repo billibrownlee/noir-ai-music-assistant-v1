@@ -109,6 +109,30 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       saved_generated_music: {
         Row: {
           audio_url: string
@@ -123,6 +147,7 @@ export type Database = {
           prompt: string
           saved_at: string
           style: string
+          user_id: string
         }
         Insert: {
           audio_url: string
@@ -137,6 +162,7 @@ export type Database = {
           prompt: string
           saved_at?: string
           style: string
+          user_id: string
         }
         Update: {
           audio_url?: string
@@ -151,6 +177,7 @@ export type Database = {
           prompt?: string
           saved_at?: string
           style?: string
+          user_id?: string
         }
         Relationships: []
       }
