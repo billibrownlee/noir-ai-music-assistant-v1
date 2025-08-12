@@ -98,7 +98,7 @@ export default function PromptBuilder({ onGenerate }: PromptBuilderProps) {
       const { data, error } = await supabase.functions.invoke('generate-audio', {
         body: {
           text: textToSpeak.trim(),
-          voice: 'nova',
+          voice: 'alloy',
           model: 'tts-1',
           speed: 1.0
         }

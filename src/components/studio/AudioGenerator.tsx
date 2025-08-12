@@ -27,7 +27,7 @@ interface AudioGeneratorProps {
 
 export const AudioGenerator: React.FC<AudioGeneratorProps> = ({ onAudioGenerated }) => {
   const [text, setText] = useState('');
-  const [voice, setVoice] = useState('nova');
+  const [voice, setVoice] = useState('alloy');
   const [model, setModel] = useState('tts-1-hd');
   const [speed, setSpeed] = useState([1.0]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -36,12 +36,14 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({ onAudioGenerated
   const { currentTrack, isPlaying, playTrack } = useGlobalAudio();
 
   const voices = [
-    { value: 'nova', label: 'Nova (Warm Female)', description: 'Warm and engaging female voice' },
     { value: 'alloy', label: 'Alloy (Neutral)', description: 'Balanced and versatile voice' },
     { value: 'echo', label: 'Echo (Deep Male)', description: 'Rich and resonant male voice' },
-    { value: 'fable', label: 'Fable (Expressive)', description: 'Dynamic and expressive voice' },
-    { value: 'onyx', label: 'Onyx (Authoritative Male)', description: 'Strong and commanding voice' },
-    { value: 'shimmer', label: 'Shimmer (Bright Female)', description: 'Clear and bright female voice' }
+    { value: 'shimmer', label: 'Shimmer (Bright Female)', description: 'Clear and bright female voice' },
+    { value: 'sage', label: 'Sage (Wise)', description: 'Thoughtful and measured voice' },
+    { value: 'coral', label: 'Coral (Warm)', description: 'Warm and inviting voice' },
+    { value: 'ash', label: 'Ash (Clear)', description: 'Clear and crisp voice' },
+    { value: 'ballad', label: 'Ballad (Smooth)', description: 'Smooth and melodic voice' },
+    { value: 'verse', label: 'Verse (Expressive)', description: 'Dynamic and expressive voice' }
   ];
 
   const models = [

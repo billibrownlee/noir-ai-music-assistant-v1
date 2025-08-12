@@ -92,7 +92,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   const [isVoiceConnected, setIsVoiceConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [selectedVoice, setSelectedVoice] = useState('nova');
+  const [selectedVoice, setSelectedVoice] = useState('alloy');
   const [realtimeMessages, setRealtimeMessages] = useState<RealtimeMessage[]>([]);
   
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -101,14 +101,14 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   const audioProcessor = useRef(new AudioProcessor());
 
   const voices = [
-    { value: 'nova', label: 'Nova (Warm Female)' },
     { value: 'alloy', label: 'Alloy (Neutral)' },
-    { value: 'echo', label: 'Echo (Deep Male)' },
+    { value: 'echo', label: 'Echo (Male)' },
+    { value: 'shimmer', label: 'Shimmer (Female)' },
     { value: 'sage', label: 'Sage (Wise)' },
-    { value: 'shimmer', label: 'Shimmer (Bright)' },
-    { value: 'coral', label: 'Coral (Friendly)' },
+    { value: 'coral', label: 'Coral (Warm)' },
+    { value: 'ash', label: 'Ash (Clear)' },
     { value: 'ballad', label: 'Ballad (Smooth)' },
-    { value: 'verse', label: 'Verse (Clear)' }
+    { value: 'verse', label: 'Verse (Expressive)' }
   ];
 
   // Auto-scroll to bottom when new messages arrive

@@ -18,7 +18,7 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not set');
     }
 
-    const { voice = 'nova', instructions } = await req.json();
+    const { voice = 'alloy', instructions } = await req.json();
 
     console.log('🎤 Creating high-quality realtime session with voice:', voice);
 

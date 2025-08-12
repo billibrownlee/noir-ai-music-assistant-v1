@@ -88,7 +88,7 @@ export class RealtimeChat {
     this.audioEl.autoplay = true;
   }
 
-  async init(voice: string = 'nova', instructions?: string) {
+  async init(voice: string = 'alloy', instructions?: string) {
     try {
       this.onStatusChange('connecting');
       console.log('🚀 Initializing high-quality realtime chat...');
