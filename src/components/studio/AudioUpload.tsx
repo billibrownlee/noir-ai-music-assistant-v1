@@ -49,16 +49,16 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   const [isSeparating, setIsSeparating] = useState(false);
   const [autoSeparateStems, setAutoSeparateStems] = useState(false);
   
-  // Authentication state
+  // Authentication state (optional for development)
   const [user, setUser] = useState(null);
   
   React.useEffect(() => {
-    // Get initial session
+    // Get initial session (but don't require it)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
     });
 
-    // Listen for auth changes
+    // Listen for auth changes (but don't require it)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });
@@ -202,15 +202,10 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   }, []);
 
   const uploadToSupabase = async (file: File, sampleId: string): Promise<string> => {
-    // Check authentication first
-    if (!user) {
-      throw new Error('Authentication required to upload files');
-    }
-
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${sampleId}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`; // Store in user-specific folder
+      const filePath = user ? `${user.id}/${fileName}` : `public/${fileName}`; // Store in user folder or public folder
 
       console.log('☁️ Step 1: Starting Supabase upload:', file.name);
 
@@ -245,17 +240,12 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
       console.log('✅ Step 3: Public URL obtained:', publicUrl);
 
-      // Save to database with authentication check
-      if (!user) {
-        console.warn('⚠️ No authenticated user - skipping database save');
-        return publicUrl; // Still return the URL for local use
-      }
-
+      // Save to database (with or without user)
       const { error: dbError } = await supabase
         .from('audio_samples')
         .insert({
           id: sampleId,
-          user_id: user.id,
+          user_id: user?.id || null, // Optional user association
           filename: file.name,
           file_type: file.type || 'audio/unknown',
           file_size: file.size,
@@ -269,7 +259,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         console.warn('⚠️ Failed to save to database:', dbError);
         // Continue anyway - the file is still uploaded
       } else {
-        console.log('✅ Step 4: Sample saved to database with user ownership');
+        console.log('✅ Step 4: Sample saved to database', user ? 'with user ownership' : 'as public sample');
       }
 
       return publicUrl;
@@ -282,16 +272,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
   const handleFiles = async (files: File[]) => {
     console.log('🔍 UPLOAD DEBUG: Processing files:', files.length);
-    
-    // Check authentication first
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to upload and save your audio files.",
-        variant: "destructive"
-      });
-      return;
-    }
     
     if (!files || files.length === 0) {
       console.log('❌ UPLOAD DEBUG: No files provided to handleFiles');
@@ -775,29 +755,16 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           onDragLeave={() => setIsDragging(false)}
         >
           <Upload className="w-12 h-12 mx-auto mb-4 text-studio-text-secondary" />
-          {!user ? (
-            <>
-              <p className="text-lg font-medium mb-2 text-orange-400">
-                🔐 Sign In Required
-              </p>
-              <p className="text-studio-text-secondary mb-4">
-                Please sign in to upload and save your audio files securely
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-lg font-medium mb-2">
-                {uploadedSamples.length > 0 ? "Add more files or reupload" : "Drop audio files here"}
-              </p>
-              <p className="text-studio-text-secondary mb-2">Supports MP3, WAV, FLAC, M4A, OGG, AAC (up to 100MB)</p>
-              <p className="text-sm text-studio-text-secondary mb-4">
-                {uploadedSamples.length > 0 
-                  ? `${uploadedSamples.length} file(s) uploaded. You can add more or clear all to start over.`
-                  : "Files will be automatically analyzed and separated into stems for editing!"
-                }
-              </p>
-            </>
-          )}
+          <p className="text-lg font-medium mb-2">
+            {uploadedSamples.length > 0 ? "Add more files or reupload" : "Drop audio files here"}
+          </p>
+          <p className="text-studio-text-secondary mb-2">Supports MP3, WAV, FLAC, M4A, OGG, AAC (up to 100MB)</p>
+          <p className="text-sm text-studio-text-secondary mb-4">
+            {uploadedSamples.length > 0 
+              ? `${uploadedSamples.length} file(s) uploaded. You can add more or clear all to start over.`
+              : "Files will be automatically analyzed and separated into stems for editing!"
+            }
+          </p>
           <input
             type="file"
             multiple
@@ -829,17 +796,9 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             id="audio-upload"
           />
           <Button 
-            variant={user ? "neon" : "outline"} 
+            variant="neon" 
             size="lg" 
             onClick={() => {
-              if (!user) {
-                toast({
-                  title: "Sign In Required",
-                  description: "Please sign in to upload audio files.",
-                  variant: "destructive"
-                });
-                return;
-              }
               console.log('🖱️ BUTTON CLICK: Browse Files button clicked');
               const input = document.getElementById('audio-upload') as HTMLInputElement;
               if (input) {
@@ -849,13 +808,9 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                 console.log('❌ BUTTON CLICK: File input not found');
               }
             }}
-            className={user 
-              ? "bg-neon-purple hover:bg-neon-purple/80 text-white font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
-              : "border-orange-400 text-orange-400 hover:bg-orange-400/10 px-6 py-3 cursor-pointer z-10 pointer-events-auto"
-            }
-            disabled={!user}
+            className="bg-neon-purple hover:bg-neon-purple/80 text-white font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
           >
-            {user ? "Browse Files" : "Sign In to Upload"}
+            Browse Files
           </Button>
         </div>
 
