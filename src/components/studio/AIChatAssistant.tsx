@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { AudioProcessor, AudioProcessingResult } from '@/lib/audioProcessor';
 import { RealtimeChat, RealtimeMessage } from '@/utils/RealtimeAudio';
-import { AudioEffectsProcessor, AUDIO_EFFECTS } from '@/lib/audioEffects';
+import { AudioEffectsProcessor, AUDIO_EFFECTS } from '@/lib/audioEffects.ts';
 import { useGlobalAudio } from '@/hooks/useGlobalAudio';
 import { 
   Send, 
