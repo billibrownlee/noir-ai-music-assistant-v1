@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AudioOutputSelector } from "@/components/ui/audio-output-selector";
+import { supabase } from "@/integrations/supabase/client";
 import StudioHeader from "@/components/studio/StudioHeader";
 import PromptBuilder from "@/components/studio/PromptBuilder";
 import AudioPlayer from "@/components/studio/AudioPlayer";
@@ -50,6 +51,66 @@ const Index = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStemEditorOpen, setIsStemEditorOpen] = useState(false);
   const { playTrack, setAudioOutputDevice } = useGlobalAudio();
+  
+  // Authentication state
+  const [user, setUser] = useState(null);
+  
+  // Load user's audio samples from database
+  const loadUserSamples = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('audio_samples')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Failed to load user samples:', error);
+        return;
+      }
+      
+      // Transform database samples to match the component interface
+      const transformedSamples = data?.map(sample => ({
+        id: sample.id,
+        name: sample.filename,
+        audioUrl: sample.public_url,
+        genre: sample.genre || 'Unknown',
+        bpm: sample.bpm,
+        key: sample.key,
+        duration: sample.duration,
+        tags: sample.tags || [],
+        uploadDate: new Date(sample.created_at)
+      })) || [];
+      
+      setUploadedSamples(transformedSamples);
+      console.log('✅ Loaded user samples:', transformedSamples.length);
+    } catch (error) {
+      console.error('Error loading user samples:', error);
+    }
+  };
+  
+  // Authentication effect
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadUserSamples(session.user.id);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadUserSamples(session.user.id);
+      } else {
+        setUploadedSamples([]); // Clear samples when signed out
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
 
   // Check audio output device
@@ -153,10 +214,14 @@ const Index = () => {
                     <AudioUpload 
                       onSamplesUploaded={(samples) => {
                         console.log('Uploaded samples:', samples);
-                        setUploadedSamples(samples);
+                        setUploadedSamples(prev => [...prev, ...samples]);
                         const latestSample = samples[samples.length - 1];
                         if (latestSample && latestSample.analysis) {
                           setAudioAnalysis(latestSample.analysis);
+                        }
+                        // Refresh user samples from database to get the latest data
+                        if (user) {
+                          setTimeout(() => loadUserSamples(user.id), 1000);
                         }
                       }}
                       onAudioSeparated={(separated) => setSeparatedAudio(separated)}

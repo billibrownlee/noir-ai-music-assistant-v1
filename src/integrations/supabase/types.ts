@@ -32,6 +32,7 @@ export type Database = {
           training_extracted: boolean | null
           updated_at: string | null
           upload_status: string | null
+          user_id: string | null
         }
         Insert: {
           analysis_data?: Json | null
@@ -50,6 +51,7 @@ export type Database = {
           training_extracted?: boolean | null
           updated_at?: string | null
           upload_status?: string | null
+          user_id?: string | null
         }
         Update: {
           analysis_data?: Json | null
@@ -68,6 +70,7 @@ export type Database = {
           training_extracted?: boolean | null
           updated_at?: string | null
           upload_status?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
