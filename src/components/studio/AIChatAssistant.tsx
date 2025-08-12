@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { AudioProcessor, AudioProcessingResult } from '@/lib/audioProcessor';
 import { RealtimeChat, RealtimeMessage } from '@/utils/RealtimeAudio';
+import { AudioEffectsProcessor, AUDIO_EFFECTS } from '@/lib/audioEffects';
+import { useGlobalAudio } from '@/hooks/useGlobalAudio';
 import { 
   Send, 
   Brain, 
@@ -95,9 +97,14 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   const [selectedVoice, setSelectedVoice] = useState('alloy');
   const [realtimeMessages, setRealtimeMessages] = useState<RealtimeMessage[]>([]);
   
+  // Audio effects processor
+  const [audioEffects] = useState(() => new AudioEffectsProcessor());
+  const [isProcessingAudio, setIsProcessingAudio] = useState(false);
+  
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { playTrack } = useGlobalAudio();
   const audioProcessor = useRef(new AudioProcessor());
 
   const voices = [
@@ -110,6 +117,84 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     { value: 'ballad', label: 'Ballad (Smooth)' },
     { value: 'verse', label: 'Verse (Expressive)' }
   ];
+
+  // Direct audio effects using the new AudioEffectsProcessor
+  const applyAudioEffect = async (sample: any, effect: string) => {
+    if (!sample?.audioUrl) {
+      toast({
+        title: "No Audio URL",
+        description: "Cannot process audio without a valid URL",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsProcessingAudio(true);
+    addAssistantMessage(`🔄 Processing: ${effect}...`);
+
+    try {
+      let result;
+      
+      switch (effect) {
+        case AUDIO_EFFECTS.REVERSE:
+          result = await audioEffects.reverseAudio(sample.audioUrl);
+          break;
+        case AUDIO_EFFECTS.SPEED_UP:
+          result = await audioEffects.changeSpeed(sample.audioUrl, 2.0);
+          break;
+        case AUDIO_EFFECTS.SLOW_DOWN:
+          result = await audioEffects.changeSpeed(sample.audioUrl, 0.5);
+          break;
+        case AUDIO_EFFECTS.ECHO:
+          result = await audioEffects.addEcho(sample.audioUrl);
+          break;
+        case AUDIO_EFFECTS.PITCH_UP:
+          result = await audioEffects.changePitch(sample.audioUrl, 1.5);
+          break;
+        case AUDIO_EFFECTS.PITCH_DOWN:
+          result = await audioEffects.changePitch(sample.audioUrl, 0.75);
+          break;
+        default:
+          throw new Error(`Unknown effect: ${effect}`);
+      }
+
+      // Update the sample with the new audio
+      const updates = {
+        audioUrl: result.audioUrl,
+        name: `${sample.name} (${effect})`,
+        tags: [...(sample.tags || []), 'processed', effect],
+        processHistory: [
+          ...(sample.processHistory || []),
+          {
+            effect: effect,
+            timestamp: new Date(),
+            processingTime: Date.now()
+          }
+        ]
+      };
+
+      onUpdateSample?.(sample.id, updates);
+      
+      addAssistantMessage(`✅ **${effect.toUpperCase()} Applied!**\n\nYour audio has been processed and updated. You can play it now to hear the effect!`);
+      
+      toast({
+        title: "🎛️ Effect Applied!",
+        description: `Successfully applied ${effect} to your audio`,
+      });
+
+    } catch (error) {
+      console.error('Audio effect error:', error);
+      addAssistantMessage(`❌ **Effect Failed**\n\nError applying ${effect}: ${error.message}`);
+      
+      toast({
+        title: "Effect Failed",
+        description: error.message || "Failed to apply audio effect",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessingAudio(false);
+    }
+  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -252,7 +337,14 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     let processingDescription = "";
 
     try {
-      // Reverse audio
+      // Check for direct audio effects using the new processor
+      if (msg.includes('reverse')) {
+        const latestSample = uploadedSamples[uploadedSamples.length - 1];
+        await applyAudioEffect(latestSample, AUDIO_EFFECTS.REVERSE);
+        return true;
+      }
+      
+      // Use existing audioProcessor for other effects (legacy compatibility)
       if (msg.includes('reverse')) {
         processingDescription = "Reversing your audio";
         addAssistantMessage(`🔄 ${processingDescription}...`);
@@ -827,18 +919,24 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => handleAudioProcessingCommand("reverse")}
-              disabled={uploadedSamples.length === 0 || isProcessing}
+              onClick={async () => {
+                const latestSample = uploadedSamples[uploadedSamples.length - 1];
+                if (latestSample) await applyAudioEffect(latestSample, AUDIO_EFFECTS.REVERSE);
+              }}
+              disabled={uploadedSamples.length === 0 || isProcessingAudio}
               className="text-xs"
             >
-              <Cog className="w-3 h-3 mr-1" />
+              <RotateCcw className="w-3 h-3 mr-1" />
               Reverse
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => handleAudioProcessingCommand("speed up 1.5x")}
-              disabled={uploadedSamples.length === 0 || isProcessing}
+              onClick={async () => {
+                const latestSample = uploadedSamples[uploadedSamples.length - 1];
+                if (latestSample) await applyAudioEffect(latestSample, AUDIO_EFFECTS.SPEED_UP);
+              }}
+              disabled={uploadedSamples.length === 0 || isProcessingAudio}
               className="text-xs"
             >
               <Zap className="w-3 h-3 mr-1" />
@@ -847,28 +945,11 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => handleAudioProcessingCommand("normalize volume")}
-              disabled={uploadedSamples.length === 0 || isProcessing}
-              className="text-xs"
-            >
-              <Volume2 className="w-3 h-3 mr-1" />
-              Normalize
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => handleAudioProcessingCommand("add light distortion")}
-              disabled={uploadedSamples.length === 0 || isProcessing}
-              className="text-xs"
-            >
-              <Wand2 className="w-3 h-3 mr-1" />
-              Light FX
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => handleAudioProcessingCommand("slow down 25%")}
-              disabled={uploadedSamples.length === 0 || isProcessing}
+              onClick={async () => {
+                const latestSample = uploadedSamples[uploadedSamples.length - 1];
+                if (latestSample) await applyAudioEffect(latestSample, AUDIO_EFFECTS.SLOW_DOWN);
+              }}
+              disabled={uploadedSamples.length === 0 || isProcessingAudio}
               className="text-xs"
             >
               <Music className="w-3 h-3 mr-1" />
@@ -877,18 +958,24 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => handleAudioProcessingCommand("fade out 3 seconds")}
-              disabled={uploadedSamples.length === 0 || isProcessing}
+              onClick={async () => {
+                const latestSample = uploadedSamples[uploadedSamples.length - 1];
+                if (latestSample) await applyAudioEffect(latestSample, AUDIO_EFFECTS.ECHO);
+              }}
+              disabled={uploadedSamples.length === 0 || isProcessingAudio}
               className="text-xs"
             >
               <Volume2 className="w-3 h-3 mr-1" />
-              Fade Out
+              Echo
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => handleAudioProcessingCommand("pitch up 2 semitones")}
-              disabled={uploadedSamples.length === 0 || isProcessing}
+              onClick={async () => {
+                const latestSample = uploadedSamples[uploadedSamples.length - 1];
+                if (latestSample) await applyAudioEffect(latestSample, AUDIO_EFFECTS.PITCH_UP);
+              }}
+              disabled={uploadedSamples.length === 0 || isProcessingAudio}
               className="text-xs"
             >
               <Music className="w-3 h-3 mr-1" />
@@ -897,26 +984,34 @@ Be conversational, helpful, and provide specific production advice. You can use 
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => handleAudioProcessingCommand("pitch down 2 semitones")}
-              disabled={uploadedSamples.length === 0 || isProcessing}
+              onClick={async () => {
+                const latestSample = uploadedSamples[uploadedSamples.length - 1];
+                if (latestSample) await applyAudioEffect(latestSample, AUDIO_EFFECTS.PITCH_DOWN);
+              }}
+              disabled={uploadedSamples.length === 0 || isProcessingAudio}
               className="text-xs"
             >
               <Music className="w-3 h-3 mr-1" />
               Pitch Down
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => handleAudioProcessingCommand("heavy saturation")}
-              disabled={uploadedSamples.length === 0 || isProcessing}
-              className="text-xs"
-            >
-              <Wand2 className="w-3 h-3 mr-1" />
-              Heavy FX
-            </Button>
           </div>
+          
+          {/* Current Sample Info */}
+          {uploadedSamples.length > 0 && (
+            <div className="mt-3 p-2 bg-studio-surface-secondary/30 rounded text-xs">
+              <div className="text-studio-text-secondary">Current sample:</div>
+              <div className="text-studio-text-primary font-medium">
+                {uploadedSamples[uploadedSamples.length - 1]?.name || 'Unnamed'}
+              </div>
+              {uploadedSamples[uploadedSamples.length - 1]?.tags?.includes('processed') && (
+                <div className="text-neon-purple">✨ Processed</div>
+              )}
+            </div>
+           )}
         </div>
       </CardContent>
     </Card>
   );
 };
+
+export default AIChatAssistant;
