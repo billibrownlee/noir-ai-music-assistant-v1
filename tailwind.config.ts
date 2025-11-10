@@ -108,11 +108,11 @@ export default {
 				},
 				'pulse-neon': {
 					'0%, 100%': { 
-						boxShadow: '0 0 20px hsl(20 100% 63% / 0.4)',
+						boxShadow: '0 0 20px hsl(15 85% 45% / 0.4)',
 						transform: 'scale(1)' 
 					},
 					'50%': { 
-						boxShadow: '0 0 30px hsl(20 100% 63% / 0.8)',
+						boxShadow: '0 0 30px hsl(15 85% 45% / 0.8)',
 						transform: 'scale(1.02)' 
 					}
 				},
