@@ -28,7 +28,9 @@ export class AudioProcessor {
   // Convert Float32Array back to AudioBuffer
   float32ArrayToBuffer(data: Float32Array, sampleRate: number = 44100): AudioBuffer {
     const buffer = this.audioContext.createBuffer(1, data.length, sampleRate);
-    buffer.copyToChannel(data, 0);
+    // Create a new Float32Array with regular ArrayBuffer to ensure type compatibility
+    const compatibleData = new Float32Array(data);
+    buffer.copyToChannel(compatibleData, 0);
     return buffer;
   }
 

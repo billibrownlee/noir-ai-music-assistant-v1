@@ -20,23 +20,23 @@ All colors MUST be HSL.
     --popover: 240 6% 10%;
     --popover-foreground: 0 0% 95%;
 
-    /* Neon Primary - Electric Purple */
-    --primary: 270 100% 70%;
+    /* Neon Primary - Vibrant Orange */
+    --primary: 20 100% 63%;
     --primary-foreground: 240 6% 6%;
-    --primary-glow: 270 100% 80%;
+    --primary-glow: 20 100% 75%;
 
-    /* Studio Secondary - Deep Purple */
-    --secondary: 260 20% 15%;
+    /* Studio Secondary - Deep Orange */
+    --secondary: 20 50% 20%;
     --secondary-foreground: 0 0% 90%;
 
     /* Muted Studio Elements */
     --muted: 240 6% 12%;
     --muted-foreground: 0 0% 60%;
 
-    /* Cyan Accent */
-    --accent: 180 100% 70%;
+    /* Warm Accent - Peach */
+    --accent: 30 100% 70%;
     --accent-foreground: 240 6% 6%;
-    --accent-glow: 180 100% 80%;
+    --accent-glow: 30 100% 80%;
 
     /* Professional Controls */
     --destructive: 0 84% 60%;
@@ -49,15 +49,15 @@ All colors MUST be HSL.
     --radius: 0.75rem;
 
     /* Studio Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(270 100% 70%), hsl(270 100% 80%));
+    --gradient-primary: linear-gradient(135deg, hsl(20 100% 63%), hsl(20 100% 75%));
     --gradient-studio: linear-gradient(180deg, hsl(240 6% 8%), hsl(240 6% 6%));
-    --gradient-waveform: linear-gradient(90deg, hsl(270 100% 70%), hsl(180 100% 70%));
+    --gradient-waveform: linear-gradient(90deg, hsl(20 100% 63%), hsl(30 100% 70%));
     --gradient-glass: linear-gradient(135deg, hsl(240 6% 12% / 0.8), hsl(240 6% 8% / 0.6));
 
     /* Studio Shadows & Glows */
     --shadow-studio: 0 25px 50px -12px hsl(240 6% 3% / 0.8);
-    --shadow-neon: 0 0 30px hsl(270 100% 70% / 0.4);
-    --shadow-cyan: 0 0 30px hsl(180 100% 70% / 0.3);
+    --shadow-neon: 0 0 30px hsl(20 100% 63% / 0.5);
+    --shadow-cyan: 0 0 30px hsl(30 100% 70% / 0.4);
 
     /* Professional Animations */
     --transition-studio: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
