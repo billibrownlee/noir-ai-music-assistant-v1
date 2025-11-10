@@ -17,7 +17,7 @@ export default function StudioHeader() {
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full animate-pulse-neon"></div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Lando</h1>
+              <h1 className="text-2xl font-bold text-foreground">Noir</h1>
               <p className="text-xs text-muted-foreground">AI Music Production Assistant</p>
             </div>
           </div>

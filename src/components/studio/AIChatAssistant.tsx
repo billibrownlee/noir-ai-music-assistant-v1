@@ -56,7 +56,7 @@ interface AIChatAssistantProps {
 }
 
 const AI_RESPONSES = {
-  greeting: "👋 Hey! I'm Lando, your AI production assistant. I can help you manipulate your audio stems, suggest mixing techniques, and guide you through the production process. What would you like to work on?",
+  greeting: "👋 Hey! I'm Noir, your AI production assistant. I can help you manipulate your audio stems, suggest mixing techniques, and guide you through the production process. What would you like to work on?",
   
   stems: {
     vocals: "🎤 Great choice! For vocals, I recommend:\n• High-pass filter at 80-100Hz to remove rumble\n• Gentle compression (3:1 ratio, slow attack)\n• EQ boost around 2-5kHz for presence\n• Add some reverb for space. Want me to apply any of these?",
@@ -633,7 +633,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         }
       );
       
-      const instructions = `You are Lando, an expert AI music production assistant. You help users with audio production, mixing, mastering, and creative guidance. 
+      const instructions = `You are Noir, an expert AI music production assistant. You help users with audio production, mixing, mastering, and creative guidance. 
 
 Current context:
 - User has ${uploadedSamples.length} audio samples uploaded
@@ -705,7 +705,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Brain className="w-5 h-5 text-neon-purple" />
-            Lando AI Chat
+            Noir AI Chat
             <Badge variant="outline" className="text-xs">
               Production Assistant
             </Badge>
@@ -776,7 +776,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
                   </div>
                   
                   <div className="text-xs text-studio-text-secondary mt-1 px-1">
-                    {message.type === 'assistant' ? 'Lando' : 'You'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {message.type === 'assistant' ? 'Noir' : 'You'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               </div>
@@ -875,7 +875,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
               {realtimeMessages.slice(-3).map((msg, idx) => (
                 <div key={idx} className="text-xs text-studio-text-primary">
                   <span className="font-medium">
-                    {msg.role === 'user' ? 'You' : 'Lando'}:
+                    {msg.role === 'user' ? 'You' : 'Noir'}:
                   </span>
                   {' '}
                   {msg.content}
@@ -898,7 +898,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
                   ? "Processing... you can still type your next command!" 
                   : isVoiceConnected 
                     ? "Type here or speak (both work anytime!)" 
-                    : "Ask Lando about mixing, stems, effects..."
+                    : "Ask Noir about mixing, stems, effects..."
               }
               className="flex-1"
               disabled={false}

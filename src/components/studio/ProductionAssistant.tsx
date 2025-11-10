@@ -76,7 +76,7 @@ const SAMPLE_SUGGESTIONS: ProductionSuggestion[] = [
   }
 ];
 
-// AI Analysis Engine - Lando's Brain
+// AI Analysis Engine - Noir's Brain
 const generateIntelligentSuggestions = (analysis: AudioAnalysis): ProductionSuggestion[] => {
   const suggestions: ProductionSuggestion[] = [];
   
@@ -223,7 +223,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
     if (audioAnalysis) {
       setIsAnalyzing(true);
       
-      // Simulate Lando thinking (adds realism to AI processing)
+      // Simulate Noir thinking (adds realism to AI processing)
       setTimeout(() => {
         const intelligentSuggestions = generateIntelligentSuggestions(audioAnalysis);
         setSuggestions([...intelligentSuggestions, ...SAMPLE_SUGGESTIONS]);
@@ -268,7 +268,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Brain className="w-5 h-5 text-neon-purple" />
-          Lando - AI Production Assistant
+          Noir - AI Production Assistant
           <Badge variant="outline" className="ml-auto">
             <Sparkles className="w-3 h-3 mr-1" />
             {isAnalyzing ? 'Analyzing...' : audioAnalysis ? 'AI Enhanced' : 'AI Powered'}
@@ -291,7 +291,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3 mb-2">
                       <Brain className="w-4 h-4 text-neon-purple animate-pulse" />
-                      <span className="font-medium">Lando analyzed your track:</span>
+                      <span className="font-medium">Noir analyzed your track:</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant="outline" className="text-xs">
@@ -383,7 +383,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                         <div className="flex items-start gap-3 p-3 bg-studio-surface-secondary/30 rounded-lg">
                           <Brain className="w-4 h-4 text-neon-purple mt-0.5 flex-shrink-0" />
                           <div>
-                            <p className="text-xs font-medium text-neon-purple mb-1">Lando's Insight:</p>
+                            <p className="text-xs font-medium text-neon-purple mb-1">Noir's Insight:</p>
                             <p className="text-xs text-studio-text-secondary italic leading-relaxed">
                               {suggestion.reasoning}
                             </p>
@@ -476,7 +476,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 mb-3">
                         <Wand2 className="w-4 h-4 text-neon-purple" />
-                        <span className="font-medium">Lando's Professional Assessment</span>
+                        <span className="font-medium">Noir's Professional Assessment</span>
                       </div>
                       <div className="text-sm text-studio-text-secondary space-y-2">
                         <p>
@@ -486,7 +486,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                           {audioAnalysis.danceability > 0.6 ? 'strong dancefloor potential' : 'more experimental or cinematic applications'}."
                         </p>
                         <p className="italic text-neon-purple">
-                          - Lando's recommendation: Focus on {audioAnalysis.energy < 0.5 ? 'building dynamic contrast' : 'maintaining the energy while adding depth'}
+                          - Noir's recommendation: Focus on {audioAnalysis.energy < 0.5 ? 'building dynamic contrast' : 'maintaining the energy while adding depth'}
                         </p>
                       </div>
                     </CardContent>
@@ -495,7 +495,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
               ) : (
                 <div className="text-center py-8 text-studio-text-secondary">
                   <Brain className="w-12 h-12 mx-auto mb-3 text-studio-text-secondary/50" />
-                  <p>Upload an audio file to enable Lando's advanced analysis</p>
+                  <p>Upload an audio file to enable Noir's advanced analysis</p>
                 </div>
               )}
             </div>

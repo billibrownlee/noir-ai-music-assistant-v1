@@ -180,7 +180,7 @@ const Index = () => {
               <div className="h-full bg-card/50 backdrop-blur-sm rounded-lg border border-border/30">
                 <div className="p-4 border-b border-border/30">
                   <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    🤖 Lando AI Assistant
+                    🤖 Noir AI Assistant
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     Always here to help with your music production

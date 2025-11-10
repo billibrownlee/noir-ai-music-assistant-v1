@@ -506,7 +506,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
         <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
           <p className="text-sm text-green-400">
             <Sparkles className="w-4 h-4 inline mr-1" />
-            <strong>AI Training Enabled:</strong> Lando learns from your uploaded audio samples to generate music that matches your style. Upload R&B, Hip-Hop, Pop, or Electronic tracks to improve generation quality. Real audio synthesis with Web Audio API - no external services required.
+            <strong>AI Training Enabled:</strong> Noir learns from your uploaded audio samples to generate music that matches your style. Upload R&B, Hip-Hop, Pop, or Electronic tracks to improve generation quality. Real audio synthesis with Web Audio API - no external services required.
           </p>
         </div>
       </CardContent>
