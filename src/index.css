@@ -9,55 +9,55 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Orange Studio Theme */
-    --background: 20 100% 63%;
-    --foreground: 0 0% 100%;
+    /* Balanced Orange & Black Theme */
+    --background: 0 0% 8%;
+    --foreground: 0 0% 98%;
 
     /* Studio Cards & Surfaces */
-    --card: 20 95% 58%;
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 98%;
 
-    --popover: 20 90% 55%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 98%;
 
-    /* Deep Orange Primary */
-    --primary: 15 85% 45%;
+    /* Vibrant Orange Primary */
+    --primary: 20 100% 63%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 20 100% 75%;
+    --primary-glow: 25 100% 70%;
 
-    /* White Secondary */
-    --secondary: 0 0% 100%;
-    --secondary-foreground: 20 100% 63%;
+    /* Dark Secondary */
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 98%;
 
-    /* Muted Orange Elements */
-    --muted: 20 80% 70%;
-    --muted-foreground: 0 0% 95%;
+    /* Muted Dark Elements */
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 65%;
 
-    /* Warm Accent */
-    --accent: 30 100% 95%;
-    --accent-foreground: 20 100% 40%;
-    --accent-glow: 30 100% 80%;
+    /* Orange Accent */
+    --accent: 20 100% 63%;
+    --accent-foreground: 0 0% 100%;
+    --accent-glow: 25 100% 70%;
 
     /* Professional Controls */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 20 70% 75%;
-    --input: 0 0% 100%;
-    --ring: 15 85% 45%;
+    --border: 0 0% 22%;
+    --input: 0 0% 15%;
+    --ring: 20 100% 63%;
 
     --radius: 0.75rem;
 
     /* Studio Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(20 100% 63%), hsl(25 100% 70%));
-    --gradient-studio: linear-gradient(180deg, hsl(20 95% 58%), hsl(20 100% 63%));
-    --gradient-waveform: linear-gradient(90deg, hsl(15 85% 45%), hsl(25 100% 70%));
-    --gradient-glass: linear-gradient(135deg, hsl(20 80% 70% / 0.3), hsl(20 90% 65% / 0.2));
+    --gradient-studio: linear-gradient(180deg, hsl(0 0% 12%), hsl(0 0% 8%));
+    --gradient-waveform: linear-gradient(90deg, hsl(20 100% 63%), hsl(25 100% 70%));
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 15% / 0.8), hsl(0 0% 10% / 0.6));
 
     /* Studio Shadows & Glows */
-    --shadow-studio: 0 25px 50px -12px hsl(20 60% 30% / 0.3);
-    --shadow-neon: 0 0 30px hsl(15 85% 45% / 0.4);
-    --shadow-cyan: 0 0 30px hsl(30 100% 70% / 0.3);
+    --shadow-studio: 0 25px 50px -12px hsl(0 0% 0% / 0.5);
+    --shadow-neon: 0 0 30px hsl(20 100% 63% / 0.5);
+    --shadow-cyan: 0 0 30px hsl(25 100% 70% / 0.4);
 
     /* Professional Animations */
     --transition-studio: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
