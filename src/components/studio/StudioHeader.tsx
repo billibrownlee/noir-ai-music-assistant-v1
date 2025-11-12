@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AuthButton } from "@/components/ui/auth-button";
-import { Music, Sparkles, Settings, Bell, Search } from "lucide-react";
+import { Sparkles, Settings, Bell, Search } from "lucide-react";
+import noirLogo from "@/assets/noir-logo.png";
 
 export default function StudioHeader() {
   return (
@@ -11,9 +12,11 @@ export default function StudioHeader() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-10 h-10 bg-gradient-primary rounded-xl flex items-center justify-center shadow-neon">
-                <Music className="w-6 h-6 text-primary-foreground" />
-              </div>
+              <img 
+                src={noirLogo} 
+                alt="Noir Logo" 
+                className="w-10 h-10 rounded-xl shadow-neon"
+              />
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full animate-pulse-neon"></div>
             </div>
             <div>
