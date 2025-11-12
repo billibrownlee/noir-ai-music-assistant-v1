@@ -21,7 +21,7 @@ export default function StudioHeader() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Noir</h1>
-              <p className="text-xs text-muted-foreground">AI Music Production Assistant</p>
+              <p className="text-xs text-muted-foreground">AI Music Assistant</p>
             </div>
           </div>
           <Badge variant="outline" className="border-primary/50 text-primary">
