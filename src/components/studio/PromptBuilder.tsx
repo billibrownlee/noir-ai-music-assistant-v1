@@ -18,7 +18,6 @@ interface PromptBuilderProps {
 const GENRE_TEMPLATES = {
   rnb: {
     name: "R&B",
-    icon: "🎵",
     description: "Smooth vocals, rich harmonies, groove-based rhythms",
     prompts: [
       "Soulful R&B ballad with silky vocals and lush harmonies",
@@ -29,7 +28,6 @@ const GENRE_TEMPLATES = {
   },
   pop: {
     name: "Pop",
-    icon: "✨",
     description: "Catchy melodies, modern production, radio-ready",
     prompts: [
       "Infectious pop anthem with soaring chorus and modern production",
@@ -40,7 +38,6 @@ const GENRE_TEMPLATES = {
   },
   trap: {
     name: "Trap-Rap",
-    icon: "🔥",
     description: "Hard-hitting 808s, crisp hi-hats, aggressive energy",
     prompts: [
       "Dark trap beat with rolling 808s and crisp snares",
@@ -124,7 +121,7 @@ export default function PromptBuilder({ onGenerate }: PromptBuilderProps) {
       });
 
       toast({
-        title: "🎤 Playing prompt",
+        title: "Playing prompt",
         description: "Listen to your prompt being spoken aloud",
       });
 
@@ -163,7 +160,6 @@ export default function PromptBuilder({ onGenerate }: PromptBuilderProps) {
                 value={key}
                 className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
               >
-                <span className="mr-2">{genre.icon}</span>
                 {genre.name}
               </TabsTrigger>
             ))}
