@@ -116,9 +116,9 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({ onAudioGenerated
       // Clear text for next generation
       setText('');
 
-      console.log('✅ High-quality audio generated successfully!');
+      console.log('Audio generated successfully');
       toast({
-        title: "🎤 Audio Generated!",
+        title: "Audio Generated",
         description: `High-quality ${voice} voice generated using ${model}`,
       });
 

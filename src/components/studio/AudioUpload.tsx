@@ -442,7 +442,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     }
     
     toast({
-      title: "✅ Upload started!",
+      title: "Upload started",
       description: `${audioFiles.length} file(s) uploading to cloud storage...`,
     });
   };
@@ -553,8 +553,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
       onAudioSeparated?.(separatedAudio);
       
       toast({
-        title: "🎛️ Stems Ready!",
-        description: `Successfully separated ${stems.length} stems from your audio!`
+        title: "Stems Ready",
+        description: `Successfully separated ${stems.length} stems from your audio`
       });
       
     } catch (error) {

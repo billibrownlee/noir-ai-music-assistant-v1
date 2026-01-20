@@ -171,9 +171,9 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
       setGeneratedMusic(prev => [generatedMusic, ...prev]);
       setPrompt(''); // Clear prompt for next generation
 
-      console.log('✅ Real audio generated successfully!', generatedTrack);
+      console.log('Audio generated successfully', generatedTrack);
       toast({
-        title: "🎵 Music Generated!",
+        title: "Music Generated",
         description: `Created ${duration[0]}s ${style} track with real audio (${generationTime.toFixed(1)}s)`,
       });
 
@@ -203,7 +203,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
     });
     
     toast({
-      title: "🎵 Playing Generated Music",
+      title: "Playing Generated Music",
       description: `Now playing: "${music.originalPrompt}" (${music.metadata.bpm} BPM in ${music.metadata.key})`,
     });
   };
@@ -218,7 +218,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
     document.body.removeChild(link);
     
     toast({
-      title: "🎵 Download Started",
+      title: "Download Started",
       description: `Downloading: "${music.originalPrompt}.wav"`,
     });
   };
@@ -236,7 +236,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
     setGeneratedMusic(prev => prev.filter(m => m.id !== musicId));
     
     toast({
-      title: "🗑️ Music Deleted",
+      title: "Music Deleted",
       description: `"${music.originalPrompt}" has been removed from your generated music.`,
     });
   };
@@ -279,7 +279,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({ onMusicGenerated
       }
 
       toast({
-        title: "💾 Music Saved!",
+        title: "Music Saved",
         description: `"${music.originalPrompt}" has been saved to your collection.`,
       });
 

@@ -121,7 +121,7 @@ export const TempoControl: React.FC<TempoControlProps> = ({
         onUpdateSample?.(latestSample.id, updates);
         
         toast({
-          title: "🎛️ Tempo Adjusted!",
+          title: "Tempo Adjusted",
           description: `Successfully changed from ${originalBPM} BPM to ${targetBPM} BPM`,
         });
         
