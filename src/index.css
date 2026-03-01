@@ -124,7 +124,49 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
-  body {
+  html, body {
     @apply bg-background text-foreground;
+    background-color: hsl(var(--background));
+    min-height: 100vh;
+  }
+
+  #root {
+    min-height: 100vh;
+    background-color: hsl(var(--background));
+  }
+}
+
+@layer utilities {
+  /* Studio-specific utility classes */
+  .glass-card {
+    background: hsl(0 0% 12% / 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(0 0% 22% / 0.5);
+  }
+
+  .glass-card-subtle {
+    background: hsl(0 0% 12% / 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid hsl(0 0% 22% / 0.3);
+  }
+
+  .bg-studio-surface {
+    background-color: hsl(0 0% 12%);
+  }
+
+  .bg-studio-surface-secondary {
+    background-color: hsl(0 0% 15%);
+  }
+
+  .text-studio-text-primary {
+    color: hsl(0 0% 98%);
+  }
+
+  .text-studio-text-secondary {
+    color: hsl(0 0% 65%);
+  }
+
+  .border-studio-border {
+    border-color: hsl(0 0% 22%);
   }
 }

@@ -1,8 +1,28 @@
-# Welcome to your Lovable project
+# 🎵 Noir AI Music Production Assistant
+
+## 🚀 Quick Access
+
+**Local Development URL**: **http://localhost:8080**
+
+### Quick Start
+```bash
+# Option 1: Use the start script (auto-opens browser)
+./start.sh
+
+# Option 2: Manual start
+npm run dev
+# Then open: http://localhost:8080
+```
+
+**💡 Tip**: Bookmark **http://localhost:8080** in your browser for instant access!
+
+See [QUICK_START.md](./QUICK_START.md) for more access methods.
+
+---
 
 ## Project info
 
-**URL**: https://lovable.dev/projects/25ea3f9c-ff18-477b-9e9a-ee50f9a9e56b
+**Lovable URL**: https://lovable.dev/projects/25ea3f9c-ff18-477b-9e9a-ee50f9a9e56b
 
 ## How can I edit this code?
 

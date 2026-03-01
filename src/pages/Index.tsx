@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -54,9 +54,14 @@ const Index = () => {
   // Authentication state
   const [user, setUser] = useState(null);
   
-  // Load user's audio samples from database
-  const loadUserSamples = async (userId: string) => {
+  // Load user's audio samples from database with comprehensive error handling
+  const loadUserSamples = useCallback(async (userId: string | null | undefined) => {
     try {
+      if (!userId || typeof userId !== 'string' || userId.trim() === '') {
+        console.warn('Invalid userId for loading samples');
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('audio_samples')
         .select('*')
@@ -68,48 +73,89 @@ const Index = () => {
         return;
       }
       
-      // Transform database samples to match the component interface
-      const transformedSamples = data?.map(sample => ({
-        id: sample.id,
-        name: sample.filename,
-        audioUrl: sample.public_url,
-        genre: sample.genre || 'Unknown',
-        bpm: sample.bpm,
-        key: sample.key,
-        duration: sample.duration,
-        tags: sample.tags || [],
-        uploadDate: new Date(sample.created_at)
-      })) || [];
+      // Transform database samples to match the component interface with validation
+      const transformedSamples = (data || []).map((sample: any) => {
+        try {
+          return {
+            id: sample?.id && typeof sample.id === 'string' ? sample.id : crypto.randomUUID(),
+            name: sample?.filename && typeof sample.filename === 'string' ? sample.filename : 'Unknown',
+            audioUrl: sample?.public_url && typeof sample.public_url === 'string' ? sample.public_url : '',
+            genre: sample?.genre && typeof sample.genre === 'string' ? sample.genre : 'Unknown',
+            bpm: typeof sample?.bpm === 'number' && !isNaN(sample.bpm) ? sample.bpm : undefined,
+            key: sample?.key && typeof sample.key === 'string' ? sample.key : undefined,
+            duration: typeof sample?.duration === 'number' && !isNaN(sample.duration) ? sample.duration : undefined,
+            tags: Array.isArray(sample?.tags) ? sample.tags.filter((t: any) => typeof t === 'string') : [],
+            uploadDate: sample?.created_at ? new Date(sample.created_at) : new Date()
+          };
+        } catch (transformError) {
+          console.warn('Error transforming sample:', transformError, sample);
+          return null;
+        }
+      }).filter((sample: any) => sample !== null && sample.audioUrl);
       
       setUploadedSamples(transformedSamples);
       console.log('✅ Loaded user samples:', transformedSamples.length);
     } catch (error) {
       console.error('Error loading user samples:', error);
+      // Don't crash - just set empty array
+      setUploadedSamples([]);
     }
-  };
-  
-  // Authentication effect
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadUserSamples(session.user.id);
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        loadUserSamples(session.user.id);
-      } else {
-        setUploadedSamples([]); // Clear samples when signed out
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
+  
+  // Authentication effect with comprehensive error handling
+  useEffect(() => {
+    let subscription: any = null;
+    
+    try {
+      // Get initial session
+      supabase.auth.getSession()
+        .then(({ data: { session } }) => {
+          try {
+            setUser(session?.user ?? null);
+            if (session?.user?.id) {
+              loadUserSamples(session.user.id);
+            }
+          } catch (setUserError) {
+            console.warn('Error setting user:', setUserError);
+          }
+        })
+        .catch((sessionError) => {
+          console.warn('Error getting session:', sessionError);
+          setUser(null);
+        });
+
+      // Listen for auth changes
+      try {
+        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          try {
+            setUser(session?.user ?? null);
+            if (session?.user?.id) {
+              loadUserSamples(session.user.id);
+            } else {
+              setUploadedSamples([]); // Clear samples when signed out
+            }
+          } catch (authChangeError) {
+            console.warn('Error handling auth change:', authChangeError);
+          }
+        });
+        subscription = authSubscription;
+      } catch (authError) {
+        console.warn('Error setting up auth listener:', authError);
+      }
+    } catch (error) {
+      console.error('Error in auth effect:', error);
+    }
+
+    return () => {
+      try {
+        if (subscription) {
+          subscription.unsubscribe();
+        }
+      } catch (unsubscribeError) {
+        console.warn('Error unsubscribing from auth:', unsubscribeError);
+      }
+    };
+  }, [loadUserSamples]);
 
   // Check audio output device
   useEffect(() => {
@@ -168,7 +214,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ backgroundColor: 'hsl(var(--background))', minHeight: '100vh' }}>
       <StudioHeader />
       
       <div className="container mx-auto px-4 py-6">

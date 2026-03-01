@@ -46,38 +46,82 @@ export class AudioSeparationEngine {
       throw new Error('Already processing another file');
     }
 
+    // Safety check: Skip separation for very large files
+    const MAX_FILE_SIZE = 75 * 1024 * 1024; // 75MB limit
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error(`File too large for separation (max ${MAX_FILE_SIZE / (1024 * 1024)}MB)`);
+    }
+
     this.isProcessing = true;
 
     try {
       const startTime = Date.now();
       
-      // Stage 1: Load and decode audio
+      // Stage 1: Load and decode audio with error handling
       onProgress?.(10, 'Loading audio file...');
-      const audioBuffer = await this.loadAudioFile(file);
+      let audioBuffer: AudioBuffer;
+      try {
+        audioBuffer = await this.loadAudioFile(file);
+      } catch (error) {
+        console.error('Failed to load audio file:', error);
+        throw new Error('Failed to load audio file. Please ensure the file is a valid audio format.');
+      }
       
-      // Stage 2: Preprocess audio
+      // Stage 2: Preprocess audio with error handling
       onProgress?.(20, 'Preprocessing audio...');
-      const preprocessedData = await this.preprocessAudio(audioBuffer);
+      let preprocessedData: any;
+      try {
+        preprocessedData = await this.preprocessAudio(audioBuffer);
+      } catch (error) {
+        console.error('Preprocessing failed:', error);
+        // Continue with raw audio buffer
+        preprocessedData = audioBuffer;
+      }
       
-      // Stage 3: Vocal separation
+      // Stage 3: Vocal separation with error handling
       onProgress?.(40, 'Separating vocals...');
-      const vocalStem = await this.separateVocals(preprocessedData);
+      let vocalStem: AudioStem | null = null;
+      try {
+        vocalStem = await this.separateVocals(preprocessedData);
+      } catch (error) {
+        console.warn('Vocal separation failed:', error);
+      }
       
-      // Stage 4: Drum separation
+      // Stage 4: Drum separation with error handling
       onProgress?.(55, 'Separating drums...');
-      const drumStems = await this.separateDrums(preprocessedData);
+      let drumStems: AudioStem[] = [];
+      try {
+        drumStems = await this.separateDrums(preprocessedData);
+      } catch (error) {
+        console.warn('Drum separation failed:', error);
+      }
       
-      // Stage 5: Bass separation
+      // Stage 5: Bass separation with error handling
       onProgress?.(70, 'Separating bass...');
-      const bassStem = await this.separateBass(preprocessedData);
+      let bassStem: AudioStem | null = null;
+      try {
+        bassStem = await this.separateBass(preprocessedData);
+      } catch (error) {
+        console.warn('Bass separation failed:', error);
+      }
       
-      // Stage 6: Melody separation
+      // Stage 6: Melody separation with error handling
       onProgress?.(85, 'Separating melody...');
-      const melodyStem = await this.separateMelody(preprocessedData);
+      let melodyStem: AudioStem | null = null;
+      try {
+        melodyStem = await this.separateMelody(preprocessedData);
+      } catch (error) {
+        console.warn('Melody separation failed:', error);
+      }
       
-      // Stage 7: Finalize
+      // Stage 7: Finalize - ensure we have at least some stems
       onProgress?.(95, 'Finalizing stems...');
       const stems = [vocalStem, ...drumStems, bassStem, melodyStem].filter(Boolean) as AudioStem[];
+      
+      // If no stems were created, throw error
+      if (stems.length === 0) {
+        throw new Error('Failed to separate any stems from the audio');
+      }
       
       onProgress?.(100, 'Complete!');
       
@@ -91,15 +135,41 @@ export class AudioSeparationEngine {
         processingTime
       };
       
+    } catch (error) {
+      console.error('Audio separation failed:', error);
+      throw error; // Re-throw to let caller handle
     } finally {
       this.isProcessing = false;
     }
   }
 
   private async loadAudioFile(file: File): Promise<AudioBuffer> {
-    const arrayBuffer = await file.arrayBuffer();
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    return await audioContext.decodeAudioData(arrayBuffer);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+        throw new Error('Empty file');
+      }
+      
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume context if suspended
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
+      
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      
+      if (!audioBuffer || audioBuffer.length === 0) {
+        throw new Error('Failed to decode audio');
+      }
+      
+      return audioBuffer;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'EncodingError') {
+        throw new Error('Unsupported audio format. Please use WAV, MP3, or OGG format.');
+      }
+      throw error;
+    }
   }
 
   private async preprocessAudio(audioBuffer: AudioBuffer): Promise<Float32Array> {

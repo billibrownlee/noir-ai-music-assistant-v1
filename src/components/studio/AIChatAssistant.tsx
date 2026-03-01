@@ -104,7 +104,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { playTrack } = useGlobalAudio();
+  const { currentTrack, currentTime, duration, isPlaying, playTrack, seekTo, getReversedAudio, preloadReversedAudio } = useGlobalAudio();
   const audioProcessor = useRef(new AudioProcessor());
 
   const voices = [
@@ -120,43 +120,87 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
 
   // Direct audio effects using the new AudioEffectsProcessor
   const applyAudioEffect = async (sample: any, effect: string) => {
-    if (!sample?.audioUrl) {
+    // Get audioUrl from sample (either direct or from file)
+    let audioUrl = sample?.audioUrl;
+    
+    // If no audioUrl but we have a file, create object URL
+    if (!audioUrl && sample?.file) {
+      audioUrl = URL.createObjectURL(sample.file);
+    }
+    
+    if (!audioUrl) {
       toast({
-        title: "No Audio URL",
-        description: "Cannot process audio without a valid URL",
+        title: "No Audio Available",
+        description: "Cannot process audio without a valid file or URL",
         variant: "destructive"
       });
       return;
     }
 
+    // Check if this sample is currently playing and capture playback state for real-time processing
+    const wasPlaying = currentTrack?.id === sample.id && isPlaying;
+    const currentPlaybackTime = wasPlaying ? currentTime : 0;
+    const originalDuration = wasPlaying ? duration : 0;
+    
+    console.log('🎵 Real-time audio processing:', {
+      wasPlaying,
+      currentTrack: currentTrack?.id,
+      sampleId: sample.id,
+      currentPosition: currentPlaybackTime,
+      duration: originalDuration,
+      effect
+    });
+
     setIsProcessingAudio(true);
-    addAssistantMessage(`🔄 Processing: ${effect}...`);
+    if (wasPlaying) {
+      addAssistantMessage(`🔄 Real-time processing: ${effect} while playing...\n\nProcessing audio at position ${Math.floor(currentPlaybackTime)}s. Playback will continue seamlessly!`);
+    } else {
+      addAssistantMessage(`🔄 Processing: ${effect}...`);
+    }
 
     try {
       let result;
       
+      // Use the audioUrl variable (not sample.audioUrl) to ensure we use the correct URL
       switch (effect) {
         case AUDIO_EFFECTS.REVERSE:
-          result = await audioEffects.reverseAudio(sample.audioUrl);
+          // INSTANT REVERSAL: Try to get cached reversed audio first
+          if (wasPlaying) {
+            console.log('⚡ Attempting instant reversal from cache...');
+            const cachedReversed = await getReversedAudio(audioUrl);
+            if (cachedReversed) {
+              console.log('✅ Using cached reversed audio - INSTANT!');
+              result = cachedReversed;
+            } else {
+              console.log('⚠️ Cache miss, processing now (may take a moment)...');
+              result = await audioEffects.reverseAudio(audioUrl);
+            }
+          } else {
+            // For non-playing audio, use normal processing
+            result = await audioEffects.reverseAudio(audioUrl);
+          }
           break;
         case AUDIO_EFFECTS.SPEED_UP:
-          result = await audioEffects.changeSpeed(sample.audioUrl, 2.0);
+          result = await audioEffects.changeSpeed(audioUrl, 2.0);
           break;
         case AUDIO_EFFECTS.SLOW_DOWN:
-          result = await audioEffects.changeSpeed(sample.audioUrl, 0.5);
+          result = await audioEffects.changeSpeed(audioUrl, 0.5);
           break;
         case AUDIO_EFFECTS.ECHO:
-          result = await audioEffects.addEcho(sample.audioUrl);
+          result = await audioEffects.addEcho(audioUrl);
           break;
         case AUDIO_EFFECTS.PITCH_UP:
-          result = await audioEffects.changePitch(sample.audioUrl, 1.5);
+          result = await audioEffects.changePitch(audioUrl, 1.5);
           break;
         case AUDIO_EFFECTS.PITCH_DOWN:
-          result = await audioEffects.changePitch(sample.audioUrl, 0.75);
+          result = await audioEffects.changePitch(audioUrl, 0.75);
           break;
         default:
           throw new Error(`Unknown effect: ${effect}`);
       }
+
+      console.log('✅ Audio effect applied, new URL:', result.audioUrl);
+      console.log('📝 Updating sample:', sample.id, 'with new audioUrl');
 
       // Update the sample with the new audio
       const updates = {
@@ -173,22 +217,103 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         ]
       };
 
-      onUpdateSample?.(sample.id, updates);
+      // Update the sample in the parent component
+      if (onUpdateSample) {
+        console.log('🔄 Calling onUpdateSample with:', sample.id, updates);
+        onUpdateSample(sample.id, updates);
+        console.log('✅ Sample update callback completed');
+      } else {
+        console.warn('⚠️ onUpdateSample callback not provided');
+      }
       
-      addAssistantMessage(`✅ **${effect.toUpperCase()} Applied!**\n\nYour audio has been processed and updated. You can play it now to hear the effect!`);
+      // If audio was playing, automatically start playing the processed version at equivalent position
+      if (wasPlaying) {
+        console.log('🔄 Real-time processing: Audio was playing, switching to processed version...');
+        
+        // For reverse effect, calculate equivalent position in reversed audio
+        let seekPosition = 0;
+        if (effect === AUDIO_EFFECTS.REVERSE && originalDuration > 0 && currentPlaybackTime > 0) {
+          // If we're at 30s in a 60s track, in reversed we want to be at 30s from the end
+          // Reversed audio plays backwards, so position = duration - currentPosition
+          seekPosition = Math.max(0, originalDuration - currentPlaybackTime);
+          console.log('🔄 Reverse calculation:', {
+            originalPosition: currentPlaybackTime,
+            duration: originalDuration,
+            reversedPosition: seekPosition
+          });
+        } else if (originalDuration > 0 && currentPlaybackTime > 0) {
+          // For other effects, try to maintain relative position
+          seekPosition = currentPlaybackTime;
+        }
+        
+        // Small delay to ensure state is updated
+        setTimeout(async () => {
+          try {
+            // Play the processed track
+            await playTrack({
+              id: sample.id,
+              name: updates.name,
+              audioUrl: result.audioUrl
+            });
+            
+            // Seek to equivalent position if we have one
+            if (seekPosition > 0 && originalDuration > 0) {
+              // Wait for audio metadata to load, then seek
+              // Try multiple times with increasing delays to ensure audio is ready
+              const attemptSeek = (attempt: number = 0) => {
+                if (attempt > 5) {
+                  console.warn('Could not seek after multiple attempts');
+                  return;
+                }
+                
+                setTimeout(() => {
+                  try {
+                    seekTo(seekPosition);
+                    console.log('✅ Real-time reversal: Playing at position', seekPosition, 'seconds');
+                  } catch (seekError) {
+                    console.warn('Seek attempt', attempt + 1, 'failed, retrying...', seekError);
+                    if (attempt < 4) {
+                      attemptSeek(attempt + 1);
+                    }
+                  }
+                }, 100 * (attempt + 1));
+              };
+              
+              attemptSeek();
+            } else {
+              console.log('✅ Processed audio now playing from start');
+            }
+          } catch (playError) {
+            console.error('❌ Failed to auto-play processed audio:', playError);
+          }
+        }, 100);
+      }
+      
+      if (wasPlaying && effect === AUDIO_EFFECTS.REVERSE) {
+        addAssistantMessage(`✅ **REVERSE Applied in Real-Time!**\n\nAudio reversed and continuing playback from equivalent position. The audio is now playing backwards!`);
+      } else if (wasPlaying) {
+        addAssistantMessage(`✅ **${effect.toUpperCase()} Applied!**\n\nYour audio has been processed and is now playing with the effect!`);
+      } else {
+        addAssistantMessage(`✅ **${effect.toUpperCase()} Applied!**\n\nYour audio has been processed. You can play it to hear the effect!`);
+      }
       
       toast({
         title: "🎛️ Effect Applied!",
-        description: `Successfully applied ${effect} to your audio`,
+        description: wasPlaying 
+          ? effect === AUDIO_EFFECTS.REVERSE
+            ? `Audio reversed in real-time! Now playing backwards from equivalent position.`
+            : `${effect} applied! Audio is now playing with the effect.`
+          : `Successfully applied ${effect} to your audio. Click play to hear it!`,
       });
 
-    } catch (error) {
-      console.error('Audio effect error:', error);
-      addAssistantMessage(`❌ **Effect Failed**\n\nError applying ${effect}: ${error.message}`);
+    } catch (error: any) {
+      console.error('❌ Audio effect error:', error);
+      const errorMessage = error?.message || 'Unknown error occurred';
+      addAssistantMessage(`❌ **Effect Failed**\n\nError applying ${effect}: ${errorMessage}`);
       
       toast({
         title: "Effect Failed",
-        description: error.message || "Failed to apply audio effect",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -309,6 +434,31 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     return creativeSuggestions[Math.floor(Math.random() * creativeSuggestions.length)];
   };
 
+  // Helper function to get audio file from sample (either from file object or audioUrl)
+  const getAudioFileFromSample = async (sample: any): Promise<File | null> => {
+    // If we have the original file, use it
+    if (sample.file) {
+      return sample.file;
+    }
+    
+    // If we have audioUrl, fetch it and convert to File
+    if (sample.audioUrl) {
+      try {
+        const response = await fetch(sample.audioUrl);
+        const blob = await response.blob();
+        const fileName = sample.name || 'audio_sample';
+        const fileExtension = sample.audioUrl.includes('.mp3') ? 'mp3' : 
+                             sample.audioUrl.includes('.wav') ? 'wav' : 'audio';
+        return new File([blob], `${fileName}.${fileExtension}`, { type: blob.type || 'audio/mpeg' });
+      } catch (error) {
+        console.error('Failed to fetch audio from URL:', error);
+        return null;
+      }
+    }
+    
+    return null;
+  };
+
   // Handle audio processing commands with expanded capabilities
   const handleAudioProcessingCommand = async (msg: string): Promise<boolean> => {
     if (uploadedSamples.length === 0) {
@@ -322,8 +472,9 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     }
 
     const latestSample = uploadedSamples[uploadedSamples.length - 1];
-    if (!latestSample || !latestSample.file) {
-      return false;
+    if (!latestSample || (!latestSample.file && !latestSample.audioUrl)) {
+      addAssistantMessage("❌ No audio file available for processing. Please ensure your sample has been uploaded successfully.");
+      return true;
     }
 
     // Check if this is a processed sample and inform user
@@ -337,18 +488,25 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     let processingDescription = "";
 
     try {
-      // Check for direct audio effects using the new processor
-      if (msg.includes('reverse')) {
-        const latestSample = uploadedSamples[uploadedSamples.length - 1];
+      // Get the audio file (from file object or fetch from URL)
+      const audioFile = await getAudioFileFromSample(latestSample);
+      if (!audioFile) {
+        addAssistantMessage("❌ Could not access audio file for processing. Please try re-uploading the file.");
+        setIsProcessing(false);
+        return true;
+      }
+
+      // Check for direct audio effects using the new processor (works with audioUrl)
+      if (msg.includes('reverse') && latestSample.audioUrl) {
         await applyAudioEffect(latestSample, AUDIO_EFFECTS.REVERSE);
         return true;
       }
       
-      // Use existing audioProcessor for other effects (legacy compatibility)
+      // Use existing audioProcessor for other effects (requires File object)
       if (msg.includes('reverse')) {
         processingDescription = "Reversing your audio";
         addAssistantMessage(`🔄 ${processingDescription}...`);
-        result = await audioProcessor.current.reverseAudio(latestSample.file);
+        result = await audioProcessor.current.reverseAudio(audioFile);
       }
       
       // Speed/Tempo change with more granular control
@@ -377,14 +535,14 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         const tempoDesc = speedFactor < 1 ? `slowing to ${speedFactor.toFixed(2)}x speed` : `speeding up to ${speedFactor.toFixed(2)}x speed`;
         processingDescription = `Changing tempo: ${tempoDesc}`;
         addAssistantMessage(`🎛️ ${processingDescription}...`);
-        result = await audioProcessor.current.changeSpeed(latestSample.file, speedFactor);
+        result = await audioProcessor.current.changeSpeed(audioFile, speedFactor);
       }
       
       // Normalize with different levels
       else if (msg.includes('normalize') || msg.includes('loud')) {
         processingDescription = "Normalizing volume levels";
         addAssistantMessage(`📈 ${processingDescription}...`);
-        result = await audioProcessor.current.normalizeAudio(latestSample.file);
+        result = await audioProcessor.current.normalizeAudio(audioFile);
       }
       
       // Add distortion with better control
@@ -412,7 +570,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         
         processingDescription = `Adding ${Math.round(amount * 100)}% distortion/saturation`;
         addAssistantMessage(`🎸 ${processingDescription}...`);
-        result = await audioProcessor.current.addDistortion(latestSample.file, amount);
+        result = await audioProcessor.current.addDistortion(audioFile, amount);
       }
       
       // Fade in/out with better control
@@ -441,7 +599,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         
         processingDescription = `Applying fade effects (in: ${fadeIn}s, out: ${fadeOut}s)`;
         addAssistantMessage(`🎚️ ${processingDescription}...`);
-        result = await audioProcessor.current.applyFade(latestSample.file, fadeIn, fadeOut);
+        result = await audioProcessor.current.applyFade(audioFile, fadeIn, fadeOut);
       }
 
       // Pitch shift (separate from speed change)
@@ -462,7 +620,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         
         processingDescription = `Shifting pitch ${msg.includes('down') ? 'down' : 'up'}`;
         addAssistantMessage(`🎵 ${processingDescription}...`);
-        result = await audioProcessor.current.changeSpeed(latestSample.file, pitchFactor);
+        result = await audioProcessor.current.changeSpeed(audioFile, pitchFactor);
       }
 
       // Enhanced chaining commands
@@ -488,17 +646,22 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
           }
 
           // Create enhanced processing history with only the updates needed
+          const cleanName = latestSample.name
+            .replace(' (Processed)', '')
+            .replace(/\s*\(\d+\s*BPM\)/, '')
+            .trim();
+          
           const updates = {
             audioUrl: result.processedAudioUrl,
-            name: `${latestSample.name.replace(' (Processed)', '').replace(/\s*\(\d+\s*BPM\)/, '')} (Processed)`,
-            tags: [...(latestSample.tags || []), 'processed'],
+            name: `${cleanName} (${processingDescription})`,
+            tags: [...new Set([...(latestSample.tags || []), 'processed', effect.toLowerCase()])],
             processHistory: [
               ...(latestSample.processHistory || []),
               {
                 effect: processingDescription,
                 timestamp: new Date(),
                 processingTime: result.processingTime,
-                parameters: { /* could store effect parameters here */ }
+                parameters: { effect }
               }
             ]
           };
@@ -506,12 +669,17 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
           console.log('🎵 AI Chat: Updating sample with processed audio:', {
             sampleId: latestSample.id,
             effect: processingDescription,
-            oldUrl: latestSample.audioUrl?.substring(0, 50),
+            oldUrl: latestSample.audioUrl?.substring(0, 50) || 'N/A',
             newUrl: result.processedAudioUrl?.substring(0, 50),
-            urlValid: !!result.processedAudioUrl
+            urlValid: !!result.processedAudioUrl,
+            updates
           });
           
+          // Update the sample - this will update it in the library
           onUpdateSample?.(latestSample.id, updates);
+          
+          // Also update local state if needed
+          setMessages(prev => [...prev]);
           
           const historyText = updates.processHistory?.length > 1 
             ? `\n📜 **Processing History**: ${updates.processHistory.map(h => h.effect).join(' → ')}`
@@ -920,8 +1088,18 @@ Be conversational, helpful, and provide specific production advice. You can use 
               variant="outline" 
               size="sm" 
               onClick={async () => {
-                const latestSample = uploadedSamples[uploadedSamples.length - 1];
-                if (latestSample) await applyAudioEffect(latestSample, AUDIO_EFFECTS.REVERSE);
+                // Try to get the currently playing sample first, otherwise use the latest
+                const currentSample = uploadedSamples.find(s => s.id === currentTrack?.id) || uploadedSamples[uploadedSamples.length - 1];
+                if (currentSample) {
+                  console.log('🔄 Reversing sample:', currentSample.name);
+                  await applyAudioEffect(currentSample, AUDIO_EFFECTS.REVERSE);
+                } else {
+                  toast({
+                    title: "No Audio Available",
+                    description: "Please upload an audio file first",
+                    variant: "destructive"
+                  });
+                }
               }}
               disabled={uploadedSamples.length === 0 || isProcessingAudio}
               className="text-xs"

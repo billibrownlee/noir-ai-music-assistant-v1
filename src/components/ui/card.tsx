@@ -12,6 +12,10 @@ const Card = React.forwardRef<
       "rounded-lg border bg-card text-card-foreground shadow-sm",
       className
     )}
+    style={{
+      backgroundColor: className?.includes('bg-') ? undefined : 'hsl(var(--card))',
+      ...props.style
+    }}
     {...props}
   />
 ))

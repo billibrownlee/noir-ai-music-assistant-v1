@@ -1,52 +1,148 @@
 export class AudioEffectsProcessor {
-  private audioContext: AudioContext;
+  private audioContext: AudioContext | null = null;
+  private isProcessing: boolean = false;
 
   constructor() {
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Don't create AudioContext immediately - wait for user interaction
   }
 
-  // Reverse audio effect
+  // Initialize AudioContext safely (required for user interaction)
+  private async initAudioContext(): Promise<AudioContext> {
+    try {
+      if (!this.audioContext) {
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+        if (!AudioContextClass) {
+          throw new Error('Web Audio API not supported in this browser');
+        }
+        this.audioContext = new AudioContextClass();
+      }
+      
+      // Resume context if suspended (required by some browsers)
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+        console.log('✅ AudioContext resumed');
+      }
+      
+      return this.audioContext;
+    } catch (error) {
+      console.error('Error initializing AudioContext:', error);
+      throw new Error(`Failed to initialize audio context: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  // Reverse audio effect - SAFE VERSION with proper error handling
   async reverseAudio(audioUrl: string): Promise<{ audioUrl: string; audioBlob: Blob }> {
     try {
+      // Validate input
+      if (!audioUrl || audioUrl.trim() === '') {
+        throw new Error('No audio URL provided');
+      }
+
+      // Validate URL format
+      try {
+        new URL(audioUrl);
+      } catch (urlError) {
+        throw new Error('Invalid audio URL format');
+      }
+
+      // Prevent concurrent processing
+      if (this.isProcessing) {
+        throw new Error('Audio processing already in progress. Please wait for the current operation to complete.');
+      }
+
+      this.isProcessing = true;
       console.log('🔄 Starting audio reversal process...');
       
-      // Fetch the audio file
-      const response = await fetch(audioUrl);
-      const arrayBuffer = await response.arrayBuffer();
+      // Initialize AudioContext (required for user interaction)
+      const audioContext = await this.initAudioContext();
       
-      // Decode audio data
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-      console.log('✅ Audio decoded:', audioBuffer.duration, 'seconds');
+      // Fetch the audio file with error handling
+      let response: Response;
+      try {
+        response = await fetch(audioUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch audio: ${response.status} ${response.statusText}`);
+        }
+      } catch (fetchError) {
+        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Failed to fetch audio file'}`);
+      }
+
+      let arrayBuffer: ArrayBuffer;
+      try {
+        arrayBuffer = await response.arrayBuffer();
+        if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+          throw new Error('Audio file is empty');
+        }
+      } catch (bufferError) {
+        throw new Error(`Failed to read audio data: ${bufferError instanceof Error ? bufferError.message : 'Unknown error'}`);
+      }
+      
+      // Decode audio data with error handling
+      let audioBuffer: AudioBuffer;
+      try {
+        audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        if (!audioBuffer) {
+          throw new Error('Failed to decode audio file');
+        }
+        console.log('✅ Audio decoded:', audioBuffer.duration, 'seconds,', audioBuffer.numberOfChannels, 'channels');
+      } catch (decodeError) {
+        if (decodeError instanceof DOMException && decodeError.name === 'EncodingError') {
+          throw new Error('Unsupported audio format. Please use WAV, MP3, or OGG format.');
+        }
+        throw new Error(`Failed to decode audio: ${decodeError instanceof Error ? decodeError.message : 'Unknown decoding error'}`);
+      }
       
       // Create new buffer for reversed audio
-      const reversedBuffer = this.audioContext.createBuffer(
-        audioBuffer.numberOfChannels,
-        audioBuffer.length,
-        audioBuffer.sampleRate
-      );
+      let reversedBuffer: AudioBuffer;
+      try {
+        reversedBuffer = audioContext.createBuffer(
+          audioBuffer.numberOfChannels,
+          audioBuffer.length,
+          audioBuffer.sampleRate
+        );
+      } catch (bufferError) {
+        throw new Error(`Failed to create audio buffer: ${bufferError instanceof Error ? bufferError.message : 'Unknown error'}`);
+      }
       
-      // Reverse each channel
-      for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-        const originalData = audioBuffer.getChannelData(channel);
-        const reversedData = reversedBuffer.getChannelData(channel);
-        
-        // Copy data in reverse order
-        for (let i = 0; i < originalData.length; i++) {
-          reversedData[i] = originalData[originalData.length - 1 - i];
+      // Reverse each channel with progress tracking for large files
+      try {
+        for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+          const originalData = audioBuffer.getChannelData(channel);
+          const reversedData = reversedBuffer.getChannelData(channel);
+          
+          // Copy data in reverse order
+          // For very large files, this might take a moment
+          for (let i = 0; i < originalData.length; i++) {
+            reversedData[i] = originalData[originalData.length - 1 - i];
+          }
         }
+      } catch (processingError) {
+        throw new Error(`Failed to reverse audio data: ${processingError instanceof Error ? processingError.message : 'Unknown error'}`);
       }
       
       console.log('✅ Audio reversed successfully');
       
-      // Convert back to audio blob
-      const wavBlob = await this.audioBufferToWav(reversedBuffer);
-      const reversedUrl = URL.createObjectURL(wavBlob);
+      // Convert back to audio blob with error handling
+      let wavBlob: Blob;
+      let reversedUrl: string;
+      try {
+        wavBlob = await this.audioBufferToWav(reversedBuffer);
+        if (!wavBlob || wavBlob.size === 0) {
+          throw new Error('Generated audio blob is empty');
+        }
+        reversedUrl = URL.createObjectURL(wavBlob);
+      } catch (blobError) {
+        throw new Error(`Failed to create audio file: ${blobError instanceof Error ? blobError.message : 'Unknown error'}`);
+      }
       
+      this.isProcessing = false;
       return { audioUrl: reversedUrl, audioBlob: wavBlob };
       
     } catch (error) {
+      this.isProcessing = false;
       console.error('❌ Error reversing audio:', error);
-      throw new Error(`Failed to reverse audio: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`Failed to reverse audio: ${errorMessage}`);
     }
   }
 
@@ -55,13 +151,16 @@ export class AudioEffectsProcessor {
     try {
       console.log('⚡ Changing audio speed by factor:', speedFactor);
       
+      // Initialize AudioContext
+      const audioContext = await this.initAudioContext();
+      
       const response = await fetch(audioUrl);
       const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       
       // Calculate new buffer length
       const newLength = Math.floor(audioBuffer.length / speedFactor);
-      const newBuffer = this.audioContext.createBuffer(
+      const newBuffer = audioContext.createBuffer(
         audioBuffer.numberOfChannels,
         newLength,
         audioBuffer.sampleRate
@@ -88,7 +187,7 @@ export class AudioEffectsProcessor {
       
     } catch (error) {
       console.error('❌ Error changing speed:', error);
-      throw new Error(`Failed to change speed: ${error.message}`);
+      throw new Error(`Failed to change speed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -97,14 +196,17 @@ export class AudioEffectsProcessor {
     try {
       console.log('🔊 Adding echo effect...');
       
+      // Initialize AudioContext
+      const audioContext = await this.initAudioContext();
+      
       const response = await fetch(audioUrl);
       const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       
       const delayInSamples = Math.floor(delay * audioBuffer.sampleRate);
       const newLength = audioBuffer.length + delayInSamples;
       
-      const newBuffer = this.audioContext.createBuffer(
+      const newBuffer = audioContext.createBuffer(
         audioBuffer.numberOfChannels,
         newLength,
         audioBuffer.sampleRate
@@ -136,7 +238,7 @@ export class AudioEffectsProcessor {
       
     } catch (error) {
       console.error('❌ Error adding echo:', error);
-      throw new Error(`Failed to add echo: ${error.message}`);
+      throw new Error(`Failed to add echo: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -145,13 +247,16 @@ export class AudioEffectsProcessor {
     try {
       console.log('🎵 Changing pitch by factor:', pitchFactor);
       
+      // Initialize AudioContext
+      const audioContext = await this.initAudioContext();
+      
       const response = await fetch(audioUrl);
       const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       
       // Simple pitch shifting by resampling (affects speed too)
       const newSampleRate = Math.floor(audioBuffer.sampleRate * pitchFactor);
-      const newBuffer = this.audioContext.createBuffer(
+      const newBuffer = audioContext.createBuffer(
         audioBuffer.numberOfChannels,
         audioBuffer.length,
         newSampleRate
@@ -174,7 +279,7 @@ export class AudioEffectsProcessor {
       
     } catch (error) {
       console.error('❌ Error changing pitch:', error);
-      throw new Error(`Failed to change pitch: ${error.message}`);
+      throw new Error(`Failed to change pitch: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

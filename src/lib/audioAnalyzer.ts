@@ -16,44 +16,162 @@ export interface AudioAnalysis {
 }
 
 export class AudioAnalyzer {
-  private audioContext: AudioContext;
-  private analyzer: AnalyserNode;
+  private audioContext: AudioContext | null = null;
+  private analyzer: AnalyserNode | null = null;
+  private readonly MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB limit for analysis
+  private readonly MAX_DURATION = 600; // 10 minutes max
+  private readonly ANALYSIS_TIMEOUT = 30000; // 30 seconds timeout
 
   constructor() {
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    this.analyzer = this.audioContext.createAnalyser();
-    this.analyzer.fftSize = 2048;
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        this.audioContext = new AudioContextClass();
+        this.analyzer = this.audioContext.createAnalyser();
+        this.analyzer.fftSize = 2048;
+      }
+    } catch (error) {
+      console.warn('AudioContext initialization failed:', error);
+    }
   }
 
   async analyzeAudioFile(file: File): Promise<AudioAnalysis> {
+    // Safety check: Skip analysis for very large files
+    if (file.size > this.MAX_FILE_SIZE) {
+      console.log('⚠️ File too large for analysis, using defaults');
+      return this.getDefaultAnalysis();
+    }
+
+    // Add timeout protection
+    const timeoutPromise = new Promise<AudioAnalysis>((_, reject) => {
+      setTimeout(() => reject(new Error('Analysis timeout')), this.ANALYSIS_TIMEOUT);
+    });
+
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      const analysisPromise = this.performAnalysis(file);
+      return await Promise.race([analysisPromise, timeoutPromise]);
+    } catch (error) {
+      console.error('Audio analysis failed:', error);
+      // Return default analysis instead of crashing
+      return this.getDefaultAnalysis();
+    }
+  }
+
+  private async performAnalysis(file: File): Promise<AudioAnalysis> {
+    if (!this.audioContext) {
+      throw new Error('AudioContext not available');
+    }
+
+    try {
+      // Resume context if suspended
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+    } catch (error) {
+      console.warn('Failed to resume AudioContext:', error);
+    }
+
+    let arrayBuffer: ArrayBuffer;
+    try {
+      arrayBuffer = await file.arrayBuffer();
+      if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+        throw new Error('Empty file');
+      }
+    } catch (error) {
+      console.error('Failed to read file:', error);
+      return this.getDefaultAnalysis();
+    }
+
+    let audioBuffer: AudioBuffer;
+    try {
+      audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
       
-      // Extract audio features
+      // Check duration
+      if (audioBuffer.duration > this.MAX_DURATION) {
+        console.log('⚠️ File too long, using first 10 minutes');
+        // Truncate to first 10 minutes
+        const maxSamples = Math.floor(this.MAX_DURATION * audioBuffer.sampleRate);
+        const truncatedBuffer = this.audioContext.createBuffer(
+          audioBuffer.numberOfChannels,
+          Math.min(audioBuffer.length, maxSamples),
+          audioBuffer.sampleRate
+        );
+        for (let i = 0; i < truncatedBuffer.numberOfChannels; i++) {
+          truncatedBuffer.getChannelData(i).set(
+            audioBuffer.getChannelData(i).slice(0, truncatedBuffer.length)
+          );
+        }
+        audioBuffer = truncatedBuffer;
+      }
+    } catch (error) {
+      console.error('Failed to decode audio:', error);
+      return this.getDefaultAnalysis();
+    }
+    
+    try {
+      // Extract audio features with error handling
       const channelData = audioBuffer.getChannelData(0);
       const sampleRate = audioBuffer.sampleRate;
       
-      // Basic tempo detection using autocorrelation
-      const tempo = this.detectTempo(channelData, sampleRate);
+      // Limit data size for processing to prevent crashes
+      const maxSamples = 44100 * 60; // Max 1 minute of samples
+      const processingData = channelData.length > maxSamples 
+        ? channelData.slice(0, maxSamples)
+        : channelData;
       
-      // Key detection using chroma features
-      const { key, mode } = this.detectKeyAndMode(channelData, sampleRate);
+      // Basic tempo detection with error handling
+      let tempo = 120;
+      try {
+        tempo = this.detectTempo(processingData, sampleRate);
+      } catch (error) {
+        console.warn('Tempo detection failed:', error);
+      }
       
-      // Energy and spectral features
-      const spectralFeatures = this.extractSpectralFeatures(channelData, sampleRate);
+      // Key detection with error handling
+      let key = 'C';
+      let mode: 'major' | 'minor' = 'major';
+      try {
+        const keyResult = this.detectKeyAndMode(processingData, sampleRate);
+        key = keyResult.key;
+        mode = keyResult.mode;
+      } catch (error) {
+        console.warn('Key detection failed:', error);
+      }
       
-      // Rhythm pattern analysis
-      const rhythmPattern = this.extractRhythmPattern(channelData, sampleRate, tempo);
+      // Energy and spectral features with error handling
+      let spectralFeatures = {
+        centroid: 1000,
+        rolloff: 5000,
+        zcr: 0.1,
+        mfcc: new Array(13).fill(0)
+      };
+      try {
+        spectralFeatures = this.extractSpectralFeatures(processingData, sampleRate);
+      } catch (error) {
+        console.warn('Spectral features extraction failed:', error);
+      }
       
-      // Harmonic content analysis
-      const harmonicContent = this.extractHarmonicContent(channelData, sampleRate);
+      // Rhythm pattern with error handling
+      let rhythmPattern: number[] = new Array(16).fill(0.5);
+      try {
+        rhythmPattern = this.extractRhythmPattern(processingData, sampleRate, tempo);
+      } catch (error) {
+        console.warn('Rhythm pattern extraction failed:', error);
+      }
+      
+      // Harmonic content with error handling
+      let harmonicContent: number[] = new Array(8).fill(0);
+      try {
+        harmonicContent = this.extractHarmonicContent(processingData, sampleRate);
+      } catch (error) {
+        console.warn('Harmonic content extraction failed:', error);
+      }
       
       return {
         tempo,
         key,
         mode,
-        energy: this.calculateEnergy(channelData),
+        energy: this.calculateEnergy(processingData),
         valence: this.calculateValence(spectralFeatures),
         danceability: this.calculateDanceability(tempo, rhythmPattern),
         spectralFeatures,
@@ -61,38 +179,87 @@ export class AudioAnalyzer {
         harmonicContent
       };
     } catch (error) {
-      console.error('Audio analysis failed:', error);
-      throw new Error('Failed to analyze audio file');
+      console.error('Feature extraction failed:', error);
+      return this.getDefaultAnalysis();
     }
   }
 
+  private getDefaultAnalysis(): AudioAnalysis {
+    return {
+      tempo: 120,
+      key: 'C',
+      mode: 'major',
+      energy: 0.5,
+      valence: 0.5,
+      danceability: 0.5,
+      spectralFeatures: {
+        centroid: 1000,
+        rolloff: 5000,
+        zcr: 0.1,
+        mfcc: new Array(13).fill(0)
+      },
+      rhythmPattern: new Array(16).fill(0.5),
+      harmonicContent: new Array(8).fill(0)
+    };
+  }
+
   private detectTempo(data: Float32Array, sampleRate: number): number {
-    // Simplified tempo detection using onset detection
-    const hopSize = 512;
-    const frameSize = 1024;
-    const onsets: number[] = [];
-    
-    for (let i = 0; i < data.length - frameSize; i += hopSize) {
-      const frame = data.slice(i, i + frameSize);
-      const energy = frame.reduce((sum, sample) => sum + sample * sample, 0);
+    try {
+      // Simplified tempo detection using onset detection
+      const hopSize = 512;
+      const frameSize = 1024;
+      const onsets: number[] = [];
       
-      if (i > 0 && energy > onsets[onsets.length - 1] * 1.3) {
-        onsets.push(i / sampleRate);
+      // Limit processing to prevent crashes
+      const maxFrames = Math.min(data.length - frameSize, 10000 * hopSize);
+      
+      for (let i = 0; i < maxFrames; i += hopSize) {
+        try {
+          const frame = data.slice(i, i + frameSize);
+          if (frame.length < frameSize) break;
+          
+          const energy = frame.reduce((sum, sample) => {
+            const val = isNaN(sample) ? 0 : sample;
+            return sum + val * val;
+          }, 0);
+          
+          if (i > 0 && onsets.length > 0 && energy > onsets[onsets.length - 1] * 1.3) {
+            onsets.push(i / sampleRate);
+          }
+        } catch (error) {
+          console.warn('Tempo detection frame error:', error);
+          break;
+        }
       }
+      
+      // Calculate intervals between onsets
+      const intervals: number[] = [];
+      for (let i = 1; i < onsets.length; i++) {
+        intervals.push(onsets[i] - onsets[i - 1]);
+      }
+      
+      // Find most common interval (approximate beat)
+      if (intervals.length === 0) {
+        return 120; // Default tempo
+      }
+      
+      const avgInterval = intervals.reduce((sum, interval) => {
+        const val = isNaN(interval) ? 0 : interval;
+        return sum + val;
+      }, 0) / intervals.length;
+      
+      if (avgInterval <= 0 || !isFinite(avgInterval)) {
+        return 120; // Default tempo
+      }
+      
+      const bpm = Math.round(60 / avgInterval);
+      
+      // Clamp to reasonable range
+      return Math.max(60, Math.min(200, bpm));
+    } catch (error) {
+      console.warn('Tempo detection failed:', error);
+      return 120; // Safe default
     }
-    
-    // Calculate intervals between onsets
-    const intervals: number[] = [];
-    for (let i = 1; i < onsets.length; i++) {
-      intervals.push(onsets[i] - onsets[i - 1]);
-    }
-    
-    // Find most common interval (approximate beat)
-    const avgInterval = intervals.reduce((sum, interval) => sum + interval, 0) / intervals.length;
-    const bpm = Math.round(60 / avgInterval);
-    
-    // Clamp to reasonable range
-    return Math.max(60, Math.min(200, bpm));
   }
 
   private detectKeyAndMode(data: Float32Array, sampleRate: number): { key: string, mode: 'major' | 'minor' } {
@@ -204,20 +371,62 @@ export class AudioAnalyzer {
   }
 
   private extractRhythmPattern(data: Float32Array, sampleRate: number, tempo: number): number[] {
-    const beatLength = (60 / tempo) * sampleRate;
-    const pattern: number[] = [];
-    
-    for (let i = 0; i < Math.min(16, Math.floor(data.length / beatLength)); i++) {
-      const start = Math.floor(i * beatLength);
-      const end = Math.floor((i + 1) * beatLength);
-      const segment = data.slice(start, end);
-      const energy = segment.reduce((sum, sample) => sum + sample * sample, 0) / segment.length;
-      pattern.push(energy);
+    try {
+      if (!data || data.length === 0 || tempo <= 0 || !isFinite(tempo)) {
+        return new Array(16).fill(0.5);
+      }
+      
+      const beatLength = (60 / Math.max(60, Math.min(200, tempo))) * sampleRate;
+      if (!isFinite(beatLength) || beatLength <= 0) {
+        return new Array(16).fill(0.5);
+      }
+      
+      const pattern: number[] = [];
+      const maxBeats = Math.min(16, Math.floor(data.length / beatLength));
+      
+      for (let i = 0; i < maxBeats; i++) {
+        try {
+          const start = Math.floor(i * beatLength);
+          const end = Math.floor((i + 1) * beatLength);
+          
+          if (start >= data.length || end > data.length) break;
+          
+          const segment = data.slice(start, end);
+          if (segment.length === 0) {
+            pattern.push(0.5);
+            continue;
+          }
+          
+          const energy = segment.reduce((sum, sample) => {
+            const val = isNaN(sample) ? 0 : sample;
+            return sum + val * val;
+          }, 0) / segment.length;
+          
+          pattern.push(isFinite(energy) ? energy : 0.5);
+        } catch (error) {
+          pattern.push(0.5);
+        }
+      }
+      
+      // Ensure we have at least 16 values
+      while (pattern.length < 16) {
+        pattern.push(0.5);
+      }
+      
+      // Normalize safely
+      const maxEnergy = Math.max(...pattern.filter(v => isFinite(v)));
+      if (maxEnergy > 0 && isFinite(maxEnergy)) {
+        return pattern.map(energy => {
+          const normalized = energy / maxEnergy;
+          return isFinite(normalized) ? normalized : 0.5;
+        });
+      }
+      
+      return pattern;
+    } catch (error) {
+      console.warn('Rhythm pattern extraction failed:', error);
+      return new Array(16).fill(0.5);
     }
-    
-    // Normalize
-    const maxEnergy = Math.max(...pattern);
-    return pattern.map(energy => energy / maxEnergy);
   }
 
   private extractHarmonicContent(data: Float32Array, sampleRate: number): number[] {
@@ -242,8 +451,21 @@ export class AudioAnalyzer {
   }
 
   private calculateEnergy(data: Float32Array): number {
-    const energy = data.reduce((sum, sample) => sum + sample * sample, 0) / data.length;
-    return Math.min(1, Math.sqrt(energy) * 10); // Normalize to 0-1
+    try {
+      if (!data || data.length === 0) return 0.5;
+      
+      const energy = data.reduce((sum, sample) => {
+        const val = isNaN(sample) ? 0 : sample;
+        return sum + val * val;
+      }, 0) / data.length;
+      
+      if (!isFinite(energy) || energy <= 0) return 0.5;
+      
+      return Math.min(1, Math.max(0, Math.sqrt(energy) * 10)); // Normalize to 0-1
+    } catch (error) {
+      console.warn('Energy calculation failed:', error);
+      return 0.5; // Safe default
+    }
   }
 
   private calculateValence(spectralFeatures: any): number {
@@ -253,15 +475,33 @@ export class AudioAnalyzer {
   }
 
   private calculateDanceability(tempo: number, rhythmPattern: number[]): number {
-    // Calculate rhythm regularity
-    const avgEnergy = rhythmPattern.reduce((sum, energy) => sum + energy, 0) / rhythmPattern.length;
-    const variance = rhythmPattern.reduce((sum, energy) => sum + (energy - avgEnergy) ** 2, 0) / rhythmPattern.length;
-    const regularity = 1 / (1 + variance);
-    
-    // Optimal tempo range for danceability
-    const tempoScore = 1 - Math.abs(tempo - 120) / 120;
-    
-    return Math.min(1, (regularity + tempoScore) / 2);
+    try {
+      if (!rhythmPattern || rhythmPattern.length === 0) return 0.5;
+      
+      // Calculate rhythm regularity
+      const validPattern = rhythmPattern.filter(v => isFinite(v));
+      if (validPattern.length === 0) return 0.5;
+      
+      const avgEnergy = validPattern.reduce((sum, energy) => sum + energy, 0) / validPattern.length;
+      if (!isFinite(avgEnergy)) return 0.5;
+      
+      const variance = validPattern.reduce((sum, energy) => {
+        const diff = energy - avgEnergy;
+        return sum + (isFinite(diff) ? diff ** 2 : 0);
+      }, 0) / validPattern.length;
+      
+      const regularity = isFinite(variance) && variance > 0 ? 1 / (1 + variance) : 0.5;
+      
+      // Optimal tempo range for danceability
+      const validTempo = isFinite(tempo) ? Math.max(60, Math.min(200, tempo)) : 120;
+      const tempoScore = 1 - Math.abs(validTempo - 120) / 120;
+      
+      const result = (regularity + tempoScore) / 2;
+      return Math.min(1, Math.max(0, isFinite(result) ? result : 0.5));
+    } catch (error) {
+      console.warn('Danceability calculation failed:', error);
+      return 0.5;
+    }
   }
 
   private calculateMFCC(magnitudes: number[]): number[] {

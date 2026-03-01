@@ -101,32 +101,80 @@ export class AudioProcessor {
     return url;
   }
 
-  // Reverse audio
+  // Reverse audio - SAFE VERSION with proper multi-channel support
   async reverseAudio(file: File): Promise<AudioProcessingResult> {
     const startTime = Date.now();
     
     try {
+      // Validate file
+      if (!file) {
+        throw new Error('No file provided');
+      }
+
+      if (!file.type.startsWith('audio/')) {
+        throw new Error('File is not an audio file');
+      }
+
       console.log('🔄 Starting audio reversal...');
       
-      const buffer = await this.loadAudioFile(file);
-      const channelData = buffer.getChannelData(0);
-      
-      // Create reversed data
-      const reversedData = new Float32Array(channelData.length);
-      for (let i = 0; i < channelData.length; i++) {
-        reversedData[i] = channelData[channelData.length - 1 - i];
+      // Initialize AudioContext if needed
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
       }
+
+      // Load and decode audio with error handling
+      let buffer: AudioBuffer;
+      try {
+        buffer = await this.loadAudioFile(file);
+        if (!buffer) {
+          throw new Error('Failed to decode audio file');
+        }
+      } catch (loadError) {
+        if (loadError instanceof DOMException && loadError.name === 'EncodingError') {
+          throw new Error('Unsupported audio format. Please use WAV, MP3, or OGG format.');
+        }
+        throw new Error(`Failed to load audio: ${loadError instanceof Error ? loadError.message : 'Unknown error'}`);
+      }
+
+      // Handle multi-channel audio properly
+      // Create reversed buffer with same properties
+      const reversedBuffer = this.audioContext.createBuffer(
+        buffer.numberOfChannels,
+        buffer.length,
+        buffer.sampleRate
+      );
+
+      // Reverse each channel
+      for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+        const channelData = buffer.getChannelData(channel);
+        const reversedChannelData = reversedBuffer.getChannelData(channel);
+        
+        // Reverse the array
+        for (let i = 0; i < channelData.length; i++) {
+          reversedChannelData[i] = channelData[channelData.length - 1 - i];
+        }
+      }
+
+      // Use first channel for processedData (for compatibility)
+      const processedData = new Float32Array(reversedBuffer.getChannelData(0));
       
       // Convert back to buffer and create URL
-      const reversedBuffer = this.float32ArrayToBuffer(reversedData, buffer.sampleRate);
-      const processedAudioUrl = await this.bufferToBlobUrl(reversedBuffer);
+      let processedAudioUrl: string;
+      try {
+        processedAudioUrl = await this.bufferToBlobUrl(reversedBuffer);
+        if (!processedAudioUrl || processedAudioUrl.trim() === '') {
+          throw new Error('Failed to create audio URL');
+        }
+      } catch (urlError) {
+        throw new Error(`Failed to create audio file: ${urlError instanceof Error ? urlError.message : 'Unknown error'}`);
+      }
       
       console.log('✅ Audio reversed successfully');
       
       return {
         success: true,
         processedAudioUrl,
-        processedData: reversedData,
+        processedData,
         processingTime: Date.now() - startTime
       };
     } catch (error) {
