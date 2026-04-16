@@ -27,6 +27,7 @@ import { SeparatedAudio } from "@/lib/audioSeparation";
 import { AudioAnalysis } from "@/lib/audioAnalyzer";
 import { useGlobalAudio } from "@/hooks/useGlobalAudio";
 import { StudioTabErrorBoundary } from "@/components/StudioTabErrorBoundary";
+import { AudioEffectsQuickPanel } from "@/components/studio/AudioEffectsQuickPanel";
 
 interface Track {
   id: string;
@@ -262,23 +263,26 @@ const Index = () => {
               }}
               className="w-full space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-6 bg-card/50 backdrop-blur-sm">
-                <TabsTrigger value="upload" className="flex items-center gap-2">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-1 bg-card/50 backdrop-blur-sm p-1 rounded-md">
+                <TabsTrigger value="upload" className="flex items-center gap-1 text-xs sm:text-sm">
                   📤 Upload & Library
                 </TabsTrigger>
-                <TabsTrigger value="generate" className="flex items-center gap-2">
+                <TabsTrigger value="pitch-speed" className="flex items-center gap-1 text-xs sm:text-sm">
+                  🎚️ Pitch & Speed
+                </TabsTrigger>
+                <TabsTrigger value="generate" className="flex items-center gap-1 text-xs sm:text-sm">
                   🎵 Generate
                 </TabsTrigger>
-                <TabsTrigger value="record" className="flex items-center gap-2">
+                <TabsTrigger value="record" className="flex items-center gap-1 text-xs sm:text-sm">
                   🎙️ Record
                 </TabsTrigger>
-                <TabsTrigger value="mix" className="flex items-center gap-2">
+                <TabsTrigger value="mix" className="flex items-center gap-1 text-xs sm:text-sm">
                   🎛️ Mix
                 </TabsTrigger>
-                <TabsTrigger value="master" className="flex items-center gap-2">
+                <TabsTrigger value="master" className="flex items-center gap-1 text-xs sm:text-sm">
                   🎚️ Master
                 </TabsTrigger>
-                <TabsTrigger value="workflow" className="flex items-center gap-2">
+                <TabsTrigger value="workflow" className="flex items-center gap-1 text-xs sm:text-sm">
                   ⚡ Workflow
                 </TabsTrigger>
               </TabsList>
@@ -401,6 +405,41 @@ const Index = () => {
                     </Collapsible>
                   </div>
                 </div>
+                </StudioTabErrorBoundary>
+              </TabsContent>
+
+              {/* Pitch & Speed — isolated from chat / voice UI */}
+              <TabsContent
+                value="pitch-speed"
+                forceMount={visitedStudioTabs.has("pitch-speed")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Pitch & Speed">
+                  <Collapsible defaultOpen={true}>
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground"
+                      >
+                        <span className="font-medium text-lg text-foreground">
+                          🎚️ Pitch, tempo & reverse
+                        </span>
+                        <ChevronDown className="h-4 w-4 text-foreground" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2">
+                      <AudioEffectsQuickPanel
+                        uploadedSamples={uploadedSamples}
+                        onUpdateSample={(sampleId, updates) => {
+                          setUploadedSamples((prev) =>
+                            prev.map((sample) =>
+                              sample.id === sampleId ? { ...sample, ...updates } : sample
+                            )
+                          );
+                        }}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
                 </StudioTabErrorBoundary>
               </TabsContent>
 
