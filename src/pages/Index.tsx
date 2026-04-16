@@ -26,6 +26,7 @@ import { MusicGenerator } from "@/components/studio/MusicGenerator";
 import { SeparatedAudio } from "@/lib/audioSeparation";
 import { AudioAnalysis } from "@/lib/audioAnalyzer";
 import { useGlobalAudio } from "@/hooks/useGlobalAudio";
+import { StudioTabErrorBoundary } from "@/components/StudioTabErrorBoundary";
 
 interface Track {
   id: string;
@@ -49,6 +50,9 @@ const Index = () => {
   const [isSampleLibraryOpen, setIsSampleLibraryOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStemEditorOpen, setIsStemEditorOpen] = useState(false);
+  /** Keeps each studio tab mounted after first visit so audio/recording state is not torn down on switch. */
+  const [studioTab, setStudioTab] = useState("upload");
+  const [visitedStudioTabs, setVisitedStudioTabs] = useState(() => new Set<string>(["upload"]));
   const { playTrack, setAudioOutputDevice } = useGlobalAudio();
   
   // Authentication state
@@ -250,7 +254,14 @@ const Index = () => {
 
           {/* Main Content Area - Studio Interface with Tabs */}
           <div className="flex-1 space-y-6">
-            <Tabs defaultValue="upload" className="w-full space-y-6">
+            <Tabs
+              value={studioTab}
+              onValueChange={(v) => {
+                setStudioTab(v);
+                setVisitedStudioTabs((prev) => new Set(prev).add(v));
+              }}
+              className="w-full space-y-6"
+            >
               <TabsList className="grid w-full grid-cols-6 bg-card/50 backdrop-blur-sm">
                 <TabsTrigger value="upload" className="flex items-center gap-2">
                   📤 Upload & Library
@@ -273,7 +284,12 @@ const Index = () => {
               </TabsList>
 
               {/* Upload & Library Tab */}
-              <TabsContent value="upload" className="space-y-6">
+              <TabsContent
+                value="upload"
+                forceMount={visitedStudioTabs.has("upload")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Upload & Library">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Left Column - Upload Section */}
                   <div className="space-y-4">
@@ -385,10 +401,16 @@ const Index = () => {
                     </Collapsible>
                   </div>
                 </div>
+                </StudioTabErrorBoundary>
               </TabsContent>
 
               {/* Generate Tab */}
-              <TabsContent value="generate" className="space-y-6">
+              <TabsContent
+                value="generate"
+                forceMount={visitedStudioTabs.has("generate")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Generate">
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                   <div className="space-y-6">
                     <Collapsible defaultOpen={true}>
@@ -492,10 +514,16 @@ const Index = () => {
                     </Collapsible>
                   </div>
                 </div>
+                </StudioTabErrorBoundary>
               </TabsContent>
 
               {/* Record Tab */}
-              <TabsContent value="record" className="space-y-6">
+              <TabsContent
+                value="record"
+                forceMount={visitedStudioTabs.has("record")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Record">
                 <Collapsible defaultOpen={true}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
@@ -507,10 +535,16 @@ const Index = () => {
                     <RecordingStudio />
                   </CollapsibleContent>
                 </Collapsible>
+                </StudioTabErrorBoundary>
               </TabsContent>
 
               {/* Mix Tab */}
-              <TabsContent value="mix" className="space-y-6">
+              <TabsContent
+                value="mix"
+                forceMount={visitedStudioTabs.has("mix")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Mix">
                 <Collapsible defaultOpen={true}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
@@ -522,10 +556,16 @@ const Index = () => {
                     <MixingConsole />
                   </CollapsibleContent>
                 </Collapsible>
+                </StudioTabErrorBoundary>
               </TabsContent>
 
               {/* Master Tab */}
-              <TabsContent value="master" className="space-y-6">
+              <TabsContent
+                value="master"
+                forceMount={visitedStudioTabs.has("master")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Master">
                 <Collapsible defaultOpen={true}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
@@ -537,10 +577,16 @@ const Index = () => {
                     <MasteringSuite />
                   </CollapsibleContent>
                 </Collapsible>
+                </StudioTabErrorBoundary>
               </TabsContent>
 
               {/* Workflow Tab */}
-              <TabsContent value="workflow" className="space-y-6">
+              <TabsContent
+                value="workflow"
+                forceMount={visitedStudioTabs.has("workflow")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Workflow">
                 <Collapsible defaultOpen={true}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
@@ -552,6 +598,7 @@ const Index = () => {
                     <MusicProductionWorkflow />
                   </CollapsibleContent>
                 </Collapsible>
+                </StudioTabErrorBoundary>
               </TabsContent>
             </Tabs>
 
