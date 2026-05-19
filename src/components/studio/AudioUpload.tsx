@@ -13,6 +13,7 @@ import { AudioAnalyzer, AudioAnalysis } from '@/lib/audioAnalyzer';
 import { AudioSeparationEngine, SeparatedAudio } from '@/lib/audioSeparation';
 import { AudioPlayButton } from '@/components/ui/audio-play-button';
 import { useGlobalAudio } from '@/hooks/useGlobalAudio';
+import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 interface AudioSample {
@@ -50,7 +51,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   const [autoSeparateStems, setAutoSeparateStems] = useState(false);
   
   // Authentication state (optional for development)
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   
   React.useEffect(() => {
     let subscription: any = null;
@@ -404,6 +405,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
       
       try {
         // 100% LOCAL UPLOAD - INSTANT COMPLETION, CREATE WITH 100% IMMEDIATELY
+        // `sample` must be declared outside inner try so catch can safely reference it (try-block const is not in catch scope).
+        let sample: AudioSample | undefined;
         try {
           // Create local blob URL immediately (synchronous, instant, no async)
           const localUrl = URL.createObjectURL(file);
@@ -413,7 +416,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           }
           
           // Create sample with 100% progress immediately - no intermediate state
-          const sample: AudioSample = {
+          sample = {
             id,
             name: file.name.replace(/\.[^/.]+$/, ""),
             genre: '',
@@ -425,13 +428,13 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           };
 
           // Add sample with 100% progress immediately
-          setUploadedSamples(prev => [...prev, sample]);
+          setUploadedSamples(prev => [...prev, sample!]);
           console.log('✅ Sample added with 100% progress instantly:', sample.name);
           
           // Call callback asynchronously to not block UI
           Promise.resolve().then(() => {
             try {
-              onSamplesUploaded([sample]);
+              if (sample) onSamplesUploaded([sample]);
             } catch (callbackError) {
               console.warn('Callback error (non-critical):', callbackError);
             }
@@ -480,17 +483,32 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           // Even on error, try to create local URL as last resort
           try {
             const fallbackUrl = URL.createObjectURL(file);
-            setUploadedSamples(prev => 
-              prev.map(s => s.id === id ? { 
-                ...s, 
+            const base: AudioSample =
+              sample ??
+              ({
+                id,
+                name: file.name.replace(/\.[^/.]+$/, ""),
+                genre: "",
+                tags: [],
+                file,
                 uploadProgress: 100,
-                audioUrl: fallbackUrl
-              } : s)
-            );
-            
-            const fallbackSample = { ...sample, uploadProgress: 100, audioUrl: fallbackUrl };
+                audioUrl: fallbackUrl,
+                isPlaying: false,
+              } satisfies AudioSample);
+
+            setUploadedSamples((prev) => {
+              const exists = prev.some((s) => s.id === id);
+              if (!exists) {
+                return [...prev, { ...base, audioUrl: fallbackUrl, uploadProgress: 100 }];
+              }
+              return prev.map((s) =>
+                s.id === id ? { ...s, uploadProgress: 100, audioUrl: fallbackUrl } : s
+              );
+            });
+
+            const fallbackSample = { ...base, uploadProgress: 100, audioUrl: fallbackUrl };
             onSamplesUploaded([fallbackSample]);
-            console.log('✅ SAMPLE SAVED (FALLBACK):', sample.name);
+            console.log("✅ SAMPLE SAVED (FALLBACK):", fallbackSample.name);
           } catch (fallbackError) {
             console.error('❌ Complete upload failure:', fallbackError);
             toast({

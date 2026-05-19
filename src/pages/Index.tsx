@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AudioOutputSelector } from "@/components/ui/audio-output-selector";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import StudioHeader from "@/components/studio/StudioHeader";
 import PromptBuilder from "@/components/studio/PromptBuilder";
@@ -57,7 +58,7 @@ const Index = () => {
   const { playTrack, setAudioOutputDevice } = useGlobalAudio();
   
   // Authentication state
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   
   // Load user's audio samples from database with comprehensive error handling
   const loadUserSamples = useCallback(async (userId: string | null | undefined) => {
@@ -161,41 +162,6 @@ const Index = () => {
       }
     };
   }, [loadUserSamples]);
-
-  // Check audio output device
-  useEffect(() => {
-    const checkAudioOutput = async () => {
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
-          
-          // Find the default or currently selected output
-          const defaultOutput = audioOutputs.find(device => device.deviceId === 'default') || audioOutputs[0];
-          
-          const outputElement = document.getElementById('audio-output-device');
-          if (outputElement && defaultOutput) {
-            outputElement.textContent = defaultOutput.label || 'Default Audio Output';
-            outputElement.className = 'text-neon-green ml-2';
-          } else if (outputElement) {
-            outputElement.textContent = 'System Default Audio Output';
-            outputElement.className = 'text-neon-blue ml-2';
-          }
-        }
-      } catch (error) {
-        console.log('Audio device detection:', error);
-        const outputElement = document.getElementById('audio-output-device');
-        if (outputElement) {
-          outputElement.textContent = 'System Default (AirPods if connected)';
-          outputElement.className = 'text-neon-orange ml-2';
-        }
-      }
-    };
-
-    if (uploadedSamples.length > 0) {
-      checkAudioOutput();
-    }
-  }, [uploadedSamples]);
 
   const handleGenerate = (prompt: string, settings: any) => {
     // Simulate track generation
@@ -313,10 +279,6 @@ const Index = () => {
                             const latestSample = samples[samples.length - 1];
                             if (latestSample && latestSample.analysis) {
                               setAudioAnalysis(latestSample.analysis);
-                            }
-                            // Refresh user samples from database to get the latest data
-                            if (user) {
-                              setTimeout(() => loadUserSamples(user.id), 1000);
                             }
                           }}
                           onAudioSeparated={(separated) => setSeparatedAudio(separated)}

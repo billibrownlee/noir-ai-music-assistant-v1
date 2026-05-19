@@ -143,7 +143,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         addAssistantMessage(AI_RESPONSES.techniques.separation);
       }, 1000);
     }
-  }, [separatedAudio]);
+  }, [separatedAudio, messages.length, addAssistantMessage]);
 
   const generateAIResponse = async (userMessage: string): Promise<string> => {
     const msg = userMessage.toLowerCase();
@@ -269,6 +269,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     }
 
     const latestSample = uploadedSamples[uploadedSamples.length - 1];
+    const oldAudioUrl = latestSample?.audioUrl as string | undefined;
     if (!latestSample || (!latestSample.file && !latestSample.audioUrl)) {
       addAssistantMessage("❌ No audio file available for processing. Please ensure your sample has been uploaded successfully.");
       return true;
@@ -451,14 +452,14 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
           const updates = {
             audioUrl: result.processedAudioUrl,
             name: `${cleanName} (${processingDescription})`,
-            tags: [...new Set([...(latestSample.tags || []), 'processed', effect.toLowerCase()])],
+            tags: [...new Set([...(latestSample.tags || []), 'processed', processingDescription.toLowerCase()])],
             processHistory: [
               ...(latestSample.processHistory || []),
               {
                 effect: processingDescription,
                 timestamp: new Date(),
                 processingTime: result.processingTime,
-                parameters: { effect }
+                parameters: { effect: processingDescription }
               }
             ]
           };
@@ -474,6 +475,12 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
           
           // Update the sample - this will update it in the library
           onUpdateSample?.(latestSample.id, updates);
+
+          // Release the old blob URL after a short delay so any active audio
+          // element has time to switch to the new URL before it's revoked
+          if (oldAudioUrl?.startsWith('blob:')) {
+            setTimeout(() => URL.revokeObjectURL(oldAudioUrl), 500);
+          }
           
           // Also update local state if needed
           setMessages(prev => [...prev]);

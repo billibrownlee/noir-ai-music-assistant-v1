@@ -45,6 +45,7 @@ export function useApplyAudioEffects({
         return;
       }
 
+      const oldAudioUrl = sample?.audioUrl as string | undefined;
       const wasPlaying = currentTrack?.id === sample.id && isPlaying;
       const currentPlaybackTime = wasPlaying ? currentTime : 0;
       const originalDuration = wasPlaying ? duration : 0;
@@ -132,6 +133,11 @@ export function useApplyAudioEffects({
                 audioUrl: result.audioUrl,
               });
 
+              // Audio element has switched to the new URL — safe to release the old blob
+              if (oldAudioUrl?.startsWith('blob:')) {
+                URL.revokeObjectURL(oldAudioUrl);
+              }
+
               if (seekPosition > 0 && originalDuration > 0) {
                 const attemptSeek = (attempt: number = 0) => {
                   if (attempt > 5) return;
@@ -149,6 +155,11 @@ export function useApplyAudioEffects({
               console.error("Failed to auto-play processed audio:", playError);
             }
           }, 100);
+        } else {
+          // Not playing — nothing holds the old URL, revoke immediately
+          if (oldAudioUrl?.startsWith('blob:')) {
+            URL.revokeObjectURL(oldAudioUrl);
+          }
         }
 
         if (wasPlaying && effect === AUDIO_EFFECTS.REVERSE) {
