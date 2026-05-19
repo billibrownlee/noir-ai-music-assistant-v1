@@ -272,17 +272,26 @@ const Index = () => {
                         </Button>
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
-                        <AudioUpload 
+                        <AudioUpload
                           onSamplesUploaded={(samples) => {
-                            console.log('Uploaded samples:', samples);
-                            setUploadedSamples(prev => [...prev, ...samples]);
+                            setUploadedSamples(prev => {
+                              const existingIds = new Set(prev.map(s => s.id));
+                              const newOnly = samples.filter(s => !existingIds.has(s.id));
+                              return newOnly.length > 0 ? [...prev, ...newOnly] : prev;
+                            });
                             const latestSample = samples[samples.length - 1];
-                            if (latestSample && latestSample.analysis) {
+                            if (latestSample?.analysis) {
                               setAudioAnalysis(latestSample.analysis);
                             }
                           }}
                           onAudioSeparated={(separated) => setSeparatedAudio(separated)}
                           onAnalysisComplete={(analysis) => setAudioAnalysis(analysis)}
+                          onDeleteSample={(sampleId) => {
+                            setUploadedSamples(prev => prev.filter(s => s.id !== sampleId));
+                          }}
+                          onClearSamples={() => {
+                            setUploadedSamples([]);
+                          }}
                         />
                       </CollapsibleContent>
                     </Collapsible>

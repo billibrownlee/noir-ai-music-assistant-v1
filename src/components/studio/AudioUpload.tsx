@@ -35,12 +35,16 @@ interface AudioUploadProps {
   onSamplesUploaded: (samples: AudioSample[]) => void;
   onAudioSeparated?: (separatedAudio: SeparatedAudio) => void;
   onAnalysisComplete?: (analysis: AudioAnalysis) => void;
+  onDeleteSample?: (sampleId: string) => void;
+  onClearSamples?: () => void;
 }
 
-export const AudioUpload: React.FC<AudioUploadProps> = ({ 
-  onSamplesUploaded, 
+export const AudioUpload: React.FC<AudioUploadProps> = ({
+  onSamplesUploaded,
   onAudioSeparated,
-  onAnalysisComplete 
+  onAnalysisComplete,
+  onDeleteSample,
+  onClearSamples,
 }) => {
   const [uploadedSamples, setUploadedSamples] = useState<AudioSample[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -667,49 +671,25 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   };
 
   const removeSample = (id: string) => {
-    // Clean up audio URL to prevent memory leaks
     const sample = uploadedSamples.find(s => s.id === id);
-    if (sample?.audioUrl) {
-      URL.revokeObjectURL(sample.audioUrl);
-      console.log('🧹 Cleaned up audio URL for removed sample:', sample.name);
-    }
-    
-    const updatedSamples = uploadedSamples.filter(sample => sample.id !== id);
-    setUploadedSamples(updatedSamples);
-    
-    // Update parent component immediately - keep remaining samples in library
-    const completedSamples = updatedSamples.filter(s => s.uploadProgress === 100);
-    onSamplesUploaded(completedSamples);
-    
-    console.log('✅ Sample removed, remaining samples preserved in library');
-    
+    // Remove from local display
+    setUploadedSamples(prev => prev.filter(s => s.id !== id));
+    // Remove from global library state — don't revoke URL here, parent may still use it
+    onDeleteSample?.(id);
     toast({
       title: "Sample removed",
-      description: `${sample?.name || 'Sample'} was removed. Other samples remain in library.`,
+      description: `${sample?.name || 'Sample'} was removed from your library.`,
     });
   };
 
   const clearAllSamples = () => {
-    console.log('🗑️ USER REQUESTED: Clearing all samples');
-    
-    // Clean up all audio URLs
-    uploadedSamples.forEach(sample => {
-      if (sample.audioUrl) {
-        URL.revokeObjectURL(sample.audioUrl);
-      }
-    });
-    
-    // Clear local state
+    // Clear local display — do NOT revoke URLs, the global library still references them
     setUploadedSamples([]);
-    
-    // Update parent component with empty array (user choice to clear)
-    onSamplesUploaded([]);
-    
-    console.log('✅ All samples cleared by user request');
-    
+    // Clear global library state
+    onClearSamples?.();
     toast({
       title: "All samples cleared",
-      description: "Upload queue has been reset. Previous uploads removed from library.",
+      description: "Upload queue and library have been cleared.",
     });
   };
 
