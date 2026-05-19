@@ -11,6 +11,7 @@ import { AudioProcessor, AudioProcessingResult } from '@/lib/audioProcessor';
 import { RealtimeChat, RealtimeMessage } from '@/utils/RealtimeAudio';
 import { AUDIO_EFFECTS } from '@/lib/audioEffects';
 import { useApplyAudioEffects } from '@/hooks/useApplyAudioEffects';
+import { useGlobalAudio } from '@/hooks/useGlobalAudio';
 import { 
   Send, 
   Brain, 
@@ -117,6 +118,7 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     onUpdateSample,
     onNotify: addAssistantMessage,
   });
+  const { playTrack } = useGlobalAudio();
 
   const voices = [
     { value: 'alloy', label: 'Alloy (Neutral)' },
@@ -269,7 +271,6 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     }
 
     const latestSample = uploadedSamples[uploadedSamples.length - 1];
-    const oldAudioUrl = latestSample?.audioUrl as string | undefined;
     if (!latestSample || (!latestSample.file && !latestSample.audioUrl)) {
       addAssistantMessage("❌ No audio file available for processing. Please ensure your sample has been uploaded successfully.");
       return true;
@@ -294,13 +295,35 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
         return true;
       }
 
-      // Check for direct audio effects using the new processor (works with audioUrl)
-      if (msg.includes('reverse') && latestSample.audioUrl) {
-        await applyAudioEffect(latestSample, AUDIO_EFFECTS.REVERSE);
-        return true;
+      // Route common effects through applyAudioEffect — it handles playback automatically
+      if (latestSample.audioUrl) {
+        if (msg.includes('reverse')) {
+          await applyAudioEffect(latestSample, AUDIO_EFFECTS.REVERSE);
+          return true;
+        }
+        if (msg.includes('echo') || msg.includes('reverb')) {
+          await applyAudioEffect(latestSample, AUDIO_EFFECTS.ECHO);
+          return true;
+        }
+        if ((msg.includes('speed') && msg.includes('up')) || msg.includes('faster') || msg.includes('fast')) {
+          await applyAudioEffect(latestSample, AUDIO_EFFECTS.SPEED_UP);
+          return true;
+        }
+        if (msg.includes('slow') || (msg.includes('speed') && msg.includes('down'))) {
+          await applyAudioEffect(latestSample, AUDIO_EFFECTS.SLOW_DOWN);
+          return true;
+        }
+        if (msg.includes('pitch up') || msg.includes('higher pitch') || msg.includes('pitch higher')) {
+          await applyAudioEffect(latestSample, AUDIO_EFFECTS.PITCH_UP);
+          return true;
+        }
+        if (msg.includes('pitch down') || msg.includes('lower pitch') || msg.includes('pitch lower')) {
+          await applyAudioEffect(latestSample, AUDIO_EFFECTS.PITCH_DOWN);
+          return true;
+        }
       }
-      
-      // Use existing audioProcessor for other effects (requires File object)
+
+      // Fallback: use audioProcessor for effects that need a File object
       if (msg.includes('reverse')) {
         processingDescription = "Reversing your audio";
         addAssistantMessage(`🔄 ${processingDescription}...`);
@@ -473,16 +496,16 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             updates
           });
           
-          // Update the sample - this will update it in the library
+          // Update the sample in the library
           onUpdateSample?.(latestSample.id, updates);
 
-          // Release the old blob URL after a short delay so any active audio
-          // element has time to switch to the new URL before it's revoked
-          if (oldAudioUrl?.startsWith('blob:')) {
-            setTimeout(() => URL.revokeObjectURL(oldAudioUrl), 500);
-          }
-          
-          // Also update local state if needed
+          // Play the processed audio immediately
+          playTrack({
+            id: latestSample.id,
+            name: updates.name,
+            audioUrl: result.processedAudioUrl,
+          }).catch(console.error);
+
           setMessages(prev => [...prev]);
           
           const historyText = updates.processHistory?.length > 1 
