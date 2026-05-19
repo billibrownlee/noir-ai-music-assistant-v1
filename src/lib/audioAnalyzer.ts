@@ -22,17 +22,17 @@ export class AudioAnalyzer {
   private readonly MAX_DURATION = 600; // 10 minutes max
   private readonly ANALYSIS_TIMEOUT = 30000; // 30 seconds timeout
 
-  constructor() {
-    try {
+  private getAudioContext(): AudioContext {
+    if (!this.audioContext) {
       const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContextClass) {
-        this.audioContext = new AudioContextClass();
-        this.analyzer = this.audioContext.createAnalyser();
-        this.analyzer.fftSize = 2048;
-      }
-    } catch (error) {
-      console.warn('AudioContext initialization failed:', error);
+      this.audioContext = new AudioContextClass();
+      this.analyzer = this.audioContext.createAnalyser();
+      this.analyzer.fftSize = 2048;
     }
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+    return this.audioContext;
   }
 
   async analyzeAudioFile(file: File): Promise<AudioAnalysis> {
@@ -58,17 +58,12 @@ export class AudioAnalyzer {
   }
 
   private async performAnalysis(file: File): Promise<AudioAnalysis> {
-    if (!this.audioContext) {
-      throw new Error('AudioContext not available');
-    }
-
+    let audioContext: AudioContext;
     try {
-      // Resume context if suspended
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
+      audioContext = this.getAudioContext();
     } catch (error) {
-      console.warn('Failed to resume AudioContext:', error);
+      console.warn('AudioContext unavailable:', error);
+      return this.getDefaultAnalysis();
     }
 
     let arrayBuffer: ArrayBuffer;
@@ -84,14 +79,14 @@ export class AudioAnalyzer {
 
     let audioBuffer: AudioBuffer;
     try {
-      audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
-      
+      audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+
       // Check duration
       if (audioBuffer.duration > this.MAX_DURATION) {
         console.log('⚠️ File too long, using first 10 minutes');
         // Truncate to first 10 minutes
         const maxSamples = Math.floor(this.MAX_DURATION * audioBuffer.sampleRate);
-        const truncatedBuffer = this.audioContext.createBuffer(
+        const truncatedBuffer = audioContext.createBuffer(
           audioBuffer.numberOfChannels,
           Math.min(audioBuffer.length, maxSamples),
           audioBuffer.sampleRate
@@ -300,8 +295,12 @@ export class AudioAnalyzer {
     const chroma = new Array(12).fill(0);
     const fftSize = 2048;
     const hopSize = 512;
-    
-    for (let i = 0; i < data.length - fftSize; i += hopSize) {
+    // Cap at 10 frames — the naive DFT is O(N²) per frame and blocks the main thread
+    const MAX_FRAMES = 10;
+    let frameCount = 0;
+
+    for (let i = 0; i < data.length - fftSize && frameCount < MAX_FRAMES; i += hopSize) {
+      frameCount++;
       const frame = data.slice(i, i + fftSize);
       const spectrum = this.fft(frame);
       
