@@ -358,41 +358,17 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
-    console.log('🔍 UPLOAD DEBUG: Drop event triggered');
-    console.log('🔍 UPLOAD DEBUG: dataTransfer.files:', e.dataTransfer.files);
-    console.log('🔍 UPLOAD DEBUG: dataTransfer.files.length:', e.dataTransfer.files.length);
-    
     const files = Array.from(e.dataTransfer.files);
-    console.log('🔍 UPLOAD DEBUG: Converted to files array:', files);
-    console.log('🔍 UPLOAD DEBUG: Files array length:', files.length);
-    
-    if (files.length === 0) {
-      console.log('❌ UPLOAD DEBUG: No files in drop event');
-      return;
-    }
-    
+    if (files.length === 0) return;
     handleFiles(files);
   }, []);
 
-
   const handleFiles = async (files: File[]) => {
-    console.log('🔍 UPLOAD DEBUG: Processing files:', files.length);
-    
-    if (!files || files.length === 0) {
-      console.log('❌ UPLOAD DEBUG: No files provided to handleFiles');
-      return;
-    }
-    
-    const audioFiles = files.filter(file => {
-      console.log('🔍 UPLOAD DEBUG: Checking file:', file.name, file.type, file.size);
-      const isValid = validateAudioFile(file);
-      console.log('🔍 UPLOAD DEBUG: File validation result:', isValid);
-      return isValid;
-    });
-    
+    if (!files || files.length === 0) return;
+
+    const audioFiles = files.filter(file => validateAudioFile(file));
+
     if (audioFiles.length === 0) {
-      console.log('❌ UPLOAD DEBUG: No valid audio files found');
       toast({
         title: "No valid audio files",
         description: "Please select MP3, WAV, FLAC, M4A, OGG, or AAC files.",
@@ -401,7 +377,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
       return;
     }
 
-    console.log('✅ UPLOAD DEBUG: Valid audio files found:', audioFiles.length);
+
 
     for (const file of audioFiles) {
       const id = crypto.randomUUID();
@@ -431,11 +407,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             isPlaying: false
           };
 
-          // Add sample with 100% progress immediately
           setUploadedSamples(prev => [...prev, sample!]);
-          console.log('✅ Sample added with 100% progress instantly:', sample.name);
-          
-          // Call callback asynchronously to not block UI
+
           Promise.resolve().then(() => {
             try {
               if (sample) onSamplesUploaded([sample]);
@@ -443,8 +416,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               console.warn('Callback error (non-critical):', callbackError);
             }
           });
-          
-          console.log('✅ Upload complete instantly - 100%');
 
           // Everything else happens in background (non-blocking, doesn't affect progress)
           // Use microtask queue to push to next tick without delay
@@ -871,26 +842,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             multiple
             accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,audio/*"
             onChange={(e) => {
-              console.log('🔍 UPLOAD DEBUG: File input onChange triggered');
-              console.log('🔍 UPLOAD DEBUG: e.target:', e.target);
-              console.log('🔍 UPLOAD DEBUG: e.target.files:', e.target.files);
-              console.log('🔍 UPLOAD DEBUG: Files length:', e.target.files?.length || 0);
-              
               if (e.target.files && e.target.files.length > 0) {
-                console.log('🔍 UPLOAD DEBUG: Files found, details:');
-                Array.from(e.target.files).forEach((file, index) => {
-                  console.log(`🔍 UPLOAD DEBUG: File ${index}:`, {
-                    name: file.name,
-                    type: file.type,
-                    size: file.size
-                  });
-                });
-                
-                console.log('🔍 UPLOAD DEBUG: About to call handleFiles with:', Array.from(e.target.files));
-                handleFiles(Array.from(e.target.files || []));
-              } else {
-                console.log('❌ UPLOAD DEBUG: No files selected or files array is empty');
-                console.log('❌ UPLOAD DEBUG: e.target.files:', e.target.files);
+                handleFiles(Array.from(e.target.files));
               }
             }}
             className="hidden"
@@ -900,14 +853,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             variant="neon" 
             size="lg" 
             onClick={() => {
-              console.log('🖱️ BUTTON CLICK: Browse Files button clicked');
-              const input = document.getElementById('audio-upload') as HTMLInputElement;
-              if (input) {
-                input.click();
-                console.log('🖱️ BUTTON CLICK: File input triggered');
-              } else {
-                console.log('❌ BUTTON CLICK: File input not found');
-              }
+              (document.getElementById('audio-upload') as HTMLInputElement)?.click();
             }}
             className="bg-neon-purple hover:bg-neon-purple/80 text-white font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
           >
@@ -978,10 +924,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => {
-                            console.log('🔄 SEPARATE BUTTON: Clicked for', sample.name);
-                            separateAudioStems(sample);
-                          }}
+                          onClick={() => separateAudioStems(sample)}
                           disabled={isSeparating}
                           className="pointer-events-auto cursor-pointer z-10"
                         >
@@ -991,10 +934,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => {
-                            console.log('🗑️ REMOVE BUTTON: Clicked for', sample.name);
-                            removeSample(sample.id);
-                          }}
+                          onClick={() => removeSample(sample.id)}
                           className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50 pointer-events-auto cursor-pointer z-10"
                         >
                           <X className="w-4 h-4 mr-1" />
@@ -1114,11 +1054,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             ))}
 
             <div className="flex gap-3 relative z-10">
-              <Button 
-                onClick={() => {
-                  console.log('🏦 FORCE SAVE BUTTON: Clicked');
-                  handleUploadToLibrary();
-                }}
+              <Button
+                onClick={handleUploadToLibrary}
                 className="flex-1 bg-neon-purple hover:bg-neon-purple/80 text-white font-medium pointer-events-auto cursor-pointer"
                 size="lg"
                 variant="neon"
@@ -1127,11 +1064,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                 🏦 Force Save to Library ({uploadedSamples.length} Sample(s))
               </Button>
               
-              <Button 
-                onClick={() => {
-                  console.log('🗑️ CLEAR ALL BUTTON: Clicked');
-                  clearAllSamples();
-                }}
+              <Button
+                onClick={clearAllSamples}
                 variant="destructive"
                 size="lg"
                 className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border-red-500/50 pointer-events-auto cursor-pointer"

@@ -250,12 +250,6 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {sample.audioUrl ? (
                         <>
-                          {console.log(`🎵 SampleLibrary: Sample "${sample.name}" has audioUrl:`, {
-                            id: sample.id,
-                            hasUrl: !!sample.audioUrl,
-                            urlPrefix: sample.audioUrl?.substring(0, 50) || 'none',
-                            urlValid: sample.audioUrl && sample.audioUrl.trim() !== ''
-                          })}
                           <AudioPlayButton
                             audioUrl={sample.audioUrl}
                             trackName={sample.name}
@@ -345,9 +339,8 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction 
+                                    <AlertDialogAction
                                       onClick={() => {
-                                        console.log('🗑️ Removing sample:', sample.name, 'ID:', sample.id);
                                         onDeleteSample?.(sample.id);
                                         toast({
                                           title: "🗑️ Sample Removed",
