@@ -126,43 +126,38 @@ export function useApplyAudioEffects({
           }
         }
 
-        // Always play the processed audio so the effect is immediately audible
-        setTimeout(async () => {
-          try {
-            await playTrack({
-              id: sample.id,
-              name: updates.name,
-              audioUrl: result.audioUrl,
-            });
+        // Play the processed audio immediately so the effect is audible.
+        try {
+          await playTrack({
+            id: sample.id,
+            name: updates.name,
+            audioUrl: result.audioUrl,
+          });
 
-            if (seekPosition > 0 && originalDuration > 0) {
-              const attemptSeek = (attempt: number = 0) => {
-                if (attempt > 5) return;
-                setTimeout(() => {
-                  try {
-                    seekTo(seekPosition);
-                  } catch {
-                    if (attempt < 4) attemptSeek(attempt + 1);
-                  }
-                }, 100 * (attempt + 1));
-              };
-              attemptSeek();
-            }
-          } catch (playError) {
-            console.error("Failed to play processed audio:", playError);
+          if (seekPosition > 0 && originalDuration > 0) {
+            seekTo(seekPosition);
           }
-        }, 100);
 
-        onNotify?.(
-          effect === AUDIO_EFFECTS.REVERSE && wasPlaying
-            ? `✅ **REVERSE Applied!**\n\nAudio reversed and playing from equivalent position.`
-            : `✅ **${effect.toUpperCase()} Applied!**\n\nNow playing the processed audio!`
-        );
+          onNotify?.(
+            effect === AUDIO_EFFECTS.REVERSE && wasPlaying
+              ? `✅ **REVERSE Applied!**\n\nAudio reversed and playing from equivalent position.`
+              : `✅ **${effect.toUpperCase()} Applied!**\n\nNow playing the processed audio!`
+          );
 
-        toast({
-          title: "🎛️ Effect Applied!",
-          description: `${effect} applied — now playing processed audio.`,
-        });
+          toast({
+            title: "🎛️ Effect Applied!",
+            description: `${effect} applied — now playing processed audio.`,
+          });
+        } catch (playError) {
+          const playMsg = playError instanceof Error ? playError.message : String(playError);
+          console.error("Failed to play processed audio:", playMsg);
+          onNotify?.(`⚠️ **${effect.toUpperCase()} Applied** but playback failed.\n\n${playMsg}`);
+          toast({
+            title: "Effect Applied — Playback Error",
+            description: `Audio processed but could not play: ${playMsg}`,
+            variant: "destructive",
+          });
+        }
       } catch (error: unknown) {
         console.error("Audio effect error:", error);
         const errorMessage =

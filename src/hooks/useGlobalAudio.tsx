@@ -93,27 +93,38 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (audio.src === track.audioUrl) {
       setCurrentTrack(track);
       if (audio.paused) {
-        try { await audio.play(); } catch (e) { console.error('Resume failed:', e); }
+        await audio.play();
       }
       return;
     }
 
-    // New URL — swap src and play
+    // New URL — swap src, wait for canplay, then play.
+    // Waiting for canplay prevents AbortError from calling play() before the
+    // browser has processed the new src.
     audio.pause();
     audio.src = track.audioUrl;
-    audio.load();
     setCurrentTrack(track);
     setCurrentTime(0);
     setDuration(0);
 
-    try {
-      await audio.play();
-    } catch (err) {
-      // NotAllowedError: user hasn't interacted yet. GlobalAudioBar will show
-      // paused so user can click play manually.
-      console.warn('audio.play() blocked (autoplay policy) — user can click play:', err);
-      setIsPlaying(false);
-    }
+    await new Promise<void>((resolve, reject) => {
+      const onCanPlay = () => {
+        audio.removeEventListener('canplay', onCanPlay);
+        audio.removeEventListener('error', onErr);
+        resolve();
+      };
+      const onErr = () => {
+        audio.removeEventListener('canplay', onCanPlay);
+        audio.removeEventListener('error', onErr);
+        const e = audio.error;
+        reject(new Error(e ? `Audio load error ${e.code}: ${e.message}` : 'Audio failed to load'));
+      };
+      audio.addEventListener('canplay', onCanPlay, { once: true });
+      audio.addEventListener('error', onErr, { once: true });
+      audio.load();
+    });
+
+    await audio.play();
   }, []);
 
   const pauseTrack = useCallback(() => {

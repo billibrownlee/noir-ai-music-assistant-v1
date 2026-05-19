@@ -78,7 +78,7 @@ export const GlobalAudioPlayer: React.FC = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => currentTrack && playTrack(currentTrack)}
+              onClick={() => currentTrack && playTrack(currentTrack).catch(console.error)}
             >
               {isPlaying ? (
                 <Pause className="w-4 h-4" />

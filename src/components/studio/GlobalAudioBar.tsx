@@ -40,7 +40,7 @@ export const GlobalAudioBar: React.FC = () => {
             variant="ghost"
             size="icon"
             onClick={() =>
-              isPlaying ? pauseTrack() : playTrack(currentTrack)
+              isPlaying ? pauseTrack() : playTrack(currentTrack).catch(console.error)
             }
           >
             {isPlaying ? (
