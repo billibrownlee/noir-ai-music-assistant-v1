@@ -471,21 +471,27 @@ const Index = () => {
                         </Button>
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
-                        <MusicGenerator onMusicGenerated={(music) => {
-                          console.log('Generated music:', music);
-                          // Add to uploaded samples so it appears in the library
-                          setUploadedSamples(prev => [...prev, {
-                            id: music.id,
-                            name: music.originalPrompt,
-                            audioUrl: music.audioUrl,
-                            genre: music.style,
-                            tags: ['AI', 'Generated', music.style, `${music.metadata.bpm}BPM`],
-                            duration: music.duration,
-                            bpm: music.metadata.bpm,
-                            key: music.metadata.key,
-                            analysis: null
-                          }]);
-                        }} />
+                        <MusicGenerator
+                          uploadedSamples={uploadedSamples}
+                          onMusicGenerated={(music) => {
+                            // Add generated track to the library so it can be used as a future reference
+                            setUploadedSamples(prev => {
+                              const exists = prev.some(s => s.id === music.id);
+                              if (exists) return prev;
+                              return [...prev, {
+                                id: music.id,
+                                name: music.originalPrompt,
+                                audioUrl: music.audioUrl,
+                                genre: music.style,
+                                tags: ['AI Generated', music.style, `${music.metadata.bpm}BPM`],
+                                duration: music.duration,
+                                bpm: music.metadata.bpm,
+                                key: music.metadata.key,
+                                analysis: null,
+                              }];
+                            });
+                          }}
+                        />
                       </CollapsibleContent>
                     </Collapsible>
                     
