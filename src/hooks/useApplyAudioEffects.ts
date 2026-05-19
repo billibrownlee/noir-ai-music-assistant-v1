@@ -112,8 +112,9 @@ export function useApplyAudioEffects({
           onUpdateSample(sample.id, updates);
         }
 
+        // Calculate seek position (only relevant if was already playing)
+        let seekPosition = 0;
         if (wasPlaying) {
-          let seekPosition = 0;
           if (
             effect === AUDIO_EFFECTS.REVERSE &&
             originalDuration > 0 &&
@@ -123,55 +124,44 @@ export function useApplyAudioEffects({
           } else if (originalDuration > 0 && currentPlaybackTime > 0) {
             seekPosition = currentPlaybackTime;
           }
+        }
 
-          setTimeout(async () => {
-            try {
-              await playTrack({
-                id: sample.id,
-                name: updates.name,
-                audioUrl: result.audioUrl,
-              });
+        // Always play the processed audio so the effect is immediately audible
+        setTimeout(async () => {
+          try {
+            await playTrack({
+              id: sample.id,
+              name: updates.name,
+              audioUrl: result.audioUrl,
+            });
 
-              if (seekPosition > 0 && originalDuration > 0) {
-                const attemptSeek = (attempt: number = 0) => {
-                  if (attempt > 5) return;
-                  setTimeout(() => {
-                    try {
-                      seekTo(seekPosition);
-                    } catch {
-                      if (attempt < 4) attemptSeek(attempt + 1);
-                    }
-                  }, 100 * (attempt + 1));
-                };
-                attemptSeek();
-              }
-            } catch (playError) {
-              console.error("Failed to auto-play processed audio:", playError);
+            if (seekPosition > 0 && originalDuration > 0) {
+              const attemptSeek = (attempt: number = 0) => {
+                if (attempt > 5) return;
+                setTimeout(() => {
+                  try {
+                    seekTo(seekPosition);
+                  } catch {
+                    if (attempt < 4) attemptSeek(attempt + 1);
+                  }
+                }, 100 * (attempt + 1));
+              };
+              attemptSeek();
             }
-          }, 100);
-        }
+          } catch (playError) {
+            console.error("Failed to play processed audio:", playError);
+          }
+        }, 100);
 
-        if (wasPlaying && effect === AUDIO_EFFECTS.REVERSE) {
-          onNotify?.(
-            `✅ **REVERSE Applied in Real-Time!**\n\nAudio reversed and continuing playback from equivalent position. The audio is now playing backwards!`
-          );
-        } else if (wasPlaying) {
-          onNotify?.(
-            `✅ **${effect.toUpperCase()} Applied!**\n\nYour audio has been processed and is now playing with the effect!`
-          );
-        } else {
-          onNotify?.(
-            `✅ **${effect.toUpperCase()} Applied!**\n\nYour audio has been processed. You can play it to hear the effect!`
-          );
-        }
+        onNotify?.(
+          effect === AUDIO_EFFECTS.REVERSE && wasPlaying
+            ? `✅ **REVERSE Applied!**\n\nAudio reversed and playing from equivalent position.`
+            : `✅ **${effect.toUpperCase()} Applied!**\n\nNow playing the processed audio!`
+        );
 
         toast({
           title: "🎛️ Effect Applied!",
-          description: wasPlaying
-            ? effect === AUDIO_EFFECTS.REVERSE
-              ? "Audio reversed in real-time! Now playing backwards from equivalent position."
-              : `${effect} applied! Audio is now playing with the effect.`
-            : `Successfully applied ${effect} to your audio. Click play to hear it!`,
+          description: `${effect} applied — now playing processed audio.`,
         });
       } catch (error: unknown) {
         console.error("Audio effect error:", error);

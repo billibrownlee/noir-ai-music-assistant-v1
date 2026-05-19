@@ -29,6 +29,7 @@ import { AudioAnalysis } from "@/lib/audioAnalyzer";
 import { useGlobalAudio } from "@/hooks/useGlobalAudio";
 import { StudioTabErrorBoundary } from "@/components/StudioTabErrorBoundary";
 import { AudioEffectsQuickPanel } from "@/components/studio/AudioEffectsQuickPanel";
+import { GlobalAudioBar } from "@/components/studio/GlobalAudioBar";
 
 interface Track {
   id: string;
@@ -185,7 +186,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background" style={{ backgroundColor: 'hsl(var(--background))', minHeight: '100vh' }}>
+    <div className="min-h-screen bg-background pb-20" style={{ backgroundColor: 'hsl(var(--background))', minHeight: '100vh' }}>
       <StudioHeader />
       
       <div className="container mx-auto px-4 py-6">
@@ -621,6 +622,7 @@ const Index = () => {
           </div>
         </div>
       </div>
+      <GlobalAudioBar />
     </div>
   );
 };

@@ -110,14 +110,7 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
           if (oldAudio.parentNode) {
             oldAudio.remove();
           }
-          // Revoke any blob URLs
-          try {
-            if (oldAudio.src && oldAudio.src.startsWith('blob:')) {
-              URL.revokeObjectURL(oldAudio.src);
-            }
-          } catch (e) {
-            // Ignore URL revocation errors
-          }
+          // Do NOT revoke old audio blob URL here — the sample library still holds that reference
         } catch (cleanupError) {
           console.warn('Audio cleanup warning:', cleanupError);
         }
@@ -204,8 +197,7 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
       
       // Optimize attributes for large files
-      audio.setAttribute('crossorigin', 'anonymous');
-      audio.setAttribute('preload', 'metadata'); // Only metadata for large files
+      audio.setAttribute('preload', 'metadata');
       audio.setAttribute('controlsList', 'nodownload noremoteplayback');
       
       // Additional optimizations for stability

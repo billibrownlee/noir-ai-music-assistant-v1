@@ -41,18 +41,6 @@ export const AudioPlayButton: React.FC<AudioPlayButtonProps> = ({
       return;
     }
 
-    // Validate URL format
-    try {
-      new URL(audioUrl);
-    } catch (urlError) {
-      console.error('🔇 AudioPlayButton: Invalid URL format:', {
-        audioUrl: audioUrl.substring(0, 50),
-        trackName,
-        error: urlError
-      });
-      return;
-    }
-
     console.log('🎵 AudioPlayButton: Playing sample through selected audio output:', {
       trackName,
       trackId,
