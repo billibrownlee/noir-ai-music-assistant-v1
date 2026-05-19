@@ -7,16 +7,23 @@ export interface AudioProcessingResult {
 }
 
 export class AudioProcessor {
-  private audioContext: AudioContext;
+  private audioContext: AudioContext | null = null;
 
-  constructor() {
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  private getAudioContext(): AudioContext {
+    if (!this.audioContext) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      this.audioContext = new AudioContextClass();
+    }
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+    return this.audioContext;
   }
 
   // Load audio file and decode to AudioBuffer
   async loadAudioFile(file: File): Promise<AudioBuffer> {
     const arrayBuffer = await file.arrayBuffer();
-    return await this.audioContext.decodeAudioData(arrayBuffer);
+    return await this.getAudioContext().decodeAudioData(arrayBuffer);
   }
 
   // Convert AudioBuffer to Float32Array
@@ -27,7 +34,7 @@ export class AudioProcessor {
 
   // Convert Float32Array back to AudioBuffer
   float32ArrayToBuffer(data: Float32Array, sampleRate: number = 44100): AudioBuffer {
-    const buffer = this.audioContext.createBuffer(1, data.length, sampleRate);
+    const buffer = this.getAudioContext().createBuffer(1, data.length, sampleRate);
     // Create a new Float32Array with regular ArrayBuffer to ensure type compatibility
     const compatibleData = new Float32Array(data);
     buffer.copyToChannel(compatibleData, 0);
@@ -117,11 +124,6 @@ export class AudioProcessor {
 
       console.log('🔄 Starting audio reversal...');
       
-      // Initialize AudioContext if needed
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-
       // Load and decode audio with error handling
       let buffer: AudioBuffer;
       try {
@@ -187,183 +189,122 @@ export class AudioProcessor {
     }
   }
 
-  // Change speed (and pitch)
+  // Change speed (and pitch) — all channels
   async changeSpeed(file: File, speedFactor: number): Promise<AudioProcessingResult> {
     const startTime = Date.now();
-    
     try {
       console.log(`🎛️ Changing audio speed by ${speedFactor}x...`);
-      
       const buffer = await this.loadAudioFile(file);
-      const channelData = buffer.getChannelData(0);
-      
-      // Simple speed change by resampling
-      const newLength = Math.floor(channelData.length / speedFactor);
-      const processedData = new Float32Array(newLength);
-      
-      for (let i = 0; i < newLength; i++) {
-        const sourceIndex = Math.floor(i * speedFactor);
-        if (sourceIndex < channelData.length) {
-          processedData[i] = channelData[sourceIndex];
+      const newLength = Math.floor(buffer.length / speedFactor);
+      const newBuffer = this.getAudioContext().createBuffer(
+        buffer.numberOfChannels, newLength, buffer.sampleRate
+      );
+      for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+        const src = buffer.getChannelData(ch);
+        const dst = newBuffer.getChannelData(ch);
+        for (let i = 0; i < newLength; i++) {
+          const srcIdx = Math.floor(i * speedFactor);
+          dst[i] = srcIdx < src.length ? src[srcIdx] : 0;
         }
       }
-      
-      const processedBuffer = this.float32ArrayToBuffer(processedData, buffer.sampleRate);
-      const processedAudioUrl = await this.bufferToBlobUrl(processedBuffer);
-      
+      const processedAudioUrl = await this.bufferToBlobUrl(newBuffer);
       console.log('✅ Audio speed changed successfully');
-      
-      return {
-        success: true,
-        processedAudioUrl,
-        processedData,
-        processingTime: Date.now() - startTime
-      };
+      return { success: true, processedAudioUrl, processedData: new Float32Array(newBuffer.getChannelData(0)), processingTime: Date.now() - startTime };
     } catch (error) {
       console.error('❌ Audio speed change failed:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        processingTime: Date.now() - startTime
-      };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error', processingTime: Date.now() - startTime };
     }
   }
 
-  // Apply fade in/out
+  // Apply fade in/out — all channels
   async applyFade(file: File, fadeInDuration: number = 0, fadeOutDuration: number = 0): Promise<AudioProcessingResult> {
     const startTime = Date.now();
-    
     try {
       console.log(`🎚️ Applying fade: ${fadeInDuration}s in, ${fadeOutDuration}s out...`);
-      
       const buffer = await this.loadAudioFile(file);
-      const channelData = buffer.getChannelData(0);
-      const sampleRate = buffer.sampleRate;
-      
-      const processedData = new Float32Array(channelData);
-      
-      // Apply fade in
-      if (fadeInDuration > 0) {
-        const fadeInSamples = Math.floor(fadeInDuration * sampleRate);
-        for (let i = 0; i < Math.min(fadeInSamples, processedData.length); i++) {
-          const fadeMultiplier = i / fadeInSamples;
-          processedData[i] *= fadeMultiplier;
+      const { sampleRate, numberOfChannels, length } = buffer;
+      const newBuffer = this.getAudioContext().createBuffer(numberOfChannels, length, sampleRate);
+      for (let ch = 0; ch < numberOfChannels; ch++) {
+        const src = buffer.getChannelData(ch);
+        const dst = newBuffer.getChannelData(ch);
+        dst.set(src);
+        if (fadeInDuration > 0) {
+          const fadeInSamples = Math.floor(fadeInDuration * sampleRate);
+          for (let i = 0; i < Math.min(fadeInSamples, length); i++) {
+            dst[i] *= i / fadeInSamples;
+          }
+        }
+        if (fadeOutDuration > 0) {
+          const fadeOutSamples = Math.floor(fadeOutDuration * sampleRate);
+          const startFadeOut = length - fadeOutSamples;
+          for (let i = Math.max(0, startFadeOut); i < length; i++) {
+            dst[i] *= (length - i) / fadeOutSamples;
+          }
         }
       }
-      
-      // Apply fade out
-      if (fadeOutDuration > 0) {
-        const fadeOutSamples = Math.floor(fadeOutDuration * sampleRate);
-        const startFadeOut = processedData.length - fadeOutSamples;
-        for (let i = startFadeOut; i < processedData.length; i++) {
-          const fadeMultiplier = (processedData.length - i) / fadeOutSamples;
-          processedData[i] *= fadeMultiplier;
-        }
-      }
-      
-      const processedBuffer = this.float32ArrayToBuffer(processedData, sampleRate);
-      const processedAudioUrl = await this.bufferToBlobUrl(processedBuffer);
-      
+      const processedAudioUrl = await this.bufferToBlobUrl(newBuffer);
       console.log('✅ Fade applied successfully');
-      
-      return {
-        success: true,
-        processedAudioUrl,
-        processedData,
-        processingTime: Date.now() - startTime
-      };
+      return { success: true, processedAudioUrl, processedData: new Float32Array(newBuffer.getChannelData(0)), processingTime: Date.now() - startTime };
     } catch (error) {
       console.error('❌ Fade application failed:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        processingTime: Date.now() - startTime
-      };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error', processingTime: Date.now() - startTime };
     }
   }
 
-  // Normalize audio
+  // Normalize audio — peak found across all channels, applied to all channels
   async normalizeAudio(file: File): Promise<AudioProcessingResult> {
     const startTime = Date.now();
-    
     try {
       console.log('📈 Normalizing audio...');
-      
       const buffer = await this.loadAudioFile(file);
-      const channelData = buffer.getChannelData(0);
-      
-      // Find peak
       let peak = 0;
-      for (let i = 0; i < channelData.length; i++) {
-        const abs = Math.abs(channelData[i]);
-        if (abs > peak) peak = abs;
+      for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+        const data = buffer.getChannelData(ch);
+        for (let i = 0; i < data.length; i++) {
+          const abs = Math.abs(data[i]);
+          if (abs > peak) peak = abs;
+        }
       }
-      
-      // Normalize to 90% to prevent clipping
-      const normalizationFactor = peak > 0 ? 0.9 / peak : 1;
-      const processedData = new Float32Array(channelData.length);
-      
-      for (let i = 0; i < channelData.length; i++) {
-        processedData[i] = channelData[i] * normalizationFactor;
+      const factor = peak > 0 ? 0.9 / peak : 1;
+      const newBuffer = this.getAudioContext().createBuffer(
+        buffer.numberOfChannels, buffer.length, buffer.sampleRate
+      );
+      for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+        const src = buffer.getChannelData(ch);
+        const dst = newBuffer.getChannelData(ch);
+        for (let i = 0; i < src.length; i++) dst[i] = src[i] * factor;
       }
-      
-      const processedBuffer = this.float32ArrayToBuffer(processedData, buffer.sampleRate);
-      const processedAudioUrl = await this.bufferToBlobUrl(processedBuffer);
-      
+      const processedAudioUrl = await this.bufferToBlobUrl(newBuffer);
       console.log('✅ Audio normalized successfully');
-      
-      return {
-        success: true,
-        processedAudioUrl,
-        processedData,
-        processingTime: Date.now() - startTime
-      };
+      return { success: true, processedAudioUrl, processedData: new Float32Array(newBuffer.getChannelData(0)), processingTime: Date.now() - startTime };
     } catch (error) {
       console.error('❌ Audio normalization failed:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        processingTime: Date.now() - startTime
-      };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error', processingTime: Date.now() - startTime };
     }
   }
 
-  // Add simple distortion/overdrive
+  // Add simple distortion/overdrive — all channels
   async addDistortion(file: File, amount: number = 0.5): Promise<AudioProcessingResult> {
     const startTime = Date.now();
-    
     try {
       console.log(`🎸 Adding distortion (${amount * 100}%)...`);
-      
       const buffer = await this.loadAudioFile(file);
-      const channelData = buffer.getChannelData(0);
-      const processedData = new Float32Array(channelData.length);
-      
-      for (let i = 0; i < channelData.length; i++) {
-        let sample = channelData[i];
-        // Simple waveshaping distortion
-        sample = Math.tanh(sample * (1 + amount * 10)) * 0.8;
-        processedData[i] = sample;
+      const newBuffer = this.getAudioContext().createBuffer(
+        buffer.numberOfChannels, buffer.length, buffer.sampleRate
+      );
+      for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+        const src = buffer.getChannelData(ch);
+        const dst = newBuffer.getChannelData(ch);
+        for (let i = 0; i < src.length; i++) {
+          dst[i] = Math.tanh(src[i] * (1 + amount * 10)) * 0.8;
+        }
       }
-      
-      const processedBuffer = this.float32ArrayToBuffer(processedData, buffer.sampleRate);
-      const processedAudioUrl = await this.bufferToBlobUrl(processedBuffer);
-      
+      const processedAudioUrl = await this.bufferToBlobUrl(newBuffer);
       console.log('✅ Distortion applied successfully');
-      
-      return {
-        success: true,
-        processedAudioUrl,
-        processedData,
-        processingTime: Date.now() - startTime
-      };
+      return { success: true, processedAudioUrl, processedData: new Float32Array(newBuffer.getChannelData(0)), processingTime: Date.now() - startTime };
     } catch (error) {
       console.error('❌ Distortion application failed:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        processingTime: Date.now() - startTime
-      };
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error', processingTime: Date.now() - startTime };
     }
   }
 }

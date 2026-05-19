@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AudioOutputSelector } from "@/components/ui/audio-output-selector";
+import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import StudioHeader from "@/components/studio/StudioHeader";
 import PromptBuilder from "@/components/studio/PromptBuilder";
@@ -26,6 +27,8 @@ import { MusicGenerator } from "@/components/studio/MusicGenerator";
 import { SeparatedAudio } from "@/lib/audioSeparation";
 import { AudioAnalysis } from "@/lib/audioAnalyzer";
 import { useGlobalAudio } from "@/hooks/useGlobalAudio";
+import { StudioTabErrorBoundary } from "@/components/StudioTabErrorBoundary";
+import { AudioEffectsQuickPanel } from "@/components/studio/AudioEffectsQuickPanel";
 
 interface Track {
   id: string;
@@ -49,10 +52,13 @@ const Index = () => {
   const [isSampleLibraryOpen, setIsSampleLibraryOpen] = useState(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStemEditorOpen, setIsStemEditorOpen] = useState(false);
+  /** Keeps each studio tab mounted after first visit so audio/recording state is not torn down on switch. */
+  const [studioTab, setStudioTab] = useState("upload");
+  const [visitedStudioTabs, setVisitedStudioTabs] = useState(() => new Set<string>(["upload"]));
   const { playTrack, setAudioOutputDevice } = useGlobalAudio();
   
   // Authentication state
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<User | null>(null);
   
   // Load user's audio samples from database with comprehensive error handling
   const loadUserSamples = useCallback(async (userId: string | null | undefined) => {
@@ -157,41 +163,6 @@ const Index = () => {
     };
   }, [loadUserSamples]);
 
-  // Check audio output device
-  useEffect(() => {
-    const checkAudioOutput = async () => {
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
-          
-          // Find the default or currently selected output
-          const defaultOutput = audioOutputs.find(device => device.deviceId === 'default') || audioOutputs[0];
-          
-          const outputElement = document.getElementById('audio-output-device');
-          if (outputElement && defaultOutput) {
-            outputElement.textContent = defaultOutput.label || 'Default Audio Output';
-            outputElement.className = 'text-neon-green ml-2';
-          } else if (outputElement) {
-            outputElement.textContent = 'System Default Audio Output';
-            outputElement.className = 'text-neon-blue ml-2';
-          }
-        }
-      } catch (error) {
-        console.log('Audio device detection:', error);
-        const outputElement = document.getElementById('audio-output-device');
-        if (outputElement) {
-          outputElement.textContent = 'System Default (AirPods if connected)';
-          outputElement.className = 'text-neon-orange ml-2';
-        }
-      }
-    };
-
-    if (uploadedSamples.length > 0) {
-      checkAudioOutput();
-    }
-  }, [uploadedSamples]);
-
   const handleGenerate = (prompt: string, settings: any) => {
     // Simulate track generation
     const newTrack: Track = {
@@ -250,30 +221,45 @@ const Index = () => {
 
           {/* Main Content Area - Studio Interface with Tabs */}
           <div className="flex-1 space-y-6">
-            <Tabs defaultValue="upload" className="w-full space-y-6">
-              <TabsList className="grid w-full grid-cols-6 bg-card/50 backdrop-blur-sm">
-                <TabsTrigger value="upload" className="flex items-center gap-2">
+            <Tabs
+              value={studioTab}
+              onValueChange={(v) => {
+                setStudioTab(v);
+                setVisitedStudioTabs((prev) => new Set(prev).add(v));
+              }}
+              className="w-full space-y-6"
+            >
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-1 bg-card/50 backdrop-blur-sm p-1 rounded-md">
+                <TabsTrigger value="upload" className="flex items-center gap-1 text-xs sm:text-sm">
                   📤 Upload & Library
                 </TabsTrigger>
-                <TabsTrigger value="generate" className="flex items-center gap-2">
+                <TabsTrigger value="pitch-speed" className="flex items-center gap-1 text-xs sm:text-sm">
+                  🎚️ Pitch & Speed
+                </TabsTrigger>
+                <TabsTrigger value="generate" className="flex items-center gap-1 text-xs sm:text-sm">
                   🎵 Generate
                 </TabsTrigger>
-                <TabsTrigger value="record" className="flex items-center gap-2">
+                <TabsTrigger value="record" className="flex items-center gap-1 text-xs sm:text-sm">
                   🎙️ Record
                 </TabsTrigger>
-                <TabsTrigger value="mix" className="flex items-center gap-2">
+                <TabsTrigger value="mix" className="flex items-center gap-1 text-xs sm:text-sm">
                   🎛️ Mix
                 </TabsTrigger>
-                <TabsTrigger value="master" className="flex items-center gap-2">
+                <TabsTrigger value="master" className="flex items-center gap-1 text-xs sm:text-sm">
                   🎚️ Master
                 </TabsTrigger>
-                <TabsTrigger value="workflow" className="flex items-center gap-2">
+                <TabsTrigger value="workflow" className="flex items-center gap-1 text-xs sm:text-sm">
                   ⚡ Workflow
                 </TabsTrigger>
               </TabsList>
 
               {/* Upload & Library Tab */}
-              <TabsContent value="upload" className="space-y-6">
+              <TabsContent
+                value="upload"
+                forceMount={visitedStudioTabs.has("upload")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Upload & Library">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   {/* Left Column - Upload Section */}
                   <div className="space-y-4">
@@ -293,10 +279,6 @@ const Index = () => {
                             const latestSample = samples[samples.length - 1];
                             if (latestSample && latestSample.analysis) {
                               setAudioAnalysis(latestSample.analysis);
-                            }
-                            // Refresh user samples from database to get the latest data
-                            if (user) {
-                              setTimeout(() => loadUserSamples(user.id), 1000);
                             }
                           }}
                           onAudioSeparated={(separated) => setSeparatedAudio(separated)}
@@ -385,10 +367,51 @@ const Index = () => {
                     </Collapsible>
                   </div>
                 </div>
+                </StudioTabErrorBoundary>
+              </TabsContent>
+
+              {/* Pitch & Speed — isolated from chat / voice UI */}
+              <TabsContent
+                value="pitch-speed"
+                forceMount={visitedStudioTabs.has("pitch-speed")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Pitch & Speed">
+                  <Collapsible defaultOpen={true}>
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground"
+                      >
+                        <span className="font-medium text-lg text-foreground">
+                          🎚️ Pitch, tempo & reverse
+                        </span>
+                        <ChevronDown className="h-4 w-4 text-foreground" />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-2">
+                      <AudioEffectsQuickPanel
+                        uploadedSamples={uploadedSamples}
+                        onUpdateSample={(sampleId, updates) => {
+                          setUploadedSamples((prev) =>
+                            prev.map((sample) =>
+                              sample.id === sampleId ? { ...sample, ...updates } : sample
+                            )
+                          );
+                        }}
+                      />
+                    </CollapsibleContent>
+                  </Collapsible>
+                </StudioTabErrorBoundary>
               </TabsContent>
 
               {/* Generate Tab */}
-              <TabsContent value="generate" className="space-y-6">
+              <TabsContent
+                value="generate"
+                forceMount={visitedStudioTabs.has("generate")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Generate">
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                   <div className="space-y-6">
                     <Collapsible defaultOpen={true}>
@@ -492,10 +515,16 @@ const Index = () => {
                     </Collapsible>
                   </div>
                 </div>
+                </StudioTabErrorBoundary>
               </TabsContent>
 
               {/* Record Tab */}
-              <TabsContent value="record" className="space-y-6">
+              <TabsContent
+                value="record"
+                forceMount={visitedStudioTabs.has("record")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Record">
                 <Collapsible defaultOpen={true}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
@@ -507,10 +536,16 @@ const Index = () => {
                     <RecordingStudio />
                   </CollapsibleContent>
                 </Collapsible>
+                </StudioTabErrorBoundary>
               </TabsContent>
 
               {/* Mix Tab */}
-              <TabsContent value="mix" className="space-y-6">
+              <TabsContent
+                value="mix"
+                forceMount={visitedStudioTabs.has("mix")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Mix">
                 <Collapsible defaultOpen={true}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
@@ -522,10 +557,16 @@ const Index = () => {
                     <MixingConsole />
                   </CollapsibleContent>
                 </Collapsible>
+                </StudioTabErrorBoundary>
               </TabsContent>
 
               {/* Master Tab */}
-              <TabsContent value="master" className="space-y-6">
+              <TabsContent
+                value="master"
+                forceMount={visitedStudioTabs.has("master")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Master">
                 <Collapsible defaultOpen={true}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
@@ -537,10 +578,16 @@ const Index = () => {
                     <MasteringSuite />
                   </CollapsibleContent>
                 </Collapsible>
+                </StudioTabErrorBoundary>
               </TabsContent>
 
               {/* Workflow Tab */}
-              <TabsContent value="workflow" className="space-y-6">
+              <TabsContent
+                value="workflow"
+                forceMount={visitedStudioTabs.has("workflow")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Workflow">
                 <Collapsible defaultOpen={true}>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
@@ -552,6 +599,7 @@ const Index = () => {
                     <MusicProductionWorkflow />
                   </CollapsibleContent>
                 </Collapsible>
+                </StudioTabErrorBoundary>
               </TabsContent>
             </Tabs>
 
