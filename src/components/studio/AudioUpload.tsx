@@ -130,9 +130,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
       
       const validTypes = ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/m4a', 'audio/ogg', 'audio/mp3', 'audio/x-wav', 'audio/aac'];
       const maxSize = 100 * 1024 * 1024; // 100MB
-      
-      console.log('Validating file:', file.name, 'Type:', file.type, 'Size:', file.size);
-      
+
       // Check file type
       const hasValidType = validTypes.includes(file.type);
       const hasValidExtension = /\.(mp3|wav|flac|m4a|ogg|aac)$/i.test(file.name);
@@ -215,8 +213,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         const isLargeFile = file.size > 50 * 1024 * 1024;
         
         if (isLargeFile) {
-          console.log('🔍 Large file detected, using lightweight metadata extraction');
-          resolve({ duration: 0 }); // Skip metadata for large files
+          resolve({ duration: 0 }); // Skip analysis for large files
           return;
         }
 
@@ -264,10 +261,9 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           try {
             if (!audio || resolved) return;
             
-            const duration = (audio.duration && isFinite(audio.duration) && audio.duration > 0) 
-              ? audio.duration 
+            const duration = (audio.duration && isFinite(audio.duration) && audio.duration > 0)
+              ? audio.duration
               : 0;
-            console.log('✅ Audio metadata loaded - Duration:', duration);
             
             // Skip analysis for files > 25MB to prevent crashes
             if (file.size > 25 * 1024 * 1024) {
@@ -324,10 +320,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           // Shorter timeout for large files
           const timeout = isLargeFile ? 1000 : 2000;
           timeoutId = setTimeout(() => {
-            if (!resolved) {
-              console.log('⚠️ Metadata extraction timeout - using defaults');
-              resolveOnce({ duration: 0 });
-            }
+            if (!resolved) resolveOnce({ duration: 0 });
           }, timeout);
 
           // Create URL and load with error handling
@@ -349,8 +342,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           resolve({ duration: 0 });
         }
         
-      } catch (error) {
-        console.log('Failed to create audio for metadata:', error);
+      } catch {
         resolve({ duration: 0 });
       }
     });
@@ -382,8 +374,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
     for (const file of audioFiles) {
       const id = crypto.randomUUID();
-      console.log('🎯 PROCESSING FILE:', file.name, 'ID:', id);
-      
       try {
         // 100% LOCAL UPLOAD - INSTANT COMPLETION, CREATE WITH 100% IMMEDIATELY
         // `sample` must be declared outside inner try so catch can safely reference it (try-block const is not in catch scope).
@@ -509,7 +499,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
             const fallbackSample = { ...base, uploadProgress: 100, audioUrl: fallbackUrl };
             onSamplesUploaded([fallbackSample]);
-            console.log("✅ SAMPLE SAVED (FALLBACK):", fallbackSample.name);
           } catch (fallbackError) {
             console.error('❌ Complete upload failure:', fallbackError);
             toast({
@@ -638,7 +627,6 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         processingTime: 1000
       };
       
-      console.log('✅ SIMPLIFIED separation complete:', separatedAudio);
       onAudioSeparated?.(separatedAudio);
       
       toast({
@@ -779,12 +767,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     try {
       const processedSamples = uploadedSamples.filter(s => (s.uploadProgress || 0) >= 99);
       
-      console.log('🚀 MANUAL UPLOAD TO LIBRARY:', processedSamples.length, 'samples');
-      console.log('🚀 SAMPLES DATA:', processedSamples.map(s => ({ name: s.name, id: s.id, audioUrl: s.audioUrl })));
-      
-      // Trigger the callback 
       onSamplesUploaded(processedSamples);
-      console.log('✅ Manual onSamplesUploaded callback triggered');
       
       toast({
         title: "Samples refreshed in library!",

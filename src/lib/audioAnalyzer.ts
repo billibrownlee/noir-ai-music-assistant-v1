@@ -309,9 +309,9 @@ export class AudioAnalyzer {
       }
     }
     
-    // Normalize
+    // Normalize (guard against silent audio producing all-zero chroma)
     const sum = chroma.reduce((a, b) => a + b, 0);
-    return chroma.map(val => val / sum);
+    return sum === 0 ? chroma.map(() => 1 / 12) : chroma.map(val => val / sum);
   }
 
   private extractSpectralFeatures(data: Float32Array, sampleRate: number) {
@@ -331,7 +331,7 @@ export class AudioAnalyzer {
       weightedSum += freq * magnitudes[i];
       magnitudeSum += magnitudes[i];
     }
-    const centroid = weightedSum / magnitudeSum;
+    const centroid = magnitudeSum === 0 ? 1000 : weightedSum / magnitudeSum;
     
     // Spectral rolloff (85% of energy)
     const totalEnergy = magnitudes.reduce((sum, mag) => sum + mag ** 2, 0);

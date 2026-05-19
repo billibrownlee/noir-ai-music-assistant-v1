@@ -149,17 +149,18 @@ export class AudioEffectsProcessor {
   // Speed up/slow down audio
   async changeSpeed(audioUrl: string, speedFactor: number): Promise<{ audioUrl: string; audioBlob: Blob }> {
     try {
-      console.log('⚡ Changing audio speed by factor:', speedFactor);
-      
+      // Clamp speed factor to a safe range to prevent memory exhaustion or empty buffers
+      const safeFactor = Math.max(0.1, Math.min(10, speedFactor));
+
       // Initialize AudioContext
       const audioContext = await this.initAudioContext();
-      
+
       const response = await fetch(audioUrl);
       const arrayBuffer = await response.arrayBuffer();
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      
+
       // Calculate new buffer length
-      const newLength = Math.floor(audioBuffer.length / speedFactor);
+      const newLength = Math.max(1, Math.floor(audioBuffer.length / safeFactor));
       const newBuffer = audioContext.createBuffer(
         audioBuffer.numberOfChannels,
         newLength,
@@ -172,7 +173,7 @@ export class AudioEffectsProcessor {
         const newData = newBuffer.getChannelData(channel);
         
         for (let i = 0; i < newLength; i++) {
-          const sourceIndex = Math.floor(i * speedFactor);
+          const sourceIndex = Math.floor(i * safeFactor);
           if (sourceIndex < originalData.length) {
             newData[i] = originalData[sourceIndex];
           }
