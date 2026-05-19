@@ -200,60 +200,51 @@ export class AudioAnalyzer {
 
   private detectTempo(data: Float32Array, sampleRate: number): number {
     try {
-      // Simplified tempo detection using onset detection
-      const hopSize = 512;
-      const frameSize = 1024;
-      const onsets: number[] = [];
-      
-      // Limit processing to prevent crashes
-      const maxFrames = Math.min(data.length - frameSize, 10000 * hopSize);
-      
-      for (let i = 0; i < maxFrames; i += hopSize) {
-        try {
-          const frame = data.slice(i, i + frameSize);
-          if (frame.length < frameSize) break;
-          
-          const energy = frame.reduce((sum, sample) => {
-            const val = isNaN(sample) ? 0 : sample;
-            return sum + val * val;
-          }, 0);
-          
-          if (i > 0 && onsets.length > 0 && energy > onsets[onsets.length - 1] * 1.3) {
-            onsets.push(i / sampleRate);
-          }
-        } catch (error) {
-          console.warn('Tempo detection frame error:', error);
-          break;
+      // Build a low-resolution energy envelope (one value per ~10ms step).
+      // Autocorrelation on this envelope reliably finds the beat period.
+      const stepSize = Math.max(1, Math.floor(sampleRate / 100)); // ~10ms steps → 100 fps
+      const maxSteps = Math.min(Math.floor(data.length / stepSize), 6000); // cap at 60s
+      const envelope = new Float32Array(maxSteps);
+
+      for (let i = 0; i < maxSteps; i++) {
+        let energy = 0;
+        const base = i * stepSize;
+        for (let j = 0; j < stepSize && base + j < data.length; j++) {
+          const s = data[base + j];
+          energy += s * s;
         }
+        envelope[i] = Math.sqrt(energy / stepSize);
       }
-      
-      // Calculate intervals between onsets
-      const intervals: number[] = [];
-      for (let i = 1; i < onsets.length; i++) {
-        intervals.push(onsets[i] - onsets[i - 1]);
+
+      // Autocorrelation in the lag range corresponding to 60–200 BPM.
+      // frameRate fps: lag L frames → 60 * frameRate / L BPM
+      const frameRate = 100; // 100 steps/second by construction above
+      const minLag = Math.round(frameRate * 60 / 200); // 30 frames → 200 BPM
+      const maxLag = Math.round(frameRate * 60 / 60);  // 100 frames → 60 BPM
+
+      let bestLag = Math.round((minLag + maxLag) / 2);
+      let bestCorr = -1;
+      const n = envelope.length;
+
+      for (let lag = minLag; lag <= maxLag; lag++) {
+        let corr = 0;
+        const limit = n - lag;
+        if (limit <= 0) continue;
+        for (let i = 0; i < limit; i++) corr += envelope[i] * envelope[i + lag];
+        corr /= limit;
+        if (corr > bestCorr) { bestCorr = corr; bestLag = lag; }
       }
-      
-      // Find most common interval (approximate beat)
-      if (intervals.length === 0) {
-        return 120; // Default tempo
-      }
-      
-      const avgInterval = intervals.reduce((sum, interval) => {
-        const val = isNaN(interval) ? 0 : interval;
-        return sum + val;
-      }, 0) / intervals.length;
-      
-      if (avgInterval <= 0 || !isFinite(avgInterval)) {
-        return 120; // Default tempo
-      }
-      
-      const bpm = Math.round(60 / avgInterval);
-      
-      // Clamp to reasonable range
+
+      let bpm = Math.round((frameRate * 60) / bestLag);
+
+      // Halve/double to land in the natural 70-150 BPM sweet spot where most
+      // music sits. Autocorrelation sometimes locks on half/double the beat.
+      if (bpm > 160) bpm = Math.round(bpm / 2);
+      if (bpm < 70)  bpm = Math.round(bpm * 2);
+
       return Math.max(60, Math.min(200, bpm));
-    } catch (error) {
-      console.warn('Tempo detection failed:', error);
-      return 120; // Safe default
+    } catch {
+      return 120;
     }
   }
 

@@ -276,9 +276,12 @@ const Index = () => {
                         <AudioUpload
                           onSamplesUploaded={(samples) => {
                             setUploadedSamples(prev => {
-                              const existingIds = new Set(prev.map(s => s.id));
-                              const newOnly = samples.filter(s => !existingIds.has(s.id));
-                              return newOnly.length > 0 ? [...prev, ...newOnly] : prev;
+                              const map = new Map(prev.map(s => [s.id, s]));
+                              for (const s of samples) {
+                                // Merge: update existing or add new
+                                map.set(s.id, map.has(s.id) ? { ...map.get(s.id), ...s } : s);
+                              }
+                              return Array.from(map.values());
                             });
                             const latestSample = samples[samples.length - 1];
                             if (latestSample?.analysis) {

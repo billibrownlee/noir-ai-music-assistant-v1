@@ -48,6 +48,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 }) => {
   const [uploadedSamples, setUploadedSamples] = useState<AudioSample[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set());
   const [audioAnalyzer] = useState(() => new AudioAnalyzer());
   const [separationEngine] = useState(() => new AudioSeparationEngine());
   const [separationProgress, setSeparationProgress] = useState<{ progress: number, stage: string } | null>(null);
@@ -420,27 +421,52 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           // Everything else happens in background (non-blocking, doesn't affect progress)
           // Use microtask queue to push to next tick without delay
           Promise.resolve().then(() => {
-            // Extract metadata in background (completely optional)
+            // Mark as analyzing so the UI shows the spinner
+            setAnalyzingIds(prev => new Set(prev).add(id));
+
+            // Extract metadata + BPM/key in background (completely optional)
             extractAudioMetadata(file)
               .then((metadata) => {
                 try {
-                  if (metadata && metadata.analysis) {
-                    setUploadedSamples(prev => 
-                      prev.map(s => s.id === id ? { 
-                        ...s, 
-                        duration: metadata.duration, 
-                        analysis: metadata.analysis 
+                  setAnalyzingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+
+                  if (metadata) {
+                    const detectedBpm = metadata.analysis?.tempo ?? undefined;
+                    const detectedKey = metadata.analysis?.key ?? undefined;
+
+                    // Update local upload card with detected values
+                    setUploadedSamples(prev =>
+                      prev.map(s => s.id === id ? {
+                        ...s,
+                        duration: metadata.duration || s.duration,
+                        analysis: metadata.analysis ?? s.analysis,
+                        bpm: detectedBpm ?? s.bpm,
+                        key: detectedKey ?? s.key,
                       } : s)
                     );
-                    if (onAnalysisComplete && metadata.analysis) {
-                      onAnalysisComplete(metadata.analysis);
+
+                    if (metadata.analysis) {
+                      onAnalysisComplete?.(metadata.analysis);
+                    }
+
+                    // Push the updated sample (with bpm/key) to the global library
+                    if (detectedBpm || detectedKey) {
+                      const updatedSample: AudioSample = {
+                        ...sample!,
+                        bpm: detectedBpm ?? sample!.bpm,
+                        key: detectedKey ?? sample!.key,
+                        duration: metadata.duration || sample!.duration,
+                        analysis: metadata.analysis ?? sample!.analysis,
+                      };
+                      onSamplesUploaded([updatedSample]);
                     }
                   }
-                } catch (updateError) {
-                  // Silent fail
+                } catch {
+                  setAnalyzingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
                 }
               })
               .catch(() => {
+                setAnalyzingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
                 // Silent fail - metadata is optional
               });
 
@@ -894,20 +920,23 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                       </div>
                       <div>
                         <h4 className="font-medium">{sample.name}</h4>
-                        <div className="flex items-center gap-2 text-sm text-studio-text-secondary">
+                        <div className="flex items-center gap-2 text-sm text-studio-text-secondary flex-wrap">
                           {sample.duration && (
                             <span>{Math.floor(sample.duration / 60)}:{(sample.duration % 60).toFixed(0).padStart(2, '0')}</span>
                           )}
                           <span>•</span>
                           <span>{(sample.file.size / (1024 * 1024)).toFixed(1)} MB</span>
-                          {sample.analysis && (
+                          {analyzingIds.has(sample.id) ? (
                             <>
                               <span>•</span>
-                              <span>{sample.analysis.tempo} BPM</span>
-                              <span>•</span>
-                              <span>{sample.analysis.key} {sample.analysis.mode}</span>
+                              <span className="text-neon-blue animate-pulse">Detecting BPM &amp; key...</span>
                             </>
-                          )}
+                          ) : sample.bpm || sample.key ? (
+                            <>
+                              {sample.bpm && <><span>•</span><span className="text-neon-green font-medium">{sample.bpm} BPM</span></>}
+                              {sample.key && <><span>•</span><span className="text-neon-purple font-medium">{sample.key}{sample.analysis?.mode === 'minor' ? 'm' : ''}</span></>}
+                            </>
+                          ) : null}
                         </div>
                       </div>
                     </div>
