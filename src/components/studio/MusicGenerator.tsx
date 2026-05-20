@@ -102,8 +102,8 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
   const [progress, setProgress] = useState<{ status: string; pct: number } | null>(null);
   const [generatedTracks, setGeneratedTracks] = useState<GeneratedMusic[]>([]);
 
-  // Reference audio (melody conditioning)
-  const [referenceId, setReferenceId] = useState<string>('');
+  // Reference audio (melody conditioning) — "none" means no reference selected
+  const [referenceId, setReferenceId] = useState<string>('none');
 
   // API key management
   const [apiKey, setApiKeyState] = useState(() => getStoredApiKey());
@@ -128,7 +128,9 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
     [uploadedSamples]
   );
 
-  const selectedReference = referenceCandidates.find(s => s.id === referenceId) ?? null;
+  const selectedReference = referenceId !== 'none'
+    ? (referenceCandidates.find(s => s.id === referenceId) ?? null)
+    : null;
 
   // Auto-suggest prompt when a reference is selected
   const autoPrompt = useMemo(() => {
@@ -385,7 +387,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
                 <SelectValue placeholder="None — text-only generation" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None — text-only</SelectItem>
+                <SelectItem value="none">None — text-only</SelectItem>
                 {referenceCandidates.map(s => (
                   <SelectItem key={s.id} value={s.id}>
                     <span className="flex items-center gap-2">
