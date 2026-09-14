@@ -6,13 +6,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Play, Pause, Download, Sparkles, Music, Mic2, Volume2 } from "lucide-react";
+import { Sparkles, Music, Mic2, Volume2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useGlobalAudio } from "@/hooks/useGlobalAudio";
 import { supabase } from "@/integrations/supabase/client";
 
 interface PromptBuilderProps {
-  onGenerate: (prompt: string, settings: any) => void;
+  onGenerate: (prompt: string, settings: any, audioUrl: string) => void;
 }
 
 const GENRE_TEMPLATES = {
@@ -61,20 +61,65 @@ export default function PromptBuilder({ onGenerate }: PromptBuilderProps) {
   });
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStatus, setGenerationStatus] = useState('');
   const [isGeneratingVoice, setIsGeneratingVoice] = useState(false);
   const { toast } = useToast();
   const { playTrack } = useGlobalAudio();
 
+  // Map PromptBuilder genre keys to Edge Function style keys
+  const GENRE_TO_STYLE: Record<string, string> = {
+    rnb: 'rnb',
+    pop: 'pop',
+    trap: 'hip-hop',
+  };
+
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setGenerationStatus('Starting…');
     const template = GENRE_TEMPLATES[selectedGenre as keyof typeof GENRE_TEMPLATES];
     const fullPrompt = customPrompt || template.prompts[0];
-    
-    // Simulate generation
-    setTimeout(() => {
-      onGenerate(fullPrompt, { ...settings, genre: selectedGenre });
+    const style = GENRE_TO_STYLE[selectedGenre] ?? selectedGenre;
+    const clampedDuration = Math.min(Math.max(Math.round(settings.duration), 5), 30);
+
+    try {
+      setGenerationStatus('Sending to Noir AI…');
+      const { data, error } = await supabase.functions.invoke('generate-music', {
+        body: {
+          prompt: fullPrompt,
+          duration: clampedDuration,
+          style,
+        },
+      });
+
+      if (error) throw new Error(error.message ?? 'Generation failed');
+      if (data?.error) throw new Error(data.error);
+      if (!data?.audioUrl) throw new Error('No audio returned from generation');
+
+      const audioUrl: string = data.audioUrl;
+
+      await playTrack({
+        id: `prompt-gen-${Date.now()}`,
+        name: fullPrompt.substring(0, 40),
+        audioUrl,
+      });
+
+      onGenerate(fullPrompt, { ...settings, genre: selectedGenre, duration: clampedDuration }, audioUrl);
+
+      toast({
+        title: 'Track generated',
+        description: `${clampedDuration}s of ${template.name} music is ready`,
+      });
+    } catch (err) {
+      console.error('PromptBuilder generation error:', err);
+      toast({
+        title: 'Generation failed',
+        description: err instanceof Error ? err.message : 'Unknown error. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
       setIsGenerating(false);
-    }, 3000);
+      setGenerationStatus('');
+    }
   };
 
   const handleVoicePreview = async () => {
@@ -278,7 +323,7 @@ export default function PromptBuilder({ onGenerate }: PromptBuilderProps) {
           {isGenerating ? (
             <>
               <div className="animate-spin w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
-              Generating Music...
+              {generationStatus || 'Generating Music…'}
             </>
           ) : (
             <>

@@ -148,6 +148,10 @@ export class AudioEffectsProcessor {
 
   // Speed up/slow down audio
   async changeSpeed(audioUrl: string, speedFactor: number): Promise<{ audioUrl: string; audioBlob: Blob }> {
+    if (this.isProcessing) {
+      throw new Error('Audio processing already in progress. Please wait for the current operation to complete.');
+    }
+    this.isProcessing = true;
     try {
       // Clamp speed factor to a safe range to prevent memory exhaustion or empty buffers
       const safeFactor = Math.max(0.1, Math.min(10, speedFactor));
@@ -189,6 +193,8 @@ export class AudioEffectsProcessor {
     } catch (error) {
       console.error('❌ Error changing speed:', error);
       throw new Error(`Failed to change speed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      this.isProcessing = false;
     }
   }
 

@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import StudioHeader from "@/components/studio/StudioHeader";
 import PromptBuilder from "@/components/studio/PromptBuilder";
 import AudioPlayer from "@/components/studio/AudioPlayer";
-import GenerationHistory from "@/components/studio/GenerationHistory";
+import GenerationHistory, { type GeneratedTrack } from "@/components/studio/GenerationHistory";
 import { AudioUpload } from "@/components/studio/AudioUpload";
 import { SampleLibrary } from "@/components/studio/SampleLibrary";
 import { ProductionAssistant } from "@/components/studio/ProductionAssistant";
@@ -24,12 +24,15 @@ import { TempoControl } from "@/components/studio/TempoControl";
 import { MusicProductionWorkflow } from "@/components/studio/MusicProductionWorkflow";
 import { AudioGenerator } from "@/components/studio/AudioGenerator";
 import { MusicGenerator } from "@/components/studio/MusicGenerator";
+import { MidiGenerator } from "@/components/studio/MidiGenerator";
 import { SeparatedAudio } from "@/lib/audioSeparation";
 import { AudioAnalysis } from "@/lib/audioAnalyzer";
 import { useGlobalAudio } from "@/hooks/useGlobalAudio";
 import { StudioTabErrorBoundary } from "@/components/StudioTabErrorBoundary";
 import { AudioEffectsQuickPanel } from "@/components/studio/AudioEffectsQuickPanel";
 import { GlobalAudioBar } from "@/components/studio/GlobalAudioBar";
+import { loadAllSamplesFromDB, deleteSampleFromDB, clearAllSamplesFromDB } from "@/lib/sampleStorage";
+import type { AudioSample } from "@/types/audio";
 
 interface Track {
   id: string;
@@ -41,13 +44,15 @@ interface Track {
   prompt: string;
   timestamp: Date;
   liked: boolean;
+  audioUrl?: string;
 }
 
 const Index = () => {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
+  const [generationHistory, setGenerationHistory] = useState<GeneratedTrack[]>([]);
   const [separatedAudio, setSeparatedAudio] = useState<SeparatedAudio | null>(null);
   const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysis | null>(null);
-  const [uploadedSamples, setUploadedSamples] = useState<any[]>([]);
+  const [uploadedSamples, setUploadedSamples] = useState<AudioSample[]>([]);
   const [isUploadOpen, setIsUploadOpen] = useState(true);
   const [isTempoOpen, setIsTempoOpen] = useState(false);
   const [isSampleLibraryOpen, setIsSampleLibraryOpen] = useState(true);
@@ -57,10 +62,21 @@ const Index = () => {
   const [studioTab, setStudioTab] = useState("upload");
   const [visitedStudioTabs, setVisitedStudioTabs] = useState(() => new Set<string>(["upload"]));
   const { playTrack, setAudioOutputDevice } = useGlobalAudio();
-  
+
   // Authentication state
   const [user, setUser] = useState<User | null>(null);
-  
+
+  // Restore persisted samples from IndexedDB on first mount
+  useEffect(() => {
+    loadAllSamplesFromDB()
+      .then(stored => {
+        if (stored.length > 0) {
+          setUploadedSamples(stored as AudioSample[]);
+        }
+      })
+      .catch(err => console.warn('Could not restore samples from IndexedDB:', err));
+  }, []);
+
   // Load user's audio samples from database with comprehensive error handling
   const loadUserSamples = useCallback(async (userId: string | null | undefined) => {
     try {
@@ -81,25 +97,25 @@ const Index = () => {
       }
       
       // Transform database samples to match the component interface with validation
-      const transformedSamples = (data || []).map((sample: any) => {
+      const transformedSamples = (data || []).map((sample: Record<string, unknown>) => {
         try {
-          return {
-            id: sample?.id && typeof sample.id === 'string' ? sample.id : crypto.randomUUID(),
-            name: sample?.filename && typeof sample.filename === 'string' ? sample.filename : 'Unknown',
-            audioUrl: sample?.public_url && typeof sample.public_url === 'string' ? sample.public_url : '',
-            genre: sample?.genre && typeof sample.genre === 'string' ? sample.genre : 'Unknown',
+          const result: AudioSample = {
+            id: typeof sample?.id === 'string' ? sample.id : crypto.randomUUID(),
+            name: typeof sample?.filename === 'string' ? sample.filename : 'Unknown',
+            audioUrl: typeof sample?.public_url === 'string' ? sample.public_url : '',
+            genre: typeof sample?.genre === 'string' ? sample.genre : 'Unknown',
             bpm: typeof sample?.bpm === 'number' && !isNaN(sample.bpm) ? sample.bpm : undefined,
-            key: sample?.key && typeof sample.key === 'string' ? sample.key : undefined,
+            key: typeof sample?.key === 'string' ? sample.key : undefined,
             duration: typeof sample?.duration === 'number' && !isNaN(sample.duration) ? sample.duration : undefined,
-            tags: Array.isArray(sample?.tags) ? sample.tags.filter((t: any) => typeof t === 'string') : [],
-            uploadDate: sample?.created_at ? new Date(sample.created_at) : new Date()
+            tags: Array.isArray(sample?.tags) ? (sample.tags as unknown[]).filter((t): t is string => typeof t === 'string') : [],
           };
+          return result;
         } catch (transformError) {
           console.warn('Error transforming sample:', transformError, sample);
           return null;
         }
-      }).filter((sample: any) => sample !== null && sample.audioUrl);
-      
+      }).filter((s): s is AudioSample => s !== null && !!s.audioUrl);
+
       setUploadedSamples(transformedSamples);
       console.log('✅ Loaded user samples:', transformedSamples.length);
     } catch (error) {
@@ -164,24 +180,24 @@ const Index = () => {
     };
   }, [loadUserSamples]);
 
-  const handleGenerate = (prompt: string, settings: any) => {
-    // Simulate track generation
+  const handleGenerate = (prompt: string, settings: any, audioUrl: string) => {
     const newTrack: Track = {
       id: Date.now().toString(),
-      title: `AI Track ${Date.now()}`,
+      title: `AI Track ${new Date().toLocaleTimeString()}`,
       genre: settings.genre || "Unknown",
-      duration: settings.duration || 180,
+      duration: settings.duration || 30,
       bpm: settings.bpm?.[0] || 120,
       key: settings.key || "C",
       prompt,
       timestamp: new Date(),
-      liked: false
+      liked: false,
+      audioUrl,
     };
-    
     setCurrentTrack(newTrack);
+    setGenerationHistory(prev => [newTrack as GeneratedTrack, ...prev]);
   };
 
-  const handleTrackSelect = (track: Track) => {
+  const handleTrackSelect = (track: GeneratedTrack) => {
     setCurrentTrack(track);
   };
 
@@ -291,9 +307,11 @@ const Index = () => {
                           onAudioSeparated={(separated) => setSeparatedAudio(separated)}
                           onAnalysisComplete={(analysis) => setAudioAnalysis(analysis)}
                           onDeleteSample={(sampleId) => {
+                            deleteSampleFromDB(sampleId).catch(console.warn);
                             setUploadedSamples(prev => prev.filter(s => s.id !== sampleId));
                           }}
                           onClearSamples={() => {
+                            clearAllSamplesFromDB().catch(console.warn);
                             setUploadedSamples([]);
                           }}
                         />
@@ -372,8 +390,8 @@ const Index = () => {
                           onSampleSelect={(sample) => console.log('Selected sample:', sample)}
                           uploadedSamples={uploadedSamples}
                           onDeleteSample={(sampleId) => {
+                            deleteSampleFromDB(sampleId).catch(console.warn);
                             setUploadedSamples(prev => prev.filter(sample => sample.id !== sampleId));
-                            console.log('Deleted sample:', sampleId);
                           }}
                         />
                       </CollapsibleContent>
@@ -430,6 +448,18 @@ const Index = () => {
                     <Collapsible defaultOpen={true}>
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
+                          <span className="font-medium text-lg text-foreground">🎹 Noir Melody Generator</span>
+                          <ChevronDown className="h-4 w-4 text-foreground" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2">
+                        <MidiGenerator uploadedSamples={uploadedSamples} />
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    <Collapsible defaultOpen={false}>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
                           <span className="font-medium text-lg text-foreground">🎯 Prompt Builder</span>
                           <ChevronDown className="h-4 w-4 text-foreground" />
                         </Button>
@@ -447,7 +477,7 @@ const Index = () => {
                         </Button>
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
-                        <AudioGenerator onAudioGenerated={(audio) => {
+                        <AudioGenerator uploadedSamples={uploadedSamples} onAudioGenerated={(audio) => {
                           console.log('Generated audio:', audio);
                           // Add to uploaded samples so it appears in the library
                           setUploadedSamples(prev => [...prev, {
@@ -457,7 +487,7 @@ const Index = () => {
                             genre: 'Generated',
                             tags: ['AI', 'TTS', audio.voice],
                             duration: 0, // Will be updated when played
-                            analysis: null
+                            analysis: undefined
                           }]);
                         }} />
                       </CollapsibleContent>
@@ -487,7 +517,7 @@ const Index = () => {
                                 duration: music.duration,
                                 bpm: music.metadata.bpm,
                                 key: music.metadata.key,
-                                analysis: null,
+                                analysis: undefined,
                               }];
                             });
                           }}
@@ -529,7 +559,7 @@ const Index = () => {
                         </Button>
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
-                        <GenerationHistory onTrackSelect={handleTrackSelect} />
+                        <GenerationHistory tracks={generationHistory} onTrackSelect={handleTrackSelect} />
                       </CollapsibleContent>
                     </Collapsible>
                   </div>
@@ -623,7 +653,7 @@ const Index = () => {
             </Tabs>
 
             {/* Current Track Player */}
-            {currentTrack && (
+            {currentTrack && currentTrack.audioUrl && (
               <div className="mt-6">
                 <AudioPlayer track={currentTrack} />
               </div>

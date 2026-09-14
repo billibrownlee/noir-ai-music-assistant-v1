@@ -103,8 +103,10 @@ export const RecordingStudio: React.FC = () => {
   const [selectedTrack, setSelectedTrack] = useState<string>('1');
   const [inputDevice, setInputDevice] = useState<string>('default');
   const [monitoringEnabled, setMonitoringEnabled] = useState(true);
+  const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   const startRecording = useCallback(async (trackId: string) => {
     try {
@@ -119,13 +121,20 @@ export const RecordingStudio: React.FC = () => {
       });
       
       audioStreamRef.current = stream;
+      chunksRef.current = [];
+      setRecordingUrl(null);
+
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus'
       });
-      
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+
       mediaRecorderRef.current = mediaRecorder;
-      
-      mediaRecorder.start();
+
+      mediaRecorder.start(100); // collect chunks every 100ms
       
       setSession(prev => ({
         ...prev,
@@ -152,23 +161,31 @@ export const RecordingStudio: React.FC = () => {
   }, [session.tracks, toast]);
 
   const stopRecording = useCallback(() => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-    
+    const mr = mediaRecorderRef.current;
+    if (!mr || mr.state !== 'recording') return;
+
+    mr.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+      const url = URL.createObjectURL(blob);
+      setRecordingUrl(url);
+      chunksRef.current = [];
+    };
+
+    mr.stop();
+
     if (audioStreamRef.current) {
       audioStreamRef.current.getTracks().forEach(track => track.stop());
     }
-    
+
     setSession(prev => ({
       ...prev,
       isRecording: false,
       tracks: prev.tracks.map(track => ({ ...track, isRecording: false }))
     }));
-    
+
     toast({
       title: "Recording stopped",
-      description: "Audio saved successfully",
+      description: "Audio captured — use Download to save it",
     });
   }, [toast]);
 
@@ -471,10 +488,19 @@ export const RecordingStudio: React.FC = () => {
               <Zap className="w-4 h-4 mr-2" />
               Add Track
             </Button>
-            <Button variant="outline" size="sm" className="whitespace-nowrap">
-              <Download className="w-4 h-4 mr-2" />
-              Export Session
-            </Button>
+            {recordingUrl ? (
+              <a href={recordingUrl} download="noir-recording.webm">
+                <Button variant="neon" size="sm" className="whitespace-nowrap">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Recording
+                </Button>
+              </a>
+            ) : (
+              <Button variant="outline" size="sm" className="whitespace-nowrap" disabled>
+                <Download className="w-4 h-4 mr-2" />
+                Export Session
+              </Button>
+            )}
             <Button variant="outline" size="sm" className="whitespace-nowrap">
               <Clock className="w-4 h-4 mr-2" />
               Metronome

@@ -1,11 +1,16 @@
 // Audio synthesis utilities for generating music programmatically
 export class AudioSynthesizer {
-  private audioContext: AudioContext;
-  private sampleRate: number;
+  private _audioContext: AudioContext | null = null;
 
-  constructor() {
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    this.sampleRate = this.audioContext.sampleRate;
+  private get audioContext(): AudioContext {
+    if (!this._audioContext) {
+      this._audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    return this._audioContext;
+  }
+
+  private get sampleRate(): number {
+    return this.audioContext.sampleRate;
   }
 
   // Generate a sine wave

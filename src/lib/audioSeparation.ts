@@ -36,9 +36,16 @@ export interface SeparatedAudio {
 
 export class AudioSeparationEngine {
   private isProcessing: boolean = false;
+  private audioContext: AudioContext | null = null;
 
-  constructor() {
-    // Initialize separation engine
+  private getAudioContext(): AudioContext {
+    if (!this.audioContext) {
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    if (this.audioContext.state === 'suspended') {
+      this.audioContext.resume();
+    }
+    return this.audioContext;
   }
 
   async separateAudio(file: File, onProgress?: (progress: number, stage: string) => void): Promise<SeparatedAudio> {
@@ -149,14 +156,14 @@ export class AudioSeparationEngine {
       if (!arrayBuffer || arrayBuffer.byteLength === 0) {
         throw new Error('Empty file');
       }
-      
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
+
+      const audioContext = this.getAudioContext();
+
       // Resume context if suspended
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
-      
+
       const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
       
       if (!audioBuffer || audioBuffer.length === 0) {
@@ -403,26 +410,28 @@ export class AudioSeparationEngine {
   // Simulation methods (in a real implementation, these would use trained ML models)
   private simulateVocalSeparation(audioData: Float32Array): Float32Array {
     const result = new Float32Array(audioData.length);
-    
-    // Simulate vocal extraction by isolating mid-range frequencies with dynamic content
+    const windowSize = 1024;
+    const half = windowSize >> 1;
+
+    // Rolling-sum window to compute local average energy in O(N) instead of O(N²)
+    let windowSum = 0;
+    for (let j = 0; j < Math.min(half, audioData.length); j++) {
+      windowSum += Math.abs(audioData[j]);
+    }
+
     for (let i = 0; i < audioData.length; i++) {
-      const windowSize = 1024;
-      const start = Math.max(0, i - windowSize / 2);
-      const end = Math.min(audioData.length, i + windowSize / 2);
-      
-      // Calculate spectral centroid for this window
-      let sum = 0;
-      for (let j = start; j < end; j++) {
-        sum += Math.abs(audioData[j]);
-      }
-      const avgEnergy = sum / (end - start);
-      
-      // Extract vocal-like content (mid frequencies with varying energy)
-      if (avgEnergy > 0.05 && i % 100 < 60) { // Simulate vocal frequency range
+      const tail = i - half - 1;
+      const head = i + half;
+      if (tail >= 0) windowSum -= Math.abs(audioData[tail]);
+      if (head < audioData.length) windowSum += Math.abs(audioData[head]);
+      const winLen = Math.min(head, audioData.length) - Math.max(0, tail + 1);
+      const avgEnergy = winLen > 0 ? windowSum / winLen : 0;
+
+      if (avgEnergy > 0.05 && i % 100 < 60) {
         result[i] = audioData[i] * 0.8;
       }
     }
-    
+
     return result;
   }
 
@@ -494,32 +503,66 @@ export class AudioSeparationEngine {
 
   private simulateMelodySeparation(audioData: Float32Array): Float32Array {
     const result = new Float32Array(audioData.length);
-    
-    // Simulate melody extraction by isolating sustained mid-to-high frequency content
+    const windowSize = 512;
+    const half = windowSize >> 1;
+
+    // Rolling-sum window — O(N) instead of O(N²)
+    let windowSum = 0;
+    for (let j = 0; j < Math.min(half, audioData.length); j++) {
+      windowSum += Math.abs(audioData[j]);
+    }
+
     for (let i = 0; i < audioData.length; i++) {
-      const windowSize = 512;
-      const start = Math.max(0, i - windowSize / 2);
-      const end = Math.min(audioData.length, i + windowSize / 2);
-      
-      let sustainedEnergy = 0;
-      for (let j = start; j < end; j++) {
-        sustainedEnergy += Math.abs(audioData[j]);
-      }
-      sustainedEnergy /= (end - start);
-      
+      const tail = i - half - 1;
+      const head = i + half;
+      if (tail >= 0) windowSum -= Math.abs(audioData[tail]);
+      if (head < audioData.length) windowSum += Math.abs(audioData[head]);
+      const winLen = Math.min(head, audioData.length) - Math.max(0, tail + 1);
+      const sustainedEnergy = winLen > 0 ? windowSum / winLen : 0;
+
       if (sustainedEnergy > 0.03 && sustainedEnergy < 0.8) {
         result[i] = audioData[i] * 0.7;
       }
     }
-    
+
     return result;
   }
 
-  private createAudioUrl(audioData: Float32Array): string {
-    // In a real implementation, this would create a proper audio blob
-    // For now, return a data URL indicating separated audio
-    const quality = audioData.reduce((sum, sample) => sum + Math.abs(sample), 0) / audioData.length;
-    return `data:audio/wav;base64,separated_stem_${quality.toFixed(3)}_${Date.now()}`;
+  private createAudioUrl(audioData: Float32Array, sampleRate: number = 44100): string {
+    const numSamples = audioData.length;
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const blockAlign = numChannels * (bitsPerSample / 8);
+    const dataByteLength = numSamples * blockAlign;
+    const buffer = new ArrayBuffer(44 + dataByteLength);
+    const view = new DataView(buffer);
+
+    const writeStr = (off: number, s: string) => {
+      for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i));
+    };
+
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + dataByteLength, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPerSample, true);
+    writeStr(36, 'data');
+    view.setUint32(40, dataByteLength, true);
+
+    let offset = 44;
+    for (let i = 0; i < numSamples; i++) {
+      const s = Math.max(-1, Math.min(1, audioData[i]));
+      view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      offset += 2;
+    }
+
+    return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
   }
 
   private generateWaveformData(audioData: Float32Array): number[] {

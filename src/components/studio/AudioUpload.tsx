@@ -6,29 +6,20 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Upload, X, Music, FileAudio, Layers } from 'lucide-react';
+import { Upload, X, Music, FileAudio, Layers, FolderOpen, CheckCircle2 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { AudioAnalyzer, AudioAnalysis } from '@/lib/audioAnalyzer';
-import { AudioSeparationEngine, SeparatedAudio } from '@/lib/audioSeparation';
+import { AudioSeparationEngine, AudioStem, SeparatedAudio } from '@/lib/audioSeparation';
 import { AudioPlayButton } from '@/components/ui/audio-play-button';
 import { useGlobalAudio } from '@/hooks/useGlobalAudio';
-import type { User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { saveSampleToDB, updateSampleMetaInDB, deleteSampleFromDB, clearAllSamplesFromDB } from '@/lib/sampleStorage';
+import type { AudioSample } from '@/types/audio';
 
-interface AudioSample {
-  id: string;
-  name: string;
-  genre: string;
-  bpm?: number;
-  key?: string;
-  tags: string[];
-  file: File;
-  audioUrl?: string;
-  duration?: number;
-  uploadProgress?: number;
-  isPlaying?: boolean;
-  analysis?: AudioAnalysis;
+interface BatchGroup {
+  folderName: string;
+  assignedGenre: string;
+  files: File[];
 }
 
 interface AudioUploadProps {
@@ -49,60 +40,13 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   const [uploadedSamples, setUploadedSamples] = useState<AudioSample[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set());
+  const [pendingBatch, setPendingBatch] = useState<BatchGroup[] | null>(null);
   const [audioAnalyzer] = useState(() => new AudioAnalyzer());
   const [separationEngine] = useState(() => new AudioSeparationEngine());
   const [separationProgress, setSeparationProgress] = useState<{ progress: number, stage: string } | null>(null);
   const [isSeparating, setIsSeparating] = useState(false);
   const [autoSeparateStems, setAutoSeparateStems] = useState(false);
-  
-  // Authentication state (optional for development)
-  const [user, setUser] = useState<User | null>(null);
-  
-  React.useEffect(() => {
-    let subscription: any = null;
-    
-    try {
-      // Get initial session (but don't require it)
-      supabase.auth.getSession()
-        .then(({ data: { session } }) => {
-          try {
-            setUser(session?.user ?? null);
-          } catch (setUserError) {
-            console.warn('Error setting user:', setUserError);
-          }
-        })
-        .catch((sessionError) => {
-          console.warn('Error getting session:', sessionError);
-          setUser(null);
-        });
 
-      // Listen for auth changes (but don't require it)
-      try {
-        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-          try {
-            setUser(session?.user ?? null);
-          } catch (setUserError) {
-            console.warn('Error setting user in auth change:', setUserError);
-          }
-        });
-        subscription = authSubscription;
-      } catch (authError) {
-        console.warn('Error setting up auth listener:', authError);
-      }
-    } catch (error) {
-      console.error('Error in auth effect:', error);
-    }
-
-    return () => {
-      try {
-        if (subscription) {
-          subscription.unsubscribe();
-        }
-      } catch (unsubscribeError) {
-        console.warn('Error unsubscribing from auth:', unsubscribeError);
-      }
-    };
-  }, []);
   const { toast } = useToast();
   const { currentTrack, isPlaying } = useGlobalAudio();
 
@@ -348,6 +292,53 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     });
   };
 
+  const detectGenreFromName = (name: string): string => {
+    const n = name.toLowerCase().replace(/[-_\s]/g, '');
+    if (/trap|drill|808/.test(n)) return 'trap';
+    if (/r.?b|rnb|rhythm/.test(n)) return 'rnb';
+    if (/hiphop|hip|rap/.test(n)) return 'hip-hop';
+    if (/soul/.test(n)) return 'soul';
+    if (/funk/.test(n)) return 'funk';
+    if (/pop/.test(n)) return 'pop';
+    return '';
+  };
+
+  const handleFolderInput = (files: File[]) => {
+    const audioFiles = files.filter(f => validateAudioFile(f));
+    if (audioFiles.length === 0) return;
+
+    // Group files by their immediate parent subfolder
+    const groupMap = new Map<string, File[]>();
+    for (const file of audioFiles) {
+      const relativePath = (file as any).webkitRelativePath as string | undefined;
+      const parts = relativePath ? relativePath.split('/') : [file.name];
+      // Use subfolder name if nested, otherwise use root folder name
+      const folder = parts.length >= 2 ? parts[parts.length - 2] : 'Samples';
+      if (!groupMap.has(folder)) groupMap.set(folder, []);
+      groupMap.get(folder)!.push(file);
+    }
+
+    const batch: BatchGroup[] = Array.from(groupMap.entries()).map(([folderName, groupFiles]) => ({
+      folderName,
+      assignedGenre: detectGenreFromName(folderName),
+      files: groupFiles,
+    }));
+
+    setPendingBatch(batch);
+  };
+
+  const confirmBatch = async () => {
+    if (!pendingBatch) return;
+    for (const group of pendingBatch) {
+      await handleFiles(group.files, group.assignedGenre);
+    }
+    setPendingBatch(null);
+    toast({
+      title: 'Folder imported',
+      description: `${pendingBatch.reduce((n, g) => n + g.files.length, 0)} samples added to library`,
+    });
+  };
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
@@ -356,7 +347,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     handleFiles(files);
   }, []);
 
-  const handleFiles = async (files: File[]) => {
+  const handleFiles = async (files: File[], defaultGenre = '') => {
     if (!files || files.length === 0) return;
 
     const audioFiles = files.filter(file => validateAudioFile(file));
@@ -390,8 +381,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
           sample = {
             id,
             name: file.name.replace(/\.[^/.]+$/, ""),
-            genre: '',
-            tags: [],
+            genre: defaultGenre,
+            tags: defaultGenre ? [defaultGenre] : [],
             file,
             uploadProgress: 100,
             audioUrl: localUrl,
@@ -407,6 +398,12 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               console.warn('Callback error (non-critical):', callbackError);
             }
           });
+
+          // Persist to IndexedDB so samples survive page refresh
+          saveSampleToDB(
+            { id, name: sample.name, genre: defaultGenre, tags: sample.tags },
+            file
+          ).catch(err => console.warn('IndexedDB save failed (non-critical):', err));
 
           // Everything else happens in background (non-blocking, doesn't affect progress)
           // Use microtask queue to push to next tick without delay
@@ -449,6 +446,12 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                         analysis: metadata.analysis ?? sample!.analysis,
                       };
                       onSamplesUploaded([updatedSample]);
+                      // Persist BPM/key into IndexedDB record
+                      updateSampleMetaInDB(id, {
+                        bpm: detectedBpm,
+                        key: detectedKey,
+                        duration: metadata.duration || undefined,
+                      }).catch(err => console.warn('IndexedDB meta update failed:', err));
                     }
                   }
                 } catch {
@@ -525,120 +528,89 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     });
   };
 
-  // Simplified separation function to ensure 100% success
+  // Creates a short silent WAV blob URL — used as a playable placeholder stem
+  const createSilentStemUrl = (durationSeconds: number = 2): string => {
+    const sampleRate = 44100;
+    const numSamples = Math.floor(sampleRate * durationSeconds);
+    const dataBytes = numSamples * 2;
+    const buf = new ArrayBuffer(44 + dataBytes);
+    const v = new DataView(buf);
+    const ws = (off: number, s: string) => { for (let i = 0; i < s.length; i++) v.setUint8(off + i, s.charCodeAt(i)); };
+    ws(0, 'RIFF'); v.setUint32(4, 36 + dataBytes, true);
+    ws(8, 'WAVE'); ws(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sampleRate, true); v.setUint32(28, sampleRate * 2, true);
+    v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    ws(36, 'data'); v.setUint32(40, dataBytes, true);
+    return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  };
+
   const startSimplifiedSeparation = async (file: File, sampleId: string) => {
     try {
       setIsSeparating(true);
       setSeparationProgress({ progress: 0, stage: 'Starting separation...' });
-      
-      // Create mock stems quickly without complex processing
-      const stems = [
+
+      const stemDefs: Array<{
+        name: string; type: 'vocals' | 'drums' | 'bass' | 'melody';
+        effects: AudioStem['effects']; volume: number; pan: number;
+      }> = [
         {
-          id: `vocal_${Date.now()}`,
-          name: 'Vocals',
-          type: 'vocals' as const,
-          audioUrl: `data:audio/wav;base64,vocal_stem_${Date.now()}`,
-          waveformData: Array.from({ length: 100 }, () => Math.random() * 80),
-          volume: 100,
-          pan: 0,
-          muted: false,
-          soloed: false,
-          effects: {
-            reverb: 20,
-            delay: 10,
-            distortion: 0,
-            filter: { type: 'highpass' as const, frequency: 80, resonance: 0.5 },
-            eq: { low: 0, mid: 2, high: 1 }
-          }
+          name: 'Vocals', type: 'vocals', volume: 100, pan: 0,
+          effects: { reverb: 20, delay: 10, distortion: 0, filter: { type: 'highpass', frequency: 80, resonance: 0.5 }, eq: { low: 0, mid: 2, high: 1 } }
         },
         {
-          id: `drums_${Date.now()}`,
-          name: 'Drums',
-          type: 'drums' as const,
-          audioUrl: `data:audio/wav;base64,drums_stem_${Date.now()}`,
-          waveformData: Array.from({ length: 100 }, () => Math.random() * 90),
-          volume: 100,
-          pan: 0,
-          muted: false,
-          soloed: false,
-          effects: {
-            reverb: 10,
-            delay: 0,
-            distortion: 0,
-            filter: { type: 'bandpass' as const, frequency: 200, resonance: 0.4 },
-            eq: { low: 2, mid: 0, high: -1 }
-          }
+          name: 'Drums', type: 'drums', volume: 100, pan: 0,
+          effects: { reverb: 10, delay: 0, distortion: 0, filter: { type: 'bandpass', frequency: 200, resonance: 0.4 }, eq: { low: 2, mid: 0, high: -1 } }
         },
         {
-          id: `bass_${Date.now()}`,
-          name: 'Bass',
-          type: 'bass' as const,
-          audioUrl: `data:audio/wav;base64,bass_stem_${Date.now()}`,
-          waveformData: Array.from({ length: 100 }, () => Math.random() * 70),
-          volume: 100,
-          pan: 0,
-          muted: false,
-          soloed: false,
-          effects: {
-            reverb: 5,
-            delay: 0,
-            distortion: 0,
-            filter: { type: 'lowpass' as const, frequency: 200, resonance: 0.4 },
-            eq: { low: 3, mid: 0, high: -2 }
-          }
+          name: 'Bass', type: 'bass', volume: 100, pan: 0,
+          effects: { reverb: 5, delay: 0, distortion: 0, filter: { type: 'lowpass', frequency: 200, resonance: 0.4 }, eq: { low: 3, mid: 0, high: -2 } }
         },
         {
-          id: `melody_${Date.now()}`,
-          name: 'Melody',
-          type: 'melody' as const,
-          audioUrl: `data:audio/wav;base64,melody_stem_${Date.now()}`,
-          waveformData: Array.from({ length: 100 }, () => Math.random() * 60),
-          volume: 90,
-          pan: 0,
-          muted: false,
-          soloed: false,
-          effects: {
-            reverb: 25,
-            delay: 15,
-            distortion: 0,
-            filter: { type: 'bandpass' as const, frequency: 1000, resonance: 0.3 },
-            eq: { low: 0, mid: 1, high: 1 }
-          }
-        }
+          name: 'Melody', type: 'melody', volume: 90, pan: 0,
+          effects: { reverb: 25, delay: 15, distortion: 0, filter: { type: 'bandpass', frequency: 1000, resonance: 0.3 }, eq: { low: 0, mid: 1, high: 1 } }
+        },
       ];
-      
-      // Simulate progress
-      for (let i = 0; i <= 100; i += 25) {
-        setSeparationProgress({ 
-          progress: i, 
-          stage: i === 0 ? 'Analyzing audio...' :
-                 i === 25 ? 'Separating vocals...' :
-                 i === 50 ? 'Isolating drums...' :
-                 i === 75 ? 'Extracting bass...' : 'Finalizing stems...'
-        });
+
+      const stages = ['Analyzing audio...', 'Separating vocals...', 'Isolating drums...', 'Extracting bass...', 'Finalizing stems...'];
+      for (let i = 0; i < stages.length; i++) {
+        setSeparationProgress({ progress: i * 25, stage: stages[i] });
         await new Promise(resolve => setTimeout(resolve, 200));
       }
-      
-      const separatedAudio = {
+
+      const stems: AudioStem[] = stemDefs.map(def => ({
+        id: `${def.type}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: def.name,
+        type: def.type,
+        audioUrl: createSilentStemUrl(2),
+        waveformData: Array.from({ length: 100 }, () => Math.random() * 60),
+        volume: def.volume,
+        pan: def.pan,
+        muted: false,
+        soloed: false,
+        effects: def.effects,
+      }));
+
+      setSeparationProgress({ progress: 100, stage: 'Complete!' });
+
+      onAudioSeparated?.({
         id: `sep_${Date.now()}`,
         originalFileName: file.name,
         stems,
-        separationQuality: 85,
-        processingTime: 1000
-      };
-      
-      onAudioSeparated?.(separatedAudio);
-      
-      toast({
-        title: "Stems Ready",
-        description: `Successfully separated ${stems.length} stems from your audio`
+        separationQuality: 0,
+        processingTime: stages.length * 200,
       });
-      
+
+      toast({
+        title: "Stem tracks created",
+        description: "Basic stem placeholders are ready. Use the Separate Stems button for DSP-based separation.",
+      });
+
     } catch (error) {
       console.error('❌ Simplified separation failed:', error);
       toast({
-        title: "Separation Failed",
-        description: "Couldn't separate audio stems. You can still work with the full track.",
+        title: "Separation failed",
+        description: "Could not create stem tracks. You can still work with the full track.",
         variant: "destructive"
       });
     } finally {
@@ -659,6 +631,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
     const sample = uploadedSamples.find(s => s.id === id);
     // Remove from local display
     setUploadedSamples(prev => prev.filter(s => s.id !== id));
+    // Remove from persistent storage
+    deleteSampleFromDB(id).catch(err => console.warn('IndexedDB delete failed:', err));
     // Remove from global library state — don't revoke URL here, parent may still use it
     onDeleteSample?.(id);
     toast({
@@ -670,6 +644,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
   const clearAllSamples = () => {
     // Clear local display — do NOT revoke URLs, the global library still references them
     setUploadedSamples([]);
+    // Clear persistent storage
+    clearAllSamplesFromDB().catch(err => console.warn('IndexedDB clear failed:', err));
     // Clear global library state
     onClearSamples?.();
     toast({
@@ -858,17 +834,108 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             className="hidden"
             id="audio-upload"
           />
-          <Button 
-            variant="neon" 
-            size="lg" 
-            onClick={() => {
-              (document.getElementById('audio-upload') as HTMLInputElement)?.click();
+          {/* folder input — webkitdirectory lets the user select an entire folder */}
+          <input
+            type="file"
+            multiple
+            {...{ webkitdirectory: '' } as any}
+            accept=".mp3,.wav,.flac,.m4a,.ogg,.aac,audio/*"
+            onChange={(e) => {
+              if (e.target.files && e.target.files.length > 0) {
+                handleFolderInput(Array.from(e.target.files));
+              }
             }}
-            className="bg-neon-purple hover:bg-neon-purple/80 text-white font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
-          >
-            Browse Files
-          </Button>
+            className="hidden"
+            id="folder-upload"
+          />
+          <div className="flex gap-3 justify-center flex-wrap">
+            <Button
+              variant="neon"
+              size="lg"
+              onClick={() => (document.getElementById('audio-upload') as HTMLInputElement)?.click()}
+              className="bg-neon-purple hover:bg-neon-purple/80 text-white font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Browse Files
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => (document.getElementById('folder-upload') as HTMLInputElement)?.click()}
+              className="border-neon-blue/50 text-neon-blue hover:bg-neon-blue/10 font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
+            >
+              <FolderOpen className="w-4 h-4 mr-2" />
+              Upload Folder
+            </Button>
+          </div>
         </div>
+
+        {/* Batch Folder Import Review */}
+        {pendingBatch && (
+          <Card className="glass-card-subtle border-neon-blue border">
+            <CardContent className="p-4 space-y-4">
+              <div className="flex items-center gap-2">
+                <FolderOpen className="w-5 h-5 text-neon-blue" />
+                <span className="font-semibold">Folder Import — Confirm Genres</span>
+                <Badge variant="outline" className="text-xs">
+                  {pendingBatch.reduce((n, g) => n + g.files.length, 0)} files
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Genres were auto-detected from your folder names. Adjust any before importing.
+              </p>
+              <div className="space-y-3">
+                {pendingBatch.map((group, i) => (
+                  <div key={group.folderName} className="flex items-center gap-3 p-3 bg-studio-surface/30 rounded-lg">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{group.folderName}</p>
+                      <p className="text-xs text-muted-foreground">{group.files.length} file{group.files.length !== 1 ? 's' : ''}</p>
+                    </div>
+                    <Select
+                      value={group.assignedGenre || 'none'}
+                      onValueChange={(val) => {
+                        setPendingBatch(prev => prev
+                          ? prev.map((g, idx) => idx === i ? { ...g, assignedGenre: val === 'none' ? '' : val } : g)
+                          : prev
+                        );
+                      }}
+                    >
+                      <SelectTrigger className="w-36">
+                        <SelectValue placeholder="Set genre" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No genre</SelectItem>
+                        <SelectItem value="rnb">R&B</SelectItem>
+                        <SelectItem value="pop">Pop</SelectItem>
+                        <SelectItem value="trap">Trap</SelectItem>
+                        <SelectItem value="rap">Rap</SelectItem>
+                        <SelectItem value="hip-hop">Hip-Hop</SelectItem>
+                        <SelectItem value="soul">Soul</SelectItem>
+                        <SelectItem value="funk">Funk</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  onClick={confirmBatch}
+                  className="flex-1 bg-neon-blue hover:bg-neon-blue/80 text-white"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Import All Samples
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setPendingBatch(null)}
+                  className="text-muted-foreground"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Separation Progress */}
         {separationProgress && (

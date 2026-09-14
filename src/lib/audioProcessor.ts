@@ -140,7 +140,7 @@ export class AudioProcessor {
 
       // Handle multi-channel audio properly
       // Create reversed buffer with same properties
-      const reversedBuffer = this.audioContext.createBuffer(
+      const reversedBuffer = this.getAudioContext().createBuffer(
         buffer.numberOfChannels,
         buffer.length,
         buffer.sampleRate

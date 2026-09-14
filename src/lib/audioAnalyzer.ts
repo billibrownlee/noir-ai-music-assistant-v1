@@ -511,24 +511,69 @@ export class AudioAnalyzer {
   }
 
   private fft(data: Float32Array): Float32Array {
-    // Simplified FFT implementation (normally you'd use a proper FFT library)
     const N = data.length;
     const result = new Float32Array(N * 2);
-    
-    for (let k = 0; k < N; k++) {
-      let real = 0;
-      let imag = 0;
-      
-      for (let n = 0; n < N; n++) {
-        const angle = (-2 * Math.PI * k * n) / N;
-        real += data[n] * Math.cos(angle);
-        imag += data[n] * Math.sin(angle);
+
+    // Cooley-Tukey radix-2 DIT FFT — O(N log N). Requires N to be a power of 2.
+    // Callers always pass slices of size 2048, so this is always satisfied.
+    if (N === 0 || (N & (N - 1)) !== 0) {
+      // Non-power-of-2 fallback (shouldn't be reached in practice)
+      for (let k = 0; k < N; k++) {
+        let real = 0, imag = 0;
+        for (let n = 0; n < N; n++) {
+          const angle = (-2 * Math.PI * k * n) / N;
+          real += data[n] * Math.cos(angle);
+          imag += data[n] * Math.sin(angle);
+        }
+        result[k * 2] = real;
+        result[k * 2 + 1] = imag;
       }
-      
-      result[k * 2] = real;
-      result[k * 2 + 1] = imag;
+      return result;
     }
-    
+
+    const bits = Math.log2(N);
+
+    // Bit-reversal permutation into result array
+    for (let i = 0; i < N; i++) {
+      let rev = 0;
+      let x = i;
+      for (let b = 0; b < bits; b++) {
+        rev = (rev << 1) | (x & 1);
+        x >>= 1;
+      }
+      result[rev * 2] = data[i];
+      result[rev * 2 + 1] = 0;
+    }
+
+    // Butterfly stages
+    for (let s = 1; s <= bits; s++) {
+      const m = 1 << s;
+      const half = m >> 1;
+      const wReal = Math.cos(-2 * Math.PI / m);
+      const wImag = Math.sin(-2 * Math.PI / m);
+
+      for (let k = 0; k < N; k += m) {
+        let tReal = 1;
+        let tImag = 0;
+
+        for (let j = 0; j < half; j++) {
+          const uReal = result[(k + j) * 2];
+          const uImag = result[(k + j) * 2 + 1];
+          const vReal = tReal * result[(k + j + half) * 2] - tImag * result[(k + j + half) * 2 + 1];
+          const vImag = tReal * result[(k + j + half) * 2 + 1] + tImag * result[(k + j + half) * 2];
+
+          result[(k + j) * 2] = uReal + vReal;
+          result[(k + j) * 2 + 1] = uImag + vImag;
+          result[(k + j + half) * 2] = uReal - vReal;
+          result[(k + j + half) * 2 + 1] = uImag - vImag;
+
+          const newTReal = tReal * wReal - tImag * wImag;
+          tImag = tReal * wImag + tImag * wReal;
+          tReal = newTReal;
+        }
+      }
+    }
+
     return result;
   }
 

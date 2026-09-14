@@ -215,6 +215,11 @@ export const MasteringSuite: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Coming Soon notice */}
+        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-sm">
+          <span className="text-base">🚧</span>
+          <span><strong>Coming Soon</strong> — DSP processing is not yet wired. Controls are visual previews of the planned interface.</span>
+        </div>
         {/* Processing Status */}
         {isProcessing && (
           <Card className="glass-card-subtle border-neon-blue border">

@@ -170,25 +170,41 @@ export const GlobalAudioProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const getCurrentTime = useCallback(() => audioRef.current?.currentTime ?? currentTime, [currentTime]);
   const getDuration = useCallback(() => audioRef.current?.duration ?? duration, [duration]);
 
+  const MAX_REVERSED_CACHE = 10;
+
+  const evictReversedCache = useCallback(() => {
+    const cache = reversedAudioCache.current;
+    if (cache.size >= MAX_REVERSED_CACHE) {
+      const oldest = cache.keys().next().value;
+      if (oldest !== undefined) {
+        const evicted = cache.get(oldest);
+        if (evicted) URL.revokeObjectURL(evicted.audioUrl);
+        cache.delete(oldest);
+      }
+    }
+  }, []);
+
   const getReversedAudio = useCallback(async (audioUrl: string) => {
     try {
       const cached = reversedAudioCache.current.get(audioUrl);
       if (cached) return cached;
       const { AudioEffectsProcessor } = await import('@/lib/audioEffects');
       const result = await new AudioEffectsProcessor().reverseAudio(audioUrl);
+      evictReversedCache();
       reversedAudioCache.current.set(audioUrl, result);
       return result;
     } catch { return null; }
-  }, []);
+  }, [evictReversedCache]);
 
   const preloadReversedAudio = useCallback(async (audioUrl: string) => {
     if (!audioUrl || reversedAudioCache.current.has(audioUrl)) return;
     try {
       const { AudioEffectsProcessor } = await import('@/lib/audioEffects');
       const result = await new AudioEffectsProcessor().reverseAudio(audioUrl);
+      evictReversedCache();
       reversedAudioCache.current.set(audioUrl, result);
     } catch {}
-  }, []);
+  }, [evictReversedCache]);
 
   return (
     <GlobalAudioContext.Provider value={{
