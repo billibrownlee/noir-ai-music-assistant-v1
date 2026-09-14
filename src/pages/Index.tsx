@@ -25,6 +25,8 @@ import { MusicProductionWorkflow } from "@/components/studio/MusicProductionWork
 import { AudioGenerator } from "@/components/studio/AudioGenerator";
 import { MusicGenerator } from "@/components/studio/MusicGenerator";
 import { MidiGenerator } from "@/components/studio/MidiGenerator";
+import { PublicDomainMelodyBank } from "@/components/studio/PublicDomainMelodyBank";
+import type { MelodyNote } from "@/lib/melodyEngine";
 import { SeparatedAudio } from "@/lib/audioSeparation";
 import { AudioAnalysis } from "@/lib/audioAnalyzer";
 import { useGlobalAudio } from "@/hooks/useGlobalAudio";
@@ -50,6 +52,9 @@ interface Track {
 const Index = () => {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [generationHistory, setGenerationHistory] = useState<GeneratedTrack[]>([]);
+  const [pdMelodyNotes, setPdMelodyNotes] = useState<MelodyNote[] | undefined>();
+  const [pdMelodyKey, setPdMelodyKey] = useState<string | undefined>();
+  const [pdMelodyScale, setPdMelodyScale] = useState<string | undefined>();
   const [separatedAudio, setSeparatedAudio] = useState<SeparatedAudio | null>(null);
   const [audioAnalysis, setAudioAnalysis] = useState<AudioAnalysis | null>(null);
   const [uploadedSamples, setUploadedSamples] = useState<AudioSample[]>([]);
@@ -453,7 +458,30 @@ const Index = () => {
                         </Button>
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
-                        <MidiGenerator uploadedSamples={uploadedSamples} />
+                        <MidiGenerator
+                          uploadedSamples={uploadedSamples}
+                          seedNotes={pdMelodyNotes}
+                          seedKey={pdMelodyKey}
+                          seedScale={pdMelodyScale}
+                        />
+                      </CollapsibleContent>
+                    </Collapsible>
+
+                    <Collapsible defaultOpen={false}>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
+                          <span className="font-medium text-lg text-foreground">🟢 Public Domain Melody Bank</span>
+                          <ChevronDown className="h-4 w-4 text-foreground" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2">
+                        <PublicDomainMelodyBank
+                          onLoadMelody={(notes, key, scale) => {
+                            setPdMelodyNotes([...notes]);
+                            setPdMelodyKey(key);
+                            setPdMelodyScale(scale);
+                          }}
+                        />
                       </CollapsibleContent>
                     </Collapsible>
 

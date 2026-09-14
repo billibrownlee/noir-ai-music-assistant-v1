@@ -118,6 +118,9 @@ function drawPianoRoll(
 
 interface MidiGeneratorProps {
   uploadedSamples?: any[];
+  seedNotes?: MelodyNote[];
+  seedKey?: string;
+  seedScale?: string;
 }
 
 interface HistoryEntry {
@@ -126,7 +129,12 @@ interface HistoryEntry {
   params: GeneratorParams;
 }
 
-export const MidiGenerator: React.FC<MidiGeneratorProps> = ({ uploadedSamples = [] }) => {
+export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
+  uploadedSamples = [],
+  seedNotes,
+  seedKey,
+  seedScale,
+}) => {
   const styleProfile: StyleProfile = useMemo(
     () => buildStyleProfile(uploadedSamples),
     [uploadedSamples],
@@ -155,6 +163,18 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({ uploadedSamples = 
   const [isPlaying, setIsPlaying] = useState(false);
   const [playheadSec, setPlayheadSec] = useState(-1);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+
+  const prevSeedRef = useRef<MelodyNote[] | undefined>();
+
+  // Load melodies from the Public Domain Bank when parent pushes new seed notes
+  useEffect(() => {
+    if (!seedNotes?.length || seedNotes === prevSeedRef.current) return;
+    prevSeedRef.current = seedNotes;
+    setNotes(seedNotes);
+    setPlayheadSec(-1);
+    if (seedKey) setParams(p => ({ ...p, key: seedKey }));
+    if (seedScale) setParams(p => ({ ...p, scale: seedScale }));
+  }, [seedNotes, seedKey, seedScale]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const synthRef = useRef<any>(null);
