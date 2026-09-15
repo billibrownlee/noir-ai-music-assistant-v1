@@ -8,6 +8,26 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      '/api/replicate': {
+        target: 'https://api.replicate.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/replicate/, ''),
+        secure: true,
+      },
+      '/api/openai': {
+        target: 'https://api.openai.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/openai/, ''),
+        secure: true,
+      },
+      '/api/elevenlabs': {
+        target: 'https://api.elevenlabs.io',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/elevenlabs/, ''),
+        secure: true,
+      },
+    },
   },
   plugins: [
     react(),

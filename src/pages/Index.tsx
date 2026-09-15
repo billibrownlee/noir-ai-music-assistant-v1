@@ -26,6 +26,7 @@ import { AudioGenerator } from "@/components/studio/AudioGenerator";
 import { MusicGenerator } from "@/components/studio/MusicGenerator";
 import { MidiGenerator } from "@/components/studio/MidiGenerator";
 import { PublicDomainMelodyBank } from "@/components/studio/PublicDomainMelodyBank";
+import { AudioAnalyzer } from "@/components/studio/AudioAnalyzer";
 import type { MelodyNote } from "@/lib/melodyEngine";
 import { SeparatedAudio } from "@/lib/audioSeparation";
 import { AudioAnalysis } from "@/lib/audioAnalyzer";
@@ -251,7 +252,7 @@ const Index = () => {
               }}
               className="w-full space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-1 bg-card/50 backdrop-blur-sm p-1 rounded-md">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-1 bg-card/50 backdrop-blur-sm p-1 rounded-md">
                 <TabsTrigger value="upload" className="flex items-center gap-1 text-xs sm:text-sm">
                   📤 Upload & Library
                 </TabsTrigger>
@@ -272,6 +273,9 @@ const Index = () => {
                 </TabsTrigger>
                 <TabsTrigger value="workflow" className="flex items-center gap-1 text-xs sm:text-sm">
                   ⚡ Workflow
+                </TabsTrigger>
+                <TabsTrigger value="analyze" className="flex items-center gap-1 text-xs sm:text-sm">
+                  🔍 Analyze
                 </TabsTrigger>
               </TabsList>
 
@@ -678,6 +682,17 @@ const Index = () => {
                 </Collapsible>
                 </StudioTabErrorBoundary>
               </TabsContent>
+              {/* Analyze Tab */}
+              <TabsContent
+                value="analyze"
+                forceMount={visitedStudioTabs.has("analyze")}
+                className="space-y-6"
+              >
+                <StudioTabErrorBoundary tabLabel="Analyze">
+                  <AudioAnalyzer />
+                </StudioTabErrorBoundary>
+              </TabsContent>
+
             </Tabs>
 
             {/* Current Track Player */}
