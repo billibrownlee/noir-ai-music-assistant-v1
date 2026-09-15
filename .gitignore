@@ -24,3 +24,12 @@ dist-ssr
 *.sw?
 .vercel
 .env*
+
+# Local dev artifacts
+*.txt
+*.sh
+*.html
+!index.html
+!public/*.html
+.noir-bookmark.html
+http:/localhost

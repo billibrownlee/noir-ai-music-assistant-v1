@@ -1,6 +1,0 @@
-http://localhost:8080/
-All URLs are saved in NOIR_URL.txt:
-Main app: http://localhost:8080
-Reverse: http://localhost:8080/reverse-audio.html
-Speed/Tempo: http://localhost:8080/speed-audio.html
-Pitch: http://localhost:8080/pitch-audio.html
