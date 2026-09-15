@@ -42,7 +42,6 @@ export const AudioOutputSelector: React.FC<AudioOutputSelectorProps> = ({ onDevi
         setSelectedDevice(defaultDevice.deviceId);
       }
       
-      console.log('Available audio devices:', audioOutputs);
     } catch (error) {
       console.error('Error getting audio devices:', error);
       toast({
@@ -63,7 +62,6 @@ export const AudioOutputSelector: React.FC<AudioOutputSelectorProps> = ({ onDevi
       const device = audioDevices.find(d => d.deviceId === deviceId);
       const deviceName = device?.label || 'Selected Device';
       
-      console.log('🎧 Connecting to AirPods:', deviceName);
       
       // Test audio output to the selected device
       if ('setSinkId' in HTMLAudioElement.prototype) {
@@ -85,7 +83,6 @@ export const AudioOutputSelector: React.FC<AudioOutputSelectorProps> = ({ onDevi
           description: `Audio will now play through: ${deviceName}`,
         });
         
-        console.log('✅ Successfully connected to AirPods:', deviceName);
       } else {
         // Fallback for browsers that don't support setSinkId
         setSelectedDevice(deviceId);

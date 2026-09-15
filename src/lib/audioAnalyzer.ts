@@ -38,7 +38,7 @@ export class AudioAnalyzer {
   async analyzeAudioFile(file: File): Promise<AudioAnalysis> {
     // Safety check: Skip analysis for very large files
     if (file.size > this.MAX_FILE_SIZE) {
-      console.log('⚠️ File too large for analysis, using defaults');
+      console.warn('File too large for analysis, using defaults');
       return this.getDefaultAnalysis();
     }
 
@@ -83,7 +83,7 @@ export class AudioAnalyzer {
 
       // Check duration
       if (audioBuffer.duration > this.MAX_DURATION) {
-        console.log('⚠️ File too long, using first 10 minutes');
+        console.warn('File too long, truncating to first 10 minutes');
         // Truncate to first 10 minutes
         const maxSamples = Math.floor(this.MAX_DURATION * audioBuffer.sampleRate);
         const truncatedBuffer = audioContext.createBuffer(

@@ -31,8 +31,6 @@ export class MusicGenerationEngine {
   }
 
   async generateMusic(params: MusicGenerationParams): Promise<GeneratedTrack> {
-    console.log('🎵 Generating music with params:', params);
-
     const { style, duration, bpm, key, useTrainingData = true } = params;
     
     // Load training data if requested
@@ -40,7 +38,6 @@ export class MusicGenerationEngine {
     if (useTrainingData) {
       trainingData = await this.loadTrainingData(style);
       if (trainingData.length > 0) {
-        console.log('🧠 Using training data from', trainingData.length, 'uploaded samples');
       }
     }
     
@@ -118,7 +115,6 @@ export class MusicGenerationEngine {
   }
 
   private generateElectronic(duration: number, bpm: number, rootFreq: number, isMinor: boolean): Float32Array {
-    console.log('🎛️ Generating electronic music');
     
     const beatDuration = 60 / bpm; // Duration of one beat in seconds
     const tracks: Float32Array[] = [];
@@ -147,7 +143,6 @@ export class MusicGenerationEngine {
   }
 
   private generateHipHop(duration: number, bpm: number, rootFreq: number, isMinor: boolean): Float32Array {
-    console.log('🎤 Generating hip-hop music');
     
     const beatDuration = 60 / bpm;
     const tracks: Float32Array[] = [];
@@ -176,7 +171,6 @@ export class MusicGenerationEngine {
   }
 
   private generateAmbient(duration: number, bpm: number, rootFreq: number, isMinor: boolean): Float32Array {
-    console.log('🌌 Generating ambient music');
     
     const tracks: Float32Array[] = [];
 
@@ -206,7 +200,6 @@ export class MusicGenerationEngine {
   }
 
   private generateRock(duration: number, bpm: number, rootFreq: number, isMinor: boolean): Float32Array {
-    console.log('🎸 Generating rock music');
     
     const beatDuration = 60 / bpm;
     const tracks: Float32Array[] = [];
@@ -227,7 +220,6 @@ export class MusicGenerationEngine {
   }
 
   private generateRnB(duration: number, bpm: number, rootFreq: number, isMinor: boolean): Float32Array {
-    console.log('🎤 Generating R&B music');
     
     const beatDuration = 60 / bpm;
     const tracks: Float32Array[] = [];
@@ -256,7 +248,6 @@ export class MusicGenerationEngine {
   }
 
   private generateJazz(duration: number, bpm: number, rootFreq: number, isMinor: boolean): Float32Array {
-    console.log('🎺 Generating jazz music');
     
     const beatDuration = 60 / bpm;
     const tracks: Float32Array[] = [];
@@ -277,7 +268,6 @@ export class MusicGenerationEngine {
   }
 
   private generateGeneric(duration: number, bpm: number, rootFreq: number, isMinor: boolean): Float32Array {
-    console.log('🎵 Generating generic music');
     
     const beatDuration = 60 / bpm;
     const tracks: Float32Array[] = [];
@@ -578,7 +568,6 @@ export class MusicGenerationEngine {
   }
 
   private generateRnBChords(duration: number, beatDuration: number, rootFreq: number, isMinor: boolean): Float32Array {
-    console.log('🎹 Generating R&B chords (simplified):', { duration, beatDuration, rootFreq, isMinor });
     
     // Create a simplified single chord track instead of multiple tracks to avoid memory issues
     const samples = Math.floor(this.synthesizer['sampleRate'] * duration);
@@ -599,7 +588,6 @@ export class MusicGenerationEngine {
       chordTrack[i] = sample;
     }
     
-    console.log('🎹 Generated simplified chord track with length:', chordTrack.length);
     return chordTrack;
   }
 

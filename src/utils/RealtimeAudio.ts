@@ -10,7 +10,6 @@ export class AudioRecorder {
 
   async start() {
     try {
-      console.log('🎤 Starting high-quality audio recording...');
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 24000,
@@ -20,23 +19,18 @@ export class AudioRecorder {
           autoGainControl: true
         }
       });
-      
-      this.audioContext = new AudioContext({
-        sampleRate: 24000,
-      });
-      
+
+      this.audioContext = new AudioContext({ sampleRate: 24000 });
       this.source = this.audioContext.createMediaStreamSource(this.stream);
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
-      
+
       this.processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
         this.onAudioData(new Float32Array(inputData));
       };
-      
+
       this.source.connect(this.processor);
       this.processor.connect(this.audioContext.destination);
-      
-      console.log('✅ Audio recording started successfully');
     } catch (error) {
       console.error('❌ Error accessing microphone:', error);
       throw error;
@@ -44,23 +38,10 @@ export class AudioRecorder {
   }
 
   stop() {
-    console.log('🛑 Stopping audio recording...');
-    if (this.source) {
-      this.source.disconnect();
-      this.source = null;
-    }
-    if (this.processor) {
-      this.processor.disconnect();
-      this.processor = null;
-    }
-    if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
-      this.stream = null;
-    }
-    if (this.audioContext) {
-      this.audioContext.close();
-      this.audioContext = null;
-    }
+    if (this.source) { this.source.disconnect(); this.source = null; }
+    if (this.processor) { this.processor.disconnect(); this.processor = null; }
+    if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
+    if (this.audioContext) { this.audioContext.close(); this.audioContext = null; }
   }
 }
 
@@ -91,9 +72,7 @@ export class RealtimeChat {
   async init(voice: string = 'alloy', instructions?: string) {
     try {
       this.onStatusChange('connecting');
-      console.log('🚀 Initializing high-quality realtime chat...');
 
-      // Get ephemeral token from our Supabase Edge Function
       const { data: tokenData, error } = await supabase.functions.invoke("realtime-token", {
         body: { voice, instructions }
       });
@@ -108,21 +87,16 @@ export class RealtimeChat {
       }
 
       const EPHEMERAL_KEY = tokenData.client_secret.value;
-      console.log('✅ Ephemeral token obtained');
 
-      // Create peer connection with optimized settings
       this.pc = new RTCPeerConnection({
         iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
       });
 
-      // Set up remote audio with high quality
       this.pc.ontrack = e => {
-        console.log('🎵 Received remote audio track');
         this.audioEl.srcObject = e.streams[0];
       };
 
-      // Add local audio track with high quality constraints
-      const ms = await navigator.mediaDevices.getUserMedia({ 
+      const ms = await navigator.mediaDevices.getUserMedia({
         audio: {
           sampleRate: 24000,
           channelCount: 1,
@@ -133,7 +107,6 @@ export class RealtimeChat {
       });
       this.pc.addTrack(ms.getTracks()[0]);
 
-      // Set up data channel for events
       this.dc = this.pc.createDataChannel("oai-events");
       this.dc.addEventListener("message", (e) => {
         const event = JSON.parse(e.data);
@@ -141,22 +114,18 @@ export class RealtimeChat {
       });
 
       this.dc.addEventListener("open", () => {
-        console.log('📡 Data channel opened');
         this.isConnected = true;
         this.onStatusChange('connected');
       });
 
       this.dc.addEventListener("close", () => {
-        console.log('📡 Data channel closed');
         this.isConnected = false;
         this.onStatusChange('disconnected');
       });
 
-      // Create and set local description
       const offer = await this.pc.createOffer();
       await this.pc.setLocalDescription(offer);
 
-      // Connect to OpenAI's Realtime API
       const baseUrl = "https://api.openai.com/v1/realtime";
       const model = "gpt-4o-realtime-preview-2024-12-17";
       const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
@@ -176,11 +145,9 @@ export class RealtimeChat {
         type: "answer" as RTCSdpType,
         sdp: await sdpResponse.text(),
       };
-      
-      await this.pc.setRemoteDescription(answer);
-      console.log('✅ WebRTC connection established with OpenAI Realtime API');
 
-      // Start recording after connection is established
+      await this.pc.setRemoteDescription(answer);
+
       this.recorder = new AudioRecorder((audioData) => {
         if (this.dc?.readyState === 'open') {
           this.dc.send(JSON.stringify({
@@ -199,8 +166,6 @@ export class RealtimeChat {
   }
 
   private handleRealtimeEvent(event: any) {
-    console.log("📨 Received realtime event:", event.type);
-
     switch (event.type) {
       case 'response.audio_transcript.delta':
         this.onMessage({
@@ -229,28 +194,22 @@ export class RealtimeChat {
         break;
 
       case 'response.function_call_arguments.done':
-        console.log('🔧 Function call:', event.name, event.arguments);
-        // Handle function calls for music production tools
         this.handleFunctionCall(event.name, JSON.parse(event.arguments));
         break;
 
       case 'error':
         console.error('❌ Realtime API error:', event);
         break;
-
-      default:
-        console.log('📝 Unhandled event type:', event.type);
     }
   }
 
   private handleFunctionCall(name: string, args: any) {
-    const message: RealtimeMessage = {
+    this.onMessage({
       type: 'function_call',
       content: `🔧 ${name}: ${JSON.stringify(args, null, 2)}`,
       timestamp: new Date(),
       role: 'assistant'
-    };
-    this.onMessage(message);
+    });
   }
 
   private encodeAudioData(float32Array: Float32Array): string {
@@ -259,16 +218,16 @@ export class RealtimeChat {
       const s = Math.max(-1, Math.min(1, float32Array[i]));
       int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
     }
-    
+
     const uint8Array = new Uint8Array(int16Array.buffer);
     let binary = '';
     const chunkSize = 0x8000;
-    
+
     for (let i = 0; i < uint8Array.length; i += chunkSize) {
       const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
       binary += String.fromCharCode.apply(null, Array.from(chunk));
     }
-    
+
     return btoa(binary);
   }
 
@@ -277,26 +236,16 @@ export class RealtimeChat {
       throw new Error('Data channel not ready');
     }
 
-    console.log('📤 Sending text message:', text);
-
-    const event = {
+    this.dc.send(JSON.stringify({
       type: 'conversation.item.create',
       item: {
         type: 'message',
         role: 'user',
-        content: [
-          {
-            type: 'input_text',
-            text
-          }
-        ]
+        content: [{ type: 'input_text', text }]
       }
-    };
+    }));
+    this.dc.send(JSON.stringify({ type: 'response.create' }));
 
-    this.dc.send(JSON.stringify(event));
-    this.dc.send(JSON.stringify({type: 'response.create'}));
-
-    // Add user message to chat
     this.onMessage({
       type: 'text',
       content: text,
@@ -306,7 +255,6 @@ export class RealtimeChat {
   }
 
   disconnect() {
-    console.log('🛑 Disconnecting realtime chat...');
     this.recorder?.stop();
     this.dc?.close();
     this.pc?.close();

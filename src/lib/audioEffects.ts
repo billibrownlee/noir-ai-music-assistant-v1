@@ -20,7 +20,6 @@ export class AudioEffectsProcessor {
       // Resume context if suspended (required by some browsers)
       if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume();
-        console.log('✅ AudioContext resumed');
       }
       
       return this.audioContext;
@@ -51,7 +50,6 @@ export class AudioEffectsProcessor {
       }
 
       this.isProcessing = true;
-      console.log('🔄 Starting audio reversal process...');
       
       // Initialize AudioContext (required for user interaction)
       const audioContext = await this.initAudioContext();
@@ -84,7 +82,6 @@ export class AudioEffectsProcessor {
         if (!audioBuffer) {
           throw new Error('Failed to decode audio file');
         }
-        console.log('✅ Audio decoded:', audioBuffer.duration, 'seconds,', audioBuffer.numberOfChannels, 'channels');
       } catch (decodeError) {
         if (decodeError instanceof DOMException && decodeError.name === 'EncodingError') {
           throw new Error('Unsupported audio format. Please use WAV, MP3, or OGG format.');
@@ -120,7 +117,6 @@ export class AudioEffectsProcessor {
         throw new Error(`Failed to reverse audio data: ${processingError instanceof Error ? processingError.message : 'Unknown error'}`);
       }
       
-      console.log('✅ Audio reversed successfully');
       
       // Convert back to audio blob with error handling
       let wavBlob: Blob;
@@ -187,7 +183,6 @@ export class AudioEffectsProcessor {
       const wavBlob = await this.audioBufferToWav(newBuffer);
       const newUrl = URL.createObjectURL(wavBlob);
       
-      console.log('✅ Speed changed successfully');
       return { audioUrl: newUrl, audioBlob: wavBlob };
       
     } catch (error) {
@@ -201,7 +196,6 @@ export class AudioEffectsProcessor {
   // Add echo effect
   async addEcho(audioUrl: string, delay: number = 0.3, feedback: number = 0.3): Promise<{ audioUrl: string; audioBlob: Blob }> {
     try {
-      console.log('🔊 Adding echo effect...');
       
       // Initialize AudioContext
       const audioContext = await this.initAudioContext();
@@ -240,7 +234,6 @@ export class AudioEffectsProcessor {
       const wavBlob = await this.audioBufferToWav(newBuffer);
       const newUrl = URL.createObjectURL(wavBlob);
       
-      console.log('✅ Echo added successfully');
       return { audioUrl: newUrl, audioBlob: wavBlob };
       
     } catch (error) {
@@ -252,7 +245,6 @@ export class AudioEffectsProcessor {
   // Pitch shift (simple implementation)
   async changePitch(audioUrl: string, pitchFactor: number): Promise<{ audioUrl: string; audioBlob: Blob }> {
     try {
-      console.log('🎵 Changing pitch by factor:', pitchFactor);
       
       // Initialize AudioContext
       const audioContext = await this.initAudioContext();
@@ -281,7 +273,6 @@ export class AudioEffectsProcessor {
       const wavBlob = await this.audioBufferToWav(newBuffer);
       const newUrl = URL.createObjectURL(wavBlob);
       
-      console.log('✅ Pitch changed successfully');
       return { audioUrl: newUrl, audioBlob: wavBlob };
       
     } catch (error) {

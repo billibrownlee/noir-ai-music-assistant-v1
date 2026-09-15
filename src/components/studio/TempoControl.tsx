@@ -83,8 +83,6 @@ export const TempoControl: React.FC<TempoControlProps> = ({
       // Calculate speed factor based on BPM change
       const speedFactor = targetBPM / originalBPM;
       
-      console.log(`🎵 Changing tempo from ${originalBPM} BPM to ${targetBPM} BPM (${speedFactor.toFixed(2)}x speed)`);
-      
       const result = await audioProcessor.current.changeSpeed(latestSample.file, speedFactor);
       
       if (result.success && result.processedAudioUrl) {
@@ -110,13 +108,6 @@ export const TempoControl: React.FC<TempoControlProps> = ({
             tempo: targetBPM
           }
         };
-        
-        console.log('🎵 Updating sample with new audio URL:', {
-          sampleId: latestSample.id,
-          oldUrl: latestSample.audioUrl?.substring(0, 50),
-          newUrl: result.processedAudioUrl?.substring(0, 50),
-          urlValid: !!result.processedAudioUrl
-        });
         
         onUpdateSample?.(latestSample.id, updates);
         

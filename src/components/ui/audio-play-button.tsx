@@ -41,12 +41,6 @@ export const AudioPlayButton: React.FC<AudioPlayButtonProps> = ({
       return;
     }
 
-    console.log('🎵 AudioPlayButton: Playing sample through selected audio output:', {
-      trackName,
-      trackId,
-      audioUrl: audioUrl.substring(0, 50) + '...'
-    });
-    
     try {
       // Use global audio system which handles AirPods routing automatically
       await playTrack({

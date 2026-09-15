@@ -277,11 +277,6 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
     }
 
     // Check if this is a processed sample and inform user
-    const isProcessed = latestSample.tags?.includes('processed') || latestSample.tags?.includes('tempo-adjusted');
-    if (isProcessed) {
-      console.log(`🎵 Processing further edits on: ${latestSample.name}`);
-    }
-
     setIsProcessing(true);
     let result: AudioProcessingResult | null = null;
     let processingDescription = "";
@@ -487,15 +482,6 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
             ]
           };
           
-          console.log('🎵 AI Chat: Updating sample with processed audio:', {
-            sampleId: latestSample.id,
-            effect: processingDescription,
-            oldUrl: latestSample.audioUrl?.substring(0, 50) || 'N/A',
-            newUrl: result.processedAudioUrl?.substring(0, 50),
-            urlValid: !!result.processedAudioUrl,
-            updates
-          });
-          
           // Update the sample in the library
           onUpdateSample?.(latestSample.id, updates);
 
@@ -615,11 +601,9 @@ export const AIChatAssistant: React.FC<AIChatAssistantProps> = ({
       
       const chat = new RealtimeChat(
         (message: RealtimeMessage) => {
-          console.log('📨 Realtime message:', message);
           setRealtimeMessages(prev => [...prev, message]);
         },
         (status) => {
-          console.log('📡 Connection status:', status);
           setIsVoiceConnected(status === 'connected');
           setIsConnecting(status === 'connecting');
         },

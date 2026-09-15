@@ -98,7 +98,6 @@ export class AudioProcessor {
     const url = URL.createObjectURL(blob);
     
     // Verify the created audio is valid
-    console.log(`🎵 Created audio blob: ${url.substring(0, 50)}... (${blob.size} bytes)`);
     
     // Additional validation for reverse audio
     if (blob.size === 0) {
@@ -122,7 +121,6 @@ export class AudioProcessor {
         throw new Error('File is not an audio file');
       }
 
-      console.log('🔄 Starting audio reversal...');
       
       // Load and decode audio with error handling
       let buffer: AudioBuffer;
@@ -171,7 +169,6 @@ export class AudioProcessor {
         throw new Error(`Failed to create audio file: ${urlError instanceof Error ? urlError.message : 'Unknown error'}`);
       }
       
-      console.log('✅ Audio reversed successfully');
       
       return {
         success: true,
@@ -193,7 +190,6 @@ export class AudioProcessor {
   async changeSpeed(file: File, speedFactor: number): Promise<AudioProcessingResult> {
     const startTime = Date.now();
     try {
-      console.log(`🎛️ Changing audio speed by ${speedFactor}x...`);
       const buffer = await this.loadAudioFile(file);
       const newLength = Math.floor(buffer.length / speedFactor);
       const newBuffer = this.getAudioContext().createBuffer(
@@ -208,7 +204,6 @@ export class AudioProcessor {
         }
       }
       const processedAudioUrl = await this.bufferToBlobUrl(newBuffer);
-      console.log('✅ Audio speed changed successfully');
       return { success: true, processedAudioUrl, processedData: new Float32Array(newBuffer.getChannelData(0)), processingTime: Date.now() - startTime };
     } catch (error) {
       console.error('❌ Audio speed change failed:', error);
@@ -220,7 +215,6 @@ export class AudioProcessor {
   async applyFade(file: File, fadeInDuration: number = 0, fadeOutDuration: number = 0): Promise<AudioProcessingResult> {
     const startTime = Date.now();
     try {
-      console.log(`🎚️ Applying fade: ${fadeInDuration}s in, ${fadeOutDuration}s out...`);
       const buffer = await this.loadAudioFile(file);
       const { sampleRate, numberOfChannels, length } = buffer;
       const newBuffer = this.getAudioContext().createBuffer(numberOfChannels, length, sampleRate);
@@ -243,7 +237,6 @@ export class AudioProcessor {
         }
       }
       const processedAudioUrl = await this.bufferToBlobUrl(newBuffer);
-      console.log('✅ Fade applied successfully');
       return { success: true, processedAudioUrl, processedData: new Float32Array(newBuffer.getChannelData(0)), processingTime: Date.now() - startTime };
     } catch (error) {
       console.error('❌ Fade application failed:', error);
@@ -255,7 +248,6 @@ export class AudioProcessor {
   async normalizeAudio(file: File): Promise<AudioProcessingResult> {
     const startTime = Date.now();
     try {
-      console.log('📈 Normalizing audio...');
       const buffer = await this.loadAudioFile(file);
       let peak = 0;
       for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
@@ -275,7 +267,6 @@ export class AudioProcessor {
         for (let i = 0; i < src.length; i++) dst[i] = src[i] * factor;
       }
       const processedAudioUrl = await this.bufferToBlobUrl(newBuffer);
-      console.log('✅ Audio normalized successfully');
       return { success: true, processedAudioUrl, processedData: new Float32Array(newBuffer.getChannelData(0)), processingTime: Date.now() - startTime };
     } catch (error) {
       console.error('❌ Audio normalization failed:', error);
@@ -287,7 +278,6 @@ export class AudioProcessor {
   async addDistortion(file: File, amount: number = 0.5): Promise<AudioProcessingResult> {
     const startTime = Date.now();
     try {
-      console.log(`🎸 Adding distortion (${amount * 100}%)...`);
       const buffer = await this.loadAudioFile(file);
       const newBuffer = this.getAudioContext().createBuffer(
         buffer.numberOfChannels, buffer.length, buffer.sampleRate
@@ -300,7 +290,6 @@ export class AudioProcessor {
         }
       }
       const processedAudioUrl = await this.bufferToBlobUrl(newBuffer);
-      console.log('✅ Distortion applied successfully');
       return { success: true, processedAudioUrl, processedData: new Float32Array(newBuffer.getChannelData(0)), processingTime: Date.now() - startTime };
     } catch (error) {
       console.error('❌ Distortion application failed:', error);

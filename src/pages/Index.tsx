@@ -123,7 +123,6 @@ const Index = () => {
       }).filter((s): s is AudioSample => s !== null && !!s.audioUrl);
 
       setUploadedSamples(transformedSamples);
-      console.log('✅ Loaded user samples:', transformedSamples.length);
     } catch (error) {
       console.error('Error loading user samples:', error);
       // Don't crash - just set empty array
@@ -327,9 +326,7 @@ const Index = () => {
                               prev.map(sample => sample.id === sampleId ? { ...sample, ...updates } : sample)
                             );
                           }}
-                          onTempoChange={(bpm) => {
-                            console.log('Tempo changed to:', bpm);
-                          }}
+                          onTempoChange={() => {}}
                         />
                       </CollapsibleContent>
                     </Collapsible>
@@ -344,12 +341,9 @@ const Index = () => {
                           </Button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="mt-2">
-                          <StemEditor 
+                          <StemEditor
                             separatedAudio={separatedAudio}
-                            onStemUpdate={(stemId, updates) => {
-                              // Handle stem updates if needed
-                              console.log('Stem updated:', stemId, updates);
-                            }}
+                            onStemUpdate={() => {}}
                           />
                         </CollapsibleContent>
                       </Collapsible>
@@ -379,8 +373,8 @@ const Index = () => {
                         </Button>
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
-                        <SampleLibrary 
-                          onSampleSelect={(sample) => console.log('Selected sample:', sample)}
+                        <SampleLibrary
+                          onSampleSelect={() => {}}
                           uploadedSamples={uploadedSamples}
                           onDeleteSample={(sampleId) => {
                             deleteSampleFromDB(sampleId).catch(console.warn);
@@ -494,7 +488,6 @@ const Index = () => {
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <AudioGenerator uploadedSamples={uploadedSamples} onAudioGenerated={(audio) => {
-                          console.log('Generated audio:', audio);
                           // Add to uploaded samples so it appears in the library
                           setUploadedSamples(prev => [...prev, {
                             id: audio.id,
