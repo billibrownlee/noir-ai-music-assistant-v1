@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Upload, X, Music, FileAudio, Layers, FolderOpen, CheckCircle2 } from 'lucide-react';
+import { Upload, X, Music, FileAudio, Layers, FolderOpen, CheckCircle2, Disc3 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { AudioAnalyzer, AudioAnalysis } from '@/lib/audioAnalyzer';
@@ -15,6 +15,131 @@ import { AudioPlayButton } from '@/components/ui/audio-play-button';
 import { useGlobalAudio } from '@/hooks/useGlobalAudio';
 import { saveSampleToDB, updateSampleMetaInDB, deleteSampleFromDB, clearAllSamplesFromDB } from '@/lib/sampleStorage';
 import type { AudioSample } from '@/types/audio';
+
+// ─── Analysis display helpers ─────────────────────────────────────────────────
+
+const NOTES_LIST = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const CAM_MAJ: Record<string,string> = {C:'8B','C#':'3B',D:'10B','D#':'5B',E:'12B',F:'7B','F#':'2B',G:'9B','G#':'4B',A:'11B','A#':'6B',B:'1B'};
+const CAM_MIN: Record<string,string> = {C:'5A','C#':'12A',D:'7A','D#':'2A',E:'9A',F:'4A','F#':'11A',G:'6A','G#':'1A',A:'8A','A#':'3A',B:'10A'};
+
+function camelotFrom(key: string, mode: 'major'|'minor'): string {
+  return mode === 'major' ? (CAM_MAJ[key] ?? '—') : (CAM_MIN[key] ?? '—');
+}
+
+function moodFrom(tempo: number, mode: 'major'|'minor', energy: number, dance: number): string {
+  if (mode === 'minor') {
+    if (energy > 0.7) return 'Dark & Intense';
+    if (tempo > 120) return 'Aggressive';
+    if (energy > 0.4) return 'Melancholic';
+    return 'Introspective';
+  }
+  if (tempo > 130 && energy > 0.6) return 'Euphoric';
+  if (dance > 0.7) return 'Energetic';
+  if (energy < 0.35) return 'Peaceful';
+  return 'Uplifting';
+}
+
+function genresFrom(tempo: number, mode: 'major'|'minor', energy: number): string[] {
+  const s: Record<string,number> = {};
+  const add = (g: string, n: number) => { s[g] = (s[g] ?? 0) + n; };
+  const min = mode === 'minor';
+  if (tempo >= 125 && tempo <= 175) { add('trap',3); add('drill',2); }
+  if (tempo >= 155 && tempo <= 200) { add('electronic',2); add('techno',2); }
+  if (tempo >= 118 && tempo <= 135) { add('house',2); add('pop',2); }
+  if (tempo >= 80  && tempo <= 112) { add('hip-hop',3); add('r&b',2); }
+  if (tempo >= 100 && tempo <= 128) { add('afrobeats',3); add('funk',2); }
+  if (tempo < 80)                   { add('lo-fi',3); add('jazz',2); }
+  if (min)  { add('trap',2); add('drill',3); add('metal',1); }
+  else      { add('pop',2); add('funk',2); add('gospel',1); }
+  if (energy > 0.7) { add('trap',1); add('rock',2); }
+  if (energy < 0.4) { add('lo-fi',2); add('jazz',1); }
+  return Object.entries(s).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([g])=>g);
+}
+
+function tempoLbl(bpm: number): string {
+  if (bpm < 60) return 'Largo'; if (bpm < 76) return 'Adagio';
+  if (bpm < 108) return 'Andante'; if (bpm < 120) return 'Moderato';
+  if (bpm < 156) return 'Allegro'; return 'Vivace';
+}
+
+async function auddIdentify(file: File): Promise<{title:string;artist:string;album?:string}|null> {
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch('https://api.audd.io/', { method:'POST', body:fd });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.status === 'success' && data.result) {
+      return { title: data.result.title, artist: data.result.artist, album: data.result.album };
+    }
+    return null;
+  } catch { return null; }
+}
+
+function SampleAnalysisCard({ analysis, songId }: { analysis: AudioAnalysis; songId?: { title:string; artist:string; album?:string } | null }) {
+  const camelot = camelotFrom(analysis.key, analysis.mode);
+  const mood = moodFrom(analysis.tempo, analysis.mode, analysis.energy, analysis.danceability);
+  const genres = genresFrom(analysis.tempo, analysis.mode, analysis.energy);
+
+  return (
+    <div className="mt-3 space-y-2 p-3 rounded-lg bg-[#07070f] border border-border/20">
+      {/* Song ID */}
+      {songId && (
+        <div className="flex items-center gap-2 pb-2 border-b border-border/15">
+          <Disc3 className="w-4 h-4 text-neon-purple flex-shrink-0" />
+          <div className="min-w-0">
+            <span className="text-xs font-semibold text-foreground truncate">{songId.title}</span>
+            <span className="text-xs text-muted-foreground ml-1">— {songId.artist}</span>
+          </div>
+          <Badge className="ml-auto flex-shrink-0 bg-neon-purple/20 text-neon-purple border-neon-purple/30 text-[10px] px-1.5">ID'd</Badge>
+        </div>
+      )}
+
+      {/* Key metrics row */}
+      <div className="flex flex-wrap gap-2">
+        <Badge className="bg-neon-green/15 text-neon-green border-neon-green/30 text-[10px] font-mono">
+          {analysis.key} {analysis.mode}
+        </Badge>
+        <Badge className="bg-neon-blue/15 text-neon-blue border-neon-blue/30 text-[10px] font-mono">
+          {camelot}
+        </Badge>
+        <Badge className="bg-neon-purple/15 text-neon-purple border-neon-purple/30 text-[10px] font-mono">
+          {Math.round(analysis.tempo)} BPM · {tempoLbl(analysis.tempo)}
+        </Badge>
+        <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">
+          {mood}
+        </Badge>
+      </div>
+
+      {/* Energy / Danceability bars */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="space-y-0.5">
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>Energy</span><span>{Math.round(analysis.energy * 100)}%</span>
+          </div>
+          <div className="h-1 bg-border/20 rounded-full overflow-hidden">
+            <div className="h-full bg-neon-green rounded-full" style={{ width:`${Math.round(analysis.energy*100)}%` }} />
+          </div>
+        </div>
+        <div className="space-y-0.5">
+          <div className="flex justify-between text-[10px] text-muted-foreground">
+            <span>Danceability</span><span>{Math.round(analysis.danceability * 100)}%</span>
+          </div>
+          <div className="h-1 bg-border/20 rounded-full overflow-hidden">
+            <div className="h-full bg-neon-blue rounded-full" style={{ width:`${Math.round(analysis.danceability*100)}%` }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Genre tags */}
+      <div className="flex flex-wrap gap-1.5">
+        {genres.map(g => (
+          <span key={g} className="text-[10px] text-neon-green/70 bg-neon-green/8 border border-neon-green/20 rounded px-1.5 py-0.5 capitalize">{g}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface BatchGroup {
   folderName: string;
@@ -462,6 +587,15 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                 setAnalyzingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
                 // Silent fail - metadata is optional
               });
+
+            // Song identification via AudD (async, non-blocking, best-effort)
+            auddIdentify(file).then(songId => {
+              if (songId) {
+                setUploadedSamples(prev =>
+                  prev.map(s => s.id === id ? { ...s, songId } : s)
+                );
+              }
+            }).catch(() => { /* silent fail */ });
 
             // Only separate stems if user has enabled auto-separation
             if (autoSeparateStems && onAudioSeparated && file.size < 75 * 1024 * 1024) {
@@ -1038,7 +1172,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
                   {/* Complete Status */}
                   {sample.uploadProgress === 100 && (
-                    <div className="mb-4 p-2 bg-neon-green/10 border border-neon-green/30 rounded">
+                    <div className="mb-3 p-2 bg-neon-green/10 border border-neon-green/30 rounded">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-neon-green rounded-full"></div>
                         <span className="text-sm font-medium text-neon-green">✅ Saved Locally - Ready for AI Processing!</span>
@@ -1046,7 +1180,12 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  {/* Inline Analysis Results */}
+                  {sample.analysis && (
+                    <SampleAnalysisCard analysis={sample.analysis} songId={sample.songId} />
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4 mt-4">
                     <div>
                       <Label htmlFor={`genre-${sample.id}`}>Genre</Label>
                       <Select 

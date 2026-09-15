@@ -13,4 +13,5 @@ export interface AudioSample {
   uploadProgress?: number;
   isPlaying?: boolean;
   analysis?: AudioAnalysis;
+  songId?: { title: string; artist: string; album?: string } | null;
 }
