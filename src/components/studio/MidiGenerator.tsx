@@ -18,6 +18,7 @@ import {
   GENRE_OPTIONS, KEY_OPTIONS, SCALE_OPTIONS,
   type MelodyNote, type GeneratorParams, type StyleProfile,
 } from '@/lib/melodyEngine';
+import { CustomSampleInstrument } from './CustomSampleInstrument';
 
 // ── LocalStorage key (same as AudioGenerator) ─────────────────────────────────
 const OAI_KEY = 'noir_openai_api_key';
@@ -163,6 +164,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [playheadSec, setPlayheadSec] = useState(-1);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [customSampler, setCustomSampler] = useState<any>(null);
 
   const prevSeedRef = useRef<MelodyNote[] | undefined>();
 
@@ -177,7 +179,8 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
   }, [seedNotes, seedKey, seedScale]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const synthRef = useRef<any>(null);
+  const synthRef = useRef<any>(null);   // owned PolySynth — disposed on stop
+  const activeRef = useRef<any>(null);  // current instrument (sampler or synth)
   const partRef = useRef<any>(null);
   const animRef = useRef<number>(0);
   const toneRef = useRef<any>(null);
@@ -226,6 +229,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
   const stopPlayback = useCallback(async () => {
     cancelAnimationFrame(animRef.current);
     try { partRef.current?.stop(); partRef.current?.dispose(); } catch {}
+    try { activeRef.current?.releaseAll?.(); } catch {}
     try { synthRef.current?.dispose(); } catch {}
     if (toneRef.current) {
       try {
@@ -235,6 +239,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
     }
     partRef.current = null;
     synthRef.current = null;
+    activeRef.current = null;
     setIsPlaying(false);
     setPlayheadSec(-1);
   }, []);
@@ -250,17 +255,26 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
     const transport = Tone.getTransport?.() ?? Tone.Transport;
     transport.bpm.value = params.bpm;
 
-    const synth = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: 'triangle8' },
-      envelope: { attack: 0.01, decay: 0.08, sustain: 0.55, release: 0.7 },
-      volume: -8,
-    }).toDestination();
-    synthRef.current = synth;
-
+    let instrument: any;
     const secPerBeat = 60 / params.bpm;
 
+    if (customSampler) {
+      instrument = customSampler;
+      activeRef.current = customSampler;
+      synthRef.current = null;
+    } else {
+      const synth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'triangle8' },
+        envelope: { attack: 0.01, decay: 0.08, sustain: 0.55, release: 0.7 },
+        volume: -8,
+      }).toDestination();
+      synthRef.current = synth;
+      activeRef.current = synth;
+      instrument = synth;
+    }
+
     const part = new Tone.Part((time: number, val: MelodyNote) => {
-      synth.triggerAttackRelease(val.note, val.beats * secPerBeat, time, val.velocity);
+      instrument.triggerAttackRelease(val.note, val.beats * secPerBeat, time, val.velocity);
     }, notes.map(n => [n.time * secPerBeat, n]));
 
     part.start(0);
@@ -281,7 +295,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
       }
     };
     animRef.current = requestAnimationFrame(animate);
-  }, [notes, params.bpm, params.bars, stopPlayback]);
+  }, [notes, params.bpm, params.bars, stopPlayback, customSampler]);
 
   useEffect(() => () => { stopPlayback(); }, [stopPlayback]);
 
@@ -467,6 +481,9 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
             className="resize-none text-sm"
           />
         </div>
+
+        {/* ── Custom Sound ────────────────────────────────────────────────── */}
+        <CustomSampleInstrument onSamplerChange={setCustomSampler} />
 
         {/* ── Generate button ─────────────────────────────────────────────── */}
         <Button

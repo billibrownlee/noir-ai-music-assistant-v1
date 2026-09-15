@@ -10,6 +10,7 @@ import {
   getScaleNotes, noteToMidi, KEY_OPTIONS, SCALE_OPTIONS,
   type MelodyNote,
 } from '@/lib/melodyEngine';
+import { CustomSampleInstrument } from './CustomSampleInstrument';
 
 // ── Seeded LCG (same family as the original All the Music generator) ──────────
 function lcg(seed: number) {
@@ -108,7 +109,9 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
   const [bars, setBars] = useState(2);
   const [page, setPage] = useState(0);
   const [playingId, setPlayingId] = useState<number | null>(null);
-  const synthRef = useRef<any>(null);
+  const [customSampler, setCustomSampler] = useState<any>(null);
+  const synthRef = useRef<any>(null);  // owned synth — disposed on stop
+  const activeRef = useRef<any>(null); // current instrument (sampler or synth)
   const { toast } = useToast();
 
   // Reset to page 0 when key/scale changes so indices feel fresh
@@ -129,8 +132,10 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
   const displayTotal = '16,777,216+';
 
   const stopPlayback = useCallback(() => {
+    try { activeRef.current?.releaseAll?.(); } catch {}
     try { synthRef.current?.dispose(); } catch {}
     synthRef.current = null;
+    activeRef.current = null;
     setPlayingId(null);
   }, []);
 
@@ -142,17 +147,28 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
       const Tone = await import('tone');
       await Tone.start();
 
-      const synth = new Tone.PolySynth(Tone.Synth, {
-        oscillator: { type: 'triangle8' },
-        envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.6 },
-        volume: -10,
-      }).toDestination();
-
-      synthRef.current = synth;
       const secPerBeat = 60 / 120;
+      let instrument: any;
+
+      if (customSampler) {
+        // Use uploaded sample — no need to dispose (owned externally)
+        instrument = customSampler;
+        activeRef.current = customSampler;
+        synthRef.current = null;
+      } else {
+        // Default triangle synth
+        const synth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'triangle8' },
+          envelope: { attack: 0.01, decay: 0.1, sustain: 0.5, release: 0.6 },
+          volume: -10,
+        }).toDestination();
+        synthRef.current = synth;
+        activeRef.current = synth;
+        instrument = synth;
+      }
 
       notes.forEach(note => {
-        synth.triggerAttackRelease(
+        instrument.triggerAttackRelease(
           note.note,
           note.beats * secPerBeat,
           `+${note.time * secPerBeat + 0.05}`,
@@ -163,13 +179,13 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
       setPlayingId(id);
       const totalMs = (bars * 4 * secPerBeat + 0.8) * 1000;
       setTimeout(() => {
-        if (synthRef.current === synth) stopPlayback();
+        if (activeRef.current === instrument) stopPlayback();
       }, totalMs);
     } catch (err) {
       console.warn('PublicDomainMelodyBank playback error:', err);
       setPlayingId(null);
     }
-  }, [playingId, bars, stopPlayback]);
+  }, [playingId, bars, stopPlayback, customSampler]);
 
   const handleExportMidi = async (notes: MelodyNote[], seed: number) => {
     try {
@@ -265,6 +281,9 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
             </div>
           </div>
         </div>
+
+        {/* Custom Sample Instrument */}
+        <CustomSampleInstrument onSamplerChange={setCustomSampler} />
 
         {/* Stats bar */}
         <div className="flex items-center justify-between text-xs text-muted-foreground px-1">

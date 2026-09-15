@@ -211,13 +211,13 @@ const Index = () => {
     <div className="min-h-screen bg-background pb-20" style={{ backgroundColor: 'hsl(var(--background))', minHeight: '100vh' }}>
       <StudioHeader />
       
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {/* Main Layout with Chat Sidebar */}
-        <div className="flex gap-6 h-[calc(100vh-8rem)]">
-          {/* Left Sidebar - AI Chat (Always Visible) */}
-          <div className="w-80 flex-shrink-0">
-            <div className="sticky top-0 h-full">
-              <div className="h-full bg-card/50 backdrop-blur-sm rounded-lg border border-border/30">
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:h-[calc(100vh-8rem)]">
+          {/* Left Sidebar - AI Chat (Desktop only; mobile chat appears below tabs) */}
+          <div className="hidden lg:block w-80 flex-shrink-0">
+            <div className="sticky top-0 lg:h-full">
+              <div className="lg:h-full bg-card/50 backdrop-blur-sm rounded-lg border border-border/30">
                 <div className="p-4 border-b border-border/30">
                   <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                     🤖 Noir AI Assistant
@@ -226,13 +226,13 @@ const Index = () => {
                     Always here to help with your music production
                   </p>
                 </div>
-                <div className="h-[calc(100%-5rem)] overflow-hidden">
-                  <AIChatAssistant 
+                <div className="h-80 lg:h-[calc(100%-5rem)] overflow-hidden">
+                  <AIChatAssistant
                     audioAnalysis={audioAnalysis}
                     separatedAudio={separatedAudio}
                     uploadedSamples={uploadedSamples}
                     onUpdateSample={(sampleId, updates) => {
-                      setUploadedSamples(prev => 
+                      setUploadedSamples(prev =>
                         prev.map(sample => sample.id === sampleId ? { ...sample, ...updates } : sample)
                       );
                     }}
@@ -243,7 +243,7 @@ const Index = () => {
           </div>
 
           {/* Main Content Area - Studio Interface with Tabs */}
-          <div className="flex-1 space-y-6">
+          <div className="flex-1 min-w-0 space-y-4 sm:space-y-6">
             <Tabs
               value={studioTab}
               onValueChange={(v) => {
@@ -252,31 +252,15 @@ const Index = () => {
               }}
               className="w-full space-y-6"
             >
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-8 gap-1 bg-card/50 backdrop-blur-sm p-1 rounded-md">
-                <TabsTrigger value="upload" className="flex items-center gap-1 text-xs sm:text-sm">
-                  📤 Upload & Library
-                </TabsTrigger>
-                <TabsTrigger value="pitch-speed" className="flex items-center gap-1 text-xs sm:text-sm">
-                  🎚️ Pitch & Speed
-                </TabsTrigger>
-                <TabsTrigger value="generate" className="flex items-center gap-1 text-xs sm:text-sm">
-                  🎵 Generate
-                </TabsTrigger>
-                <TabsTrigger value="record" className="flex items-center gap-1 text-xs sm:text-sm">
-                  🎙️ Record
-                </TabsTrigger>
-                <TabsTrigger value="mix" className="flex items-center gap-1 text-xs sm:text-sm">
-                  🎛️ Mix
-                </TabsTrigger>
-                <TabsTrigger value="master" className="flex items-center gap-1 text-xs sm:text-sm">
-                  🎚️ Master
-                </TabsTrigger>
-                <TabsTrigger value="workflow" className="flex items-center gap-1 text-xs sm:text-sm">
-                  ⚡ Workflow
-                </TabsTrigger>
-                <TabsTrigger value="analyze" className="flex items-center gap-1 text-xs sm:text-sm">
-                  🔍 Analyze
-                </TabsTrigger>
+              <TabsList className="flex w-full overflow-x-auto gap-0.5 bg-card/50 backdrop-blur-sm p-1 rounded-md">
+                <TabsTrigger value="upload" className="shrink-0 text-xs px-2 sm:px-3">📤 Upload</TabsTrigger>
+                <TabsTrigger value="pitch-speed" className="shrink-0 text-xs px-2 sm:px-3">🎚️ Pitch</TabsTrigger>
+                <TabsTrigger value="generate" className="shrink-0 text-xs px-2 sm:px-3">🎵 Generate</TabsTrigger>
+                <TabsTrigger value="record" className="shrink-0 text-xs px-2 sm:px-3">🎙️ Record</TabsTrigger>
+                <TabsTrigger value="mix" className="shrink-0 text-xs px-2 sm:px-3">🎛️ Mix</TabsTrigger>
+                <TabsTrigger value="master" className="shrink-0 text-xs px-2 sm:px-3">🎚️ Master</TabsTrigger>
+                <TabsTrigger value="workflow" className="shrink-0 text-xs px-2 sm:px-3">⚡ Workflow</TabsTrigger>
+                <TabsTrigger value="analyze" className="shrink-0 text-xs px-2 sm:px-3">🔍 Analyze</TabsTrigger>
               </TabsList>
 
               {/* Upload & Library Tab */}
@@ -695,9 +679,35 @@ const Index = () => {
 
             </Tabs>
 
+            {/* Mobile AI Chat — visible below tabs on phones */}
+            <div className="lg:hidden">
+              <Collapsible>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
+                    <span className="font-medium text-foreground">🤖 Noir AI Assistant</span>
+                    <ChevronDown className="h-4 w-4 text-foreground" />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2">
+                  <div className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/30 h-80 overflow-hidden">
+                    <AIChatAssistant
+                      audioAnalysis={audioAnalysis}
+                      separatedAudio={separatedAudio}
+                      uploadedSamples={uploadedSamples}
+                      onUpdateSample={(sampleId, updates) => {
+                        setUploadedSamples(prev =>
+                          prev.map(sample => sample.id === sampleId ? { ...sample, ...updates } : sample)
+                        );
+                      }}
+                    />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
+
             {/* Current Track Player */}
             {currentTrack && currentTrack.audioUrl && (
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <AudioPlayer track={currentTrack} />
               </div>
             )}

@@ -7,31 +7,31 @@ import noirLogo from "@/assets/noir-logo.png";
 export default function StudioHeader() {
   return (
     <header className="border-b border-border/50 bg-gradient-glass backdrop-blur-md">
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 gap-3">
         {/* Logo & Brand */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="relative">
-              <img 
-                src={noirLogo} 
-                alt="Noir Logo" 
-                className="w-10 h-10 rounded-xl shadow-neon"
+              <img
+                src={noirLogo}
+                alt="Noir Logo"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl shadow-neon"
               />
-              <div className="absolute -top-1 -right-1 w-4 h-4 bg-accent rounded-full animate-pulse-neon"></div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-accent rounded-full animate-pulse-neon"></div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Noir</h1>
-              <p className="text-xs text-muted-foreground">AI Music Assistant</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Noir</h1>
+              <p className="hidden sm:block text-xs text-muted-foreground">AI Music Assistant</p>
             </div>
           </div>
-          <Badge variant="outline" className="border-primary/50 text-primary">
+          <Badge variant="outline" className="hidden sm:flex border-primary/50 text-primary">
             <Sparkles className="w-3 h-3 mr-1" />
             Studio Pro
           </Badge>
         </div>
 
         {/* Center Search */}
-        <div className="hidden md:flex items-center gap-2 max-w-md flex-1 mx-8">
+        <div className="hidden md:flex items-center gap-2 max-w-md flex-1 mx-4 lg:mx-8">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
@@ -43,17 +43,17 @@ export default function StudioHeader() {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full"></div>
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+          <Button variant="ghost" size="icon" className="relative w-8 h-8 sm:w-10 sm:h-10">
+            <Bell className="w-4 h-4 sm:w-5 sm:h-5" />
+            <div className="absolute -top-1 -right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-accent rounded-full"></div>
           </Button>
-          
-          <Button variant="outline" size="sm">
+
+          <Button variant="outline" size="sm" className="hidden sm:flex">
             <Settings className="w-4 h-4" />
             <span className="hidden sm:inline ml-2">Settings</span>
           </Button>
-          
+
           <AuthButton />
         </div>
       </div>
