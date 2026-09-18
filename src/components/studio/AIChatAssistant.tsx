@@ -683,7 +683,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Brain className="w-5 h-5 text-neon-purple" />
+            <Brain className="w-5 h-5 text-primary" />
             Noir AI Chat
             <Badge variant="outline" className="text-xs">
               Production Assistant
@@ -725,7 +725,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
             {messages.map(message => (
               <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
                 <Avatar className="w-8 h-8 flex-shrink-0">
-                  <AvatarFallback className={message.type === 'user' ? 'bg-neon-blue text-black' : 'bg-neon-purple text-black'}>
+                  <AvatarFallback className={message.type === 'user' ? 'bg-neon-blue text-black' : 'bg-primary text-black'}>
                     {message.type === 'user' ? <User className="w-4 h-4" /> : <Brain className="w-4 h-4" />}
                   </AvatarFallback>
                 </Avatar>
@@ -765,15 +765,15 @@ Be conversational, helpful, and provide specific production advice. You can use 
             {(isTyping || isProcessing) && (
               <div className="flex gap-3">
                 <Avatar className="w-8 h-8">
-                  <AvatarFallback className="bg-neon-purple text-black">
+                  <AvatarFallback className="bg-primary text-black">
                     <Brain className="w-4 h-4" />
                   </AvatarFallback>
                 </Avatar>
                 <div className="bg-studio-surface-secondary/50 rounded-lg p-3">
                   <div className="flex gap-1 items-center">
-                    <div className="w-2 h-2 bg-neon-purple rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-neon-purple rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-neon-purple rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                     {isProcessing && (
                       <span className="ml-2 text-xs text-neon-orange">Processing audio...</span>
                     )}
@@ -788,7 +788,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
         <div className="p-4 border-t border-studio-border/30 bg-studio-surface/30">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-neon-purple" />
+              <Sparkles className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-studio-text-primary">High-Quality Voice Chat</span>
               <Badge variant={isVoiceConnected ? "default" : "outline"} className="text-xs">
                 {isVoiceConnected ? "Connected" : isConnecting ? "Connecting..." : "Offline"}
@@ -821,7 +821,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
               <Button 
                 onClick={startVoiceChat}
                 disabled={isConnecting}
-                className="flex-1 bg-neon-purple hover:bg-neon-purple/80"
+                className="flex-1 bg-primary hover:bg-primary/80"
               >
                 <Phone className="w-4 h-4 mr-2" />
                 {isConnecting ? "Connecting..." : "Start Voice Chat"}

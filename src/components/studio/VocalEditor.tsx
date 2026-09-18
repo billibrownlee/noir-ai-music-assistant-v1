@@ -294,12 +294,12 @@ export const VocalEditor: React.FC<VocalEditorProps> = ({ audioUrl, trackName, o
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <Card className="glass-card border border-neon-purple/40">
+    <Card className="glass-card border border-primary/40">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between text-sm">
           <div className="flex items-center gap-2">
-            <Sliders className="w-4 h-4 text-neon-purple" />
-            Editing: <span className="text-neon-purple truncate max-w-[180px]">{trackName}</span>
+            <Sliders className="w-4 h-4 text-primary" />
+            Editing: <span className="text-primary truncate max-w-[180px]">{trackName}</span>
             {audioBuf && (
               <Badge variant="outline" className="text-xs">{dur.toFixed(1)}s</Badge>
             )}
@@ -428,7 +428,7 @@ export const VocalEditor: React.FC<VocalEditorProps> = ({ audioUrl, trackName, o
             </div>
 
             <Button
-              className="w-full bg-neon-purple hover:bg-neon-purple/80 text-white"
+              className="w-full bg-primary hover:bg-primary/80 text-white"
               onClick={exportAudio}
               disabled={isExporting}
               size="lg"

@@ -111,11 +111,11 @@ export function CustomSampleInstrument({ onSamplerChange }: CustomSampleInstrume
   }, []);
 
   return (
-    <div className="space-y-2.5 p-3 rounded-lg border border-neon-purple/25 bg-neon-purple/5">
+    <div className="space-y-2.5 p-3 rounded-lg border border-primary/25 bg-primary/5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Music2 className="w-4 h-4 text-neon-purple" />
+          <Music2 className="w-4 h-4 text-primary" />
           <span className="text-sm font-medium">Custom Sound</span>
           <span className="text-[10px] text-muted-foreground">(replaces default synth)</span>
         </div>
@@ -138,8 +138,8 @@ export function CustomSampleInstrument({ onSamplerChange }: CustomSampleInstrume
         className={[
           'flex items-center gap-2 p-2.5 rounded border border-dashed cursor-pointer text-xs transition-colors',
           isDragging
-            ? 'border-neon-purple bg-neon-purple/10 text-neon-purple'
-            : 'border-border/40 text-muted-foreground hover:border-neon-purple/50 hover:text-neon-purple',
+            ? 'border-primary bg-primary/10 text-primary'
+            : 'border-border/40 text-muted-foreground hover:border-primary/50 hover:text-primary',
         ].join(' ')}
         onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
         onDragLeave={() => setIsDragging(false)}
@@ -169,7 +169,7 @@ export function CustomSampleInstrument({ onSamplerChange }: CustomSampleInstrume
         <div className="space-y-1.5">
           {samples.map(s => (
             <div key={s.id} className="flex items-center gap-2 px-1">
-              <Volume2 className="w-3 h-3 text-neon-purple flex-shrink-0" />
+              <Volume2 className="w-3 h-3 text-primary flex-shrink-0" />
               <span className="text-[11px] text-foreground truncate flex-1 min-w-0">{s.name}</span>
               <span className="text-[10px] text-muted-foreground flex-shrink-0">root:</span>
               <Select value={s.rootNote} onValueChange={v => updateRoot(s.id, v)}>

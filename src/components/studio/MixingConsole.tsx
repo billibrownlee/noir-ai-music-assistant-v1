@@ -148,7 +148,7 @@ export const MixingConsole: React.FC = () => {
 
   const getChannelColor = (type: string) => {
     const colors = {
-      'vocal': 'border-neon-purple',
+      'vocal': 'border-primary',
       'instrument': 'border-neon-blue',
       'drums': 'border-neon-green',
       'bass': 'border-neon-orange',

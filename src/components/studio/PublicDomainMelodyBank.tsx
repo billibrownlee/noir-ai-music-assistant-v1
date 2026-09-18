@@ -359,7 +359,7 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
                   </Button>
                   <Button
                     size="sm"
-                    className="flex-1 h-7 text-xs bg-neon-purple/80 hover:bg-neon-purple text-white"
+                    className="flex-1 h-7 text-xs bg-primary/80 hover:bg-primary text-white"
                     onClick={() => {
                       stopPlayback();
                       onLoadMelody(notes, key, scale);

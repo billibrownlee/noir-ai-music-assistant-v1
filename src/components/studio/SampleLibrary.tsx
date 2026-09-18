@@ -129,7 +129,7 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
 
   const getGenreColor = (genre: string) => {
     const colors = {
-      'rnb': 'bg-neon-purple/20 text-neon-purple',
+      'rnb': 'bg-primary/20 text-primary',
       'pop': 'bg-neon-blue/20 text-neon-blue',
       'trap': 'bg-neon-green/20 text-neon-green',
       'rap': 'bg-neon-orange/20 text-neon-orange',
@@ -144,7 +144,7 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Library className="w-5 h-5 text-neon-purple" />
+            <Library className="w-5 h-5 text-primary" />
             Sample Library ({filteredSamples.length})
             {uploadedSamples.length > 0 && (
               <Badge variant="outline" className="text-xs">
@@ -196,7 +196,7 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="flex-shrink-0 relative">
-                        <Music2 className="w-8 h-8 text-neon-purple p-1.5 bg-neon-purple/20 rounded" />
+                        <Music2 className="w-8 h-8 text-primary p-1.5 bg-primary/20 rounded" />
                         {currentTrack?.id === sample.id && isPlaying && (
                           <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-pulse"></div>
                         )}

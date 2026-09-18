@@ -131,7 +131,7 @@ export const CounterMelodyGenerator: React.FC = () => {
   const getRelationshipColor = (relationship: string) => {
     const colors = {
       'harmony': 'bg-neon-blue/20 text-neon-blue',
-      'counter': 'bg-neon-purple/20 text-neon-purple',
+      'counter': 'bg-primary/20 text-primary',
       'call-response': 'bg-neon-green/20 text-neon-green',
       'rhythmic': 'bg-neon-orange/20 text-neon-orange'
     };

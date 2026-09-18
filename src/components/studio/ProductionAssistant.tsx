@@ -239,7 +239,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
   const getTypeColor = (type: string) => {
     const colors = {
       'mixing': 'bg-neon-blue/20 text-neon-blue',
-      'arrangement': 'bg-neon-purple/20 text-neon-purple',
+      'arrangement': 'bg-primary/20 text-primary',
       'sound-design': 'bg-neon-green/20 text-neon-green',
       'mastering': 'bg-neon-orange/20 text-neon-orange',
       'instrumentation': 'bg-pink-500/20 text-pink-400',
@@ -267,7 +267,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
     <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Brain className="w-5 h-5 text-neon-purple" />
+          <Brain className="w-5 h-5 text-primary" />
           Noir - AI Production Assistant
           <Badge variant="outline" className="ml-auto">
             <Sparkles className="w-3 h-3 mr-1" />
@@ -287,10 +287,10 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
             {/* AI Status & Filter Controls */}
             <div className="space-y-4">
               {audioAnalysis && (
-                <Card className="glass-card-subtle border-neon-purple/30">
+                <Card className="glass-card-subtle border-primary/30">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3 mb-2">
-                      <Brain className="w-4 h-4 text-neon-purple animate-pulse" />
+                      <Brain className="w-4 h-4 text-primary animate-pulse" />
                       <span className="font-medium">Noir analyzed your track:</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -381,9 +381,9 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                       </p>
                       {suggestion.reasoning && (
                         <div className="flex items-start gap-3 p-3 bg-studio-surface-secondary/30 rounded-lg">
-                          <Brain className="w-4 h-4 text-neon-purple mt-0.5 flex-shrink-0" />
+                          <Brain className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                           <div>
-                            <p className="text-xs font-medium text-neon-purple mb-1">Noir's Insight:</p>
+                            <p className="text-xs font-medium text-primary mb-1">Noir's Insight:</p>
                             <p className="text-xs text-studio-text-secondary italic leading-relaxed">
                               {suggestion.reasoning}
                             </p>
@@ -438,7 +438,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>Danceability</span>
-                            <span className="text-neon-purple">{Math.round(audioAnalysis.danceability * 100)}%</span>
+                            <span className="text-primary">{Math.round(audioAnalysis.danceability * 100)}%</span>
                           </div>
                         </div>
                       </CardContent>
@@ -447,7 +447,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                     <Card className="glass-card-subtle">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <Volume2 className="w-4 h-4 text-neon-purple" />
+                          <Volume2 className="w-4 h-4 text-primary" />
                           <span className="font-medium">Spectral Features</span>
                         </div>
                         <div className="space-y-2">
@@ -475,7 +475,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                   <Card className="glass-card-subtle">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-2 mb-3">
-                        <Wand2 className="w-4 h-4 text-neon-purple" />
+                        <Wand2 className="w-4 h-4 text-primary" />
                         <span className="font-medium">Noir's Professional Assessment</span>
                       </div>
                       <div className="text-sm text-studio-text-secondary space-y-2">
@@ -485,7 +485,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                           The {audioAnalysis.key} {audioAnalysis.mode} tonality at {audioAnalysis.tempo} BPM suggests 
                           {audioAnalysis.danceability > 0.6 ? 'strong dancefloor potential' : 'more experimental or cinematic applications'}."
                         </p>
-                        <p className="italic text-neon-purple">
+                        <p className="italic text-primary">
                           - Noir's recommendation: Focus on {audioAnalysis.energy < 0.5 ? 'building dynamic contrast' : 'maintaining the energy while adding depth'}
                         </p>
                       </div>

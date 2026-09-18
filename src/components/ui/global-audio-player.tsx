@@ -47,8 +47,8 @@ export const GlobalAudioPlayer: React.FC = () => {
         <div className="flex items-center gap-4">
           {/* Track Info */}
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-12 h-12 bg-neon-purple/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Music className="w-6 h-6 text-neon-purple" />
+            <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Music className="w-6 h-6 text-primary" />
             </div>
             <div className="min-w-0 flex-1">
               <h4 className="font-medium text-sm truncate">{currentTrack.name}</h4>

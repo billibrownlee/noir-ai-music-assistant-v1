@@ -165,7 +165,7 @@ export const TempoControl: React.FC<TempoControlProps> = ({
     if (bpm < 110) return "text-yellow-400";
     if (bpm < 130) return "text-orange-400";
     if (bpm < 150) return "text-red-400";
-    if (bpm < 180) return "text-purple-400";
+    if (bpm < 180) return "text-primary";
     return "text-pink-400";
   };
 
@@ -174,7 +174,7 @@ export const TempoControl: React.FC<TempoControlProps> = ({
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Volume2 className="w-5 h-5 text-neon-purple" />
+            <Volume2 className="w-5 h-5 text-primary" />
             Tempo Control
             <Badge variant="outline" className="text-xs">
               BPM Adjuster
@@ -283,7 +283,7 @@ export const TempoControl: React.FC<TempoControlProps> = ({
         <Button 
           onClick={applyTempoChange}
           disabled={isProcessing || uploadedSamples.length === 0 || targetBPM === originalBPM}
-          className="w-full bg-neon-purple hover:bg-neon-purple/80 text-white font-medium"
+          className="w-full bg-primary hover:bg-primary/80 text-white font-medium"
         >
           {isProcessing ? (
             <>

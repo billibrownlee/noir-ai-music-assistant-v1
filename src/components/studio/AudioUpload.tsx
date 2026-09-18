@@ -86,12 +86,12 @@ function SampleAnalysisCard({ analysis, songId }: { analysis: AudioAnalysis; son
       {/* Song ID */}
       {songId && (
         <div className="flex items-center gap-2 pb-2 border-b border-border/15">
-          <Disc3 className="w-4 h-4 text-neon-purple flex-shrink-0" />
+          <Disc3 className="w-4 h-4 text-primary flex-shrink-0" />
           <div className="min-w-0">
             <span className="text-xs font-semibold text-foreground truncate">{songId.title}</span>
             <span className="text-xs text-muted-foreground ml-1">— {songId.artist}</span>
           </div>
-          <Badge className="ml-auto flex-shrink-0 bg-neon-purple/20 text-neon-purple border-neon-purple/30 text-[10px] px-1.5">ID'd</Badge>
+          <Badge className="ml-auto flex-shrink-0 bg-primary/20 text-primary border-primary/30 text-[10px] px-1.5">ID'd</Badge>
         </div>
       )}
 
@@ -103,7 +103,7 @@ function SampleAnalysisCard({ analysis, songId }: { analysis: AudioAnalysis; son
         <Badge className="bg-neon-blue/15 text-neon-blue border-neon-blue/30 text-[10px] font-mono">
           {camelot}
         </Badge>
-        <Badge className="bg-neon-purple/15 text-neon-purple border-neon-purple/30 text-[10px] font-mono">
+        <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-mono">
           {Math.round(analysis.tempo)} BPM · {tempoLbl(analysis.tempo)}
         </Badge>
         <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-[10px]">
@@ -987,7 +987,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               variant="neon"
               size="lg"
               onClick={() => (document.getElementById('audio-upload') as HTMLInputElement)?.click()}
-              className="bg-neon-purple hover:bg-neon-purple/80 text-white font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
+              className="bg-primary hover:bg-primary/80 text-white font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
             >
               <Upload className="w-4 h-4 mr-2" />
               Browse Files
@@ -1097,7 +1097,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <FileAudio className="w-6 h-6 text-neon-purple" />
+                        <FileAudio className="w-6 h-6 text-primary" />
                         {currentTrack?.id === sample.id && isPlaying && (
                           <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-pulse" />
                         )}
@@ -1118,7 +1118,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                           ) : sample.bpm || sample.key ? (
                             <>
                               {sample.bpm && <><span>•</span><span className="text-neon-green font-medium">{sample.bpm} BPM</span></>}
-                              {sample.key && <><span>•</span><span className="text-neon-purple font-medium">{sample.key}{sample.analysis?.mode === 'minor' ? 'm' : ''}</span></>}
+                              {sample.key && <><span>•</span><span className="text-primary font-medium">{sample.key}{sample.analysis?.mode === 'minor' ? 'm' : ''}</span></>}
                             </>
                           ) : null}
                         </div>
@@ -1274,7 +1274,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
             <div className="flex gap-3 relative z-10">
               <Button
                 onClick={handleUploadToLibrary}
-                className="flex-1 bg-neon-purple hover:bg-neon-purple/80 text-white font-medium pointer-events-auto cursor-pointer"
+                className="flex-1 bg-primary hover:bg-primary/80 text-white font-medium pointer-events-auto cursor-pointer"
                 size="lg"
                 variant="neon"
                 disabled={uploadedSamples.length === 0}

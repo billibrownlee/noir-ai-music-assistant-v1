@@ -66,8 +66,7 @@ export default {
 				},
 				/* Neon accent colors — defined so opacity modifiers work */
 				'neon-green':  'rgb(var(--neon-green) / <alpha-value>)',
-				'neon-blue':   'rgb(var(--neon-blue)  / <alpha-value>)',
-				'neon-purple': 'rgb(var(--neon-purple) / <alpha-value>)'
+				'neon-blue':   'rgb(var(--neon-blue)  / <alpha-value>)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

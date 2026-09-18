@@ -337,7 +337,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
     <Card className="w-full glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Music2 className="w-5 h-5 text-neon-purple" />
+          <Music2 className="w-5 h-5 text-primary" />
           Noir Melody Generator
         </CardTitle>
       </CardHeader>
@@ -346,9 +346,9 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
 
         {/* ── Style Profile ───────────────────────────────────────────────── */}
         {styleProfile.sampleCount > 0 ? (
-          <div className="p-3 rounded-lg border border-neon-purple/30 bg-neon-purple/5 space-y-2">
+          <div className="p-3 rounded-lg border border-primary/30 bg-primary/5 space-y-2">
             <div className="flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-neon-purple" />
+              <Cpu className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium">Noir has analyzed your library</span>
               <Badge variant="outline" className="text-xs ml-auto">
                 {styleProfile.sampleCount} sample{styleProfile.sampleCount !== 1 ? 's' : ''}
@@ -356,7 +356,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
             </div>
             <div className="grid grid-cols-3 gap-2 text-xs">
               <div className="text-center p-2 bg-card/40 rounded">
-                <div className="text-neon-purple font-semibold capitalize">{styleProfile.primaryGenre}</div>
+                <div className="text-primary font-semibold capitalize">{styleProfile.primaryGenre}</div>
                 <div className="text-muted-foreground">Primary Style</div>
               </div>
               <div className="text-center p-2 bg-card/40 rounded">
@@ -380,7 +380,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
           </div>
         ) : (
           <div className="p-3 rounded-lg border border-border/30 bg-card/20 flex items-start gap-2 text-sm text-muted-foreground">
-            <Library className="w-4 h-4 shrink-0 mt-0.5 text-neon-purple/60" />
+            <Library className="w-4 h-4 shrink-0 mt-0.5 text-primary/60" />
             <span>
               Upload and tag samples in the Library tab — Noir will learn your style (genre, key, BPM)
               and automatically pre-fill these settings.
@@ -399,8 +399,8 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
                 className={[
                   'px-2.5 py-1 text-xs rounded-full border transition-colors capitalize',
                   params.genre === g
-                    ? 'border-neon-purple bg-neon-purple/20 text-neon-purple'
-                    : 'border-border/40 text-muted-foreground hover:border-neon-purple/40 hover:text-foreground',
+                    ? 'border-primary bg-primary/20 text-primary'
+                    : 'border-border/40 text-muted-foreground hover:border-primary/40 hover:text-foreground',
                 ].join(' ')}
               >
                 {g}
@@ -455,8 +455,8 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
                   className={[
                     'py-2 text-xs rounded border transition-colors',
                     params.bars === b
-                      ? 'border-neon-purple bg-neon-purple/20 text-neon-purple font-semibold'
-                      : 'border-border/40 text-muted-foreground hover:border-neon-purple/40',
+                      ? 'border-primary bg-primary/20 text-primary font-semibold'
+                      : 'border-border/40 text-muted-foreground hover:border-primary/40',
                   ].join(' ')}
                 >
                   {b}
@@ -489,7 +489,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
         <Button
           onClick={generate}
           disabled={isGenerating || !openaiKey}
-          className="w-full bg-neon-purple hover:bg-neon-purple/80 text-white"
+          className="w-full bg-primary hover:bg-primary/80 text-white"
           size="lg"
         >
           {isGenerating
@@ -520,7 +520,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
               ref={canvasRef}
               width={580}
               height={150}
-              className="w-full rounded-lg border border-neon-purple/20"
+              className="w-full rounded-lg border border-primary/20"
             />
 
             <div className="flex gap-2">
@@ -555,7 +555,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
                 <button
                   key={h.id}
                   onClick={() => { setNotes(h.notes); setParams(h.params); setPlayheadSec(-1); }}
-                  className="w-full text-left p-2 rounded border border-border/30 hover:border-neon-purple/40 text-xs flex items-center justify-between bg-card/20 transition-colors"
+                  className="w-full text-left p-2 rounded border border-border/30 hover:border-primary/40 text-xs flex items-center justify-between bg-card/20 transition-colors"
                 >
                   <span className="text-muted-foreground capitalize">
                     #{history.length - i - 1} · {h.params.key} {h.params.scale} · {h.params.genre} · {h.params.bars} bars

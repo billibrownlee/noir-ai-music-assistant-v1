@@ -33,3 +33,5 @@ dist-ssr
 !public/*.html
 .noir-bookmark.html
 http:/localhost
+*.md
+!README.md

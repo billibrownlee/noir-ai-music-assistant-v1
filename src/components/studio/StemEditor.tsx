@@ -73,7 +73,7 @@ export const StemEditor: React.FC<StemEditorProps> = ({ separatedAudio, onStemUp
 
   const getStemColor = (type: AudioStem['type']) => {
     const colors = {
-      vocals: 'border-neon-purple bg-neon-purple/10',
+      vocals: 'border-primary bg-primary/10',
       drums: 'border-neon-green bg-neon-green/10',
       bass: 'border-neon-orange bg-neon-orange/10',
       melody: 'border-neon-blue bg-neon-blue/10',

@@ -325,7 +325,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className="w-full flex justify-between items-center p-3 h-auto bg-studio-surface/30 rounded-lg border border-border/30 hover:bg-studio-surface/50">
               <span className="flex items-center gap-2 text-sm font-medium">
-                <Key className="w-4 h-4 text-neon-purple" />
+                <Key className="w-4 h-4 text-primary" />
                 {isConfigured ? 'AI Model: Replicate MusicGen' : 'Connect Replicate for real AI generation'}
               </span>
               {showApiSettings ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -363,7 +363,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
                     onKeyDown={e => e.key === 'Enter' && handleSaveKey()}
                     className="font-mono text-sm"
                   />
-                  <Button onClick={handleSaveKey} className="bg-neon-purple hover:bg-neon-purple/80 shrink-0">
+                  <Button onClick={handleSaveKey} className="bg-primary hover:bg-primary/80 shrink-0">
                     Save
                   </Button>
                 </div>
@@ -379,7 +379,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
         {referenceCandidates.length > 0 && (
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
-              <AudioLines className="w-4 h-4 text-neon-purple" />
+              <AudioLines className="w-4 h-4 text-primary" />
               Reference Sample <span className="text-xs text-muted-foreground font-normal">(melody conditioning)</span>
             </Label>
             <Select value={referenceId} onValueChange={setReferenceId}>
@@ -402,7 +402,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
             {selectedReference && (
               <div className="flex flex-wrap gap-2 mt-1">
                 {selectedReference.bpm && <Badge variant="outline" className="text-xs text-neon-green">{selectedReference.bpm} BPM</Badge>}
-                {selectedReference.key && <Badge variant="outline" className="text-xs text-neon-purple">{selectedReference.key}{selectedReference.mode === 'minor' ? 'm' : ''}</Badge>}
+                {selectedReference.key && <Badge variant="outline" className="text-xs text-primary">{selectedReference.key}{selectedReference.mode === 'minor' ? 'm' : ''}</Badge>}
                 {selectedReference.genre && <Badge variant="outline" className="text-xs">{selectedReference.genre}</Badge>}
                 {isConfigured && (
                   <Badge className="text-xs bg-neon-blue/20 text-neon-blue border-neon-blue/30">
@@ -491,7 +491,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
         <Button
           onClick={generateMusic}
           disabled={isGenerating || (!prompt.trim() && !autoPrompt)}
-          className="w-full bg-neon-purple hover:bg-neon-purple/80 text-white"
+          className="w-full bg-primary hover:bg-primary/80 text-white"
           size="lg"
         >
           {isGenerating ? (
@@ -524,7 +524,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
                       <div className="min-w-0">
                         <p className="font-medium text-sm truncate">{track.originalPrompt}</p>
                         {track.referenceUsed && (
-                          <p className="text-xs text-neon-purple truncate">
+                          <p className="text-xs text-primary truncate">
                             <AudioLines className="w-3 h-3 inline mr-1" />Reference: {track.referenceUsed}
                           </p>
                         )}

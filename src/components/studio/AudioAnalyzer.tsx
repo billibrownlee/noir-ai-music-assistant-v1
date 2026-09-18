@@ -369,7 +369,7 @@ export function AudioAnalyzer() {
           </div>
           <div className="flex gap-2">
             <Badge className="bg-neon-blue/20 text-neon-blue border-neon-blue/40 text-xs">Key · BPM · Camelot</Badge>
-            <Badge className="bg-neon-purple/20 text-neon-purple border-neon-purple/40 text-xs">Shazam-Style ID</Badge>
+            <Badge className="bg-primary/20 text-primary border-primary/40 text-xs">Shazam-Style ID</Badge>
           </div>
         </CardTitle>
       </CardHeader>
@@ -457,13 +457,13 @@ export function AudioAnalyzer() {
 
             {/* Song ID card */}
             {result.songId && (
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-neon-purple/10 border border-neon-purple/30">
-                <Disc3 className="w-8 h-8 text-neon-purple flex-shrink-0" />
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/30">
+                <Disc3 className="w-8 h-8 text-primary flex-shrink-0" />
                 <div>
                   <p className="font-semibold text-sm text-foreground">{result.songId.title}</p>
                   <p className="text-xs text-muted-foreground">{result.songId.artist}{result.songId.album ? ` · ${result.songId.album}` : ''}</p>
                 </div>
-                <Badge className="ml-auto bg-neon-purple/20 text-neon-purple border-neon-purple/40 text-xs flex-shrink-0">Identified</Badge>
+                <Badge className="ml-auto bg-primary/20 text-primary border-primary/40 text-xs flex-shrink-0">Identified</Badge>
               </div>
             )}
 
@@ -487,7 +487,7 @@ export function AudioAnalyzer() {
               {/* BPM */}
               <div className="rounded-lg bg-card/40 border border-border/20 p-3 space-y-1">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">BPM</p>
-                <p className="text-xl font-bold text-neon-purple">{result.bpm}</p>
+                <p className="text-xl font-bold text-primary">{result.bpm}</p>
                 <p className="text-[10px] text-muted-foreground">{tempoLabel(result.bpm)}</p>
               </div>
 

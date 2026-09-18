@@ -286,7 +286,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
           </Button>
           <Button
             variant={mode === 'clone' ? 'default' : 'outline'}
-            className={mode === 'clone' ? 'bg-neon-purple hover:bg-neon-purple/80 text-white' : ''}
+            className={mode === 'clone' ? 'bg-primary hover:bg-primary/80 text-white' : ''}
             onClick={() => setMode('clone')}
           >
             <AudioLines className="w-4 h-4 mr-2" /> Clone My Voice
@@ -327,7 +327,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
                         onChange={e => setOaiKeyInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && saveOaiKey()}
                         className="font-mono text-sm" />
-                      <Button onClick={saveOaiKey} className="bg-neon-purple hover:bg-neon-purple/80 shrink-0">Save</Button>
+                      <Button onClick={saveOaiKey} className="bg-primary hover:bg-primary/80 shrink-0">Save</Button>
                     </div>
                   </>
                 )}
@@ -367,10 +367,10 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
 
         {/* ── CLONE MODE ─────────────────────────────────────────────────── */}
         {mode === 'clone' && (
-          <div className="space-y-3 p-3 bg-studio-surface/20 rounded-lg border border-neon-purple/30">
+          <div className="space-y-3 p-3 bg-studio-surface/20 rounded-lg border border-primary/30">
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2">
-                <AudioLines className="w-4 h-4 text-neon-purple" />
+                <AudioLines className="w-4 h-4 text-primary" />
                 Voice Reference
               </Label>
               {replicateReady
@@ -441,7 +441,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
             (mode === 'preset' && !oaiKey) ||
             (mode === 'clone' && (selectedSampleId === 'none' || !replicateReady))
           }
-          className={`w-full text-white ${mode === 'clone' ? 'bg-neon-purple hover:bg-neon-purple/80' : 'bg-neon-blue hover:bg-neon-blue/80'}`}
+          className={`w-full text-white ${mode === 'clone' ? 'bg-primary hover:bg-primary/80' : 'bg-neon-blue hover:bg-neon-blue/80'}`}
           size="lg"
         >
           {isGenerating
@@ -482,7 +482,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
                         </Button>
                         <Button
                           variant="outline" size="sm"
-                          className={isEditing ? 'border-neon-purple text-neon-purple' : ''}
+                          className={isEditing ? 'border-primary text-primary' : ''}
                           onClick={() => setEditingId(isEditing ? null : audio.id)}
                           title="Edit vocal"
                         >

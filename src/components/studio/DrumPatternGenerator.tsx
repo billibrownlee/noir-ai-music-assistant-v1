@@ -133,7 +133,7 @@ export const DrumPatternGenerator: React.FC = () => {
   const getGenreColor = (genre: string) => {
     const colors = {
       'trap': 'bg-neon-green/20 text-neon-green',
-      'rnb': 'bg-neon-purple/20 text-neon-purple',
+      'rnb': 'bg-primary/20 text-primary',
       'pop': 'bg-neon-blue/20 text-neon-blue',
       'hip-hop': 'bg-neon-orange/20 text-neon-orange'
     };
