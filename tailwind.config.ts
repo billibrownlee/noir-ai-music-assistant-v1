@@ -63,7 +63,11 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				/* Neon accent colors — defined so opacity modifiers work */
+				'neon-green':  'rgb(var(--neon-green) / <alpha-value>)',
+				'neon-blue':   'rgb(var(--neon-blue)  / <alpha-value>)',
+				'neon-purple': 'rgb(var(--neon-purple) / <alpha-value>)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import {
+  ChevronDown,
+  Upload, SlidersHorizontal, Music2, Mic, Sliders, Zap,
+  Layers, BarChart2, BookOpen, History, Mic2, Activity,
+  Timer, Scissors, Wand2, Music, Bot, Settings as SettingsIcon,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AudioOutputSelector } from "@/components/ui/audio-output-selector";
@@ -218,8 +223,9 @@ const Index = () => {
             <div className="sticky top-0 lg:h-full">
               <div className="lg:h-full bg-card/50 backdrop-blur-sm rounded-lg border border-border/30">
                 <div className="p-4 border-b border-border/30">
-                  <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    🤖 Noir AI Assistant
+                  <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Bot className="w-4 h-4 text-primary/70" />
+                    Noir AI Assistant
                   </h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     Always here to help with your music production
@@ -251,15 +257,29 @@ const Index = () => {
               }}
               className="w-full space-y-6"
             >
-              <TabsList className="flex w-full overflow-x-auto gap-0.5 bg-card/50 backdrop-blur-sm p-1 rounded-md">
-                <TabsTrigger value="upload" className="shrink-0 text-xs px-2 sm:px-3">📤 Upload</TabsTrigger>
-                <TabsTrigger value="pitch-speed" className="shrink-0 text-xs px-2 sm:px-3">🎚️ Pitch</TabsTrigger>
-                <TabsTrigger value="generate" className="shrink-0 text-xs px-2 sm:px-3">🎵 Generate</TabsTrigger>
-                <TabsTrigger value="record" className="shrink-0 text-xs px-2 sm:px-3">🎙️ Record</TabsTrigger>
-                <TabsTrigger value="mix" className="shrink-0 text-xs px-2 sm:px-3">🎛️ Mix</TabsTrigger>
-                <TabsTrigger value="master" className="shrink-0 text-xs px-2 sm:px-3">🎚️ Master</TabsTrigger>
-                <TabsTrigger value="workflow" className="shrink-0 text-xs px-2 sm:px-3">⚡ Workflow</TabsTrigger>
-                <TabsTrigger value="analyze" className="shrink-0 text-xs px-2 sm:px-3">🔍 Analyze</TabsTrigger>
+              <TabsList className="tabs-scroll flex w-full overflow-x-auto bg-card/30 border border-border/30 rounded-xl p-1 gap-0.5 h-auto">
+                {(
+                  [
+                    { value: "upload",      icon: Upload,           label: "Upload" },
+                    { value: "pitch-speed", icon: SlidersHorizontal, label: "Pitch" },
+                    { value: "generate",    icon: Music2,           label: "Generate" },
+                    { value: "record",      icon: Mic,              label: "Record" },
+                    { value: "mix",         icon: Sliders,          label: "Mix" },
+                    { value: "master",      icon: Zap,              label: "Master" },
+                    { value: "workflow",    icon: Layers,           label: "Workflow" },
+                    { value: "analyze",     icon: BarChart2,        label: "Analyze" },
+                  ] as const
+                ).map(({ value, icon: Icon, label }) => (
+                  <TabsTrigger
+                    key={value}
+                    value={value}
+                    className="shrink-0 flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-xs font-medium text-muted-foreground transition-all duration-200
+                      data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none"
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{label}</span>
+                  </TabsTrigger>
+                ))}
               </TabsList>
 
               {/* Upload & Library Tab */}
@@ -274,11 +294,12 @@ const Index = () => {
                   <div className="space-y-4">
                     {/* Audio Upload Section */}
                     <Collapsible open={isUploadOpen} onOpenChange={setIsUploadOpen}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">📤 Audio Upload</span>
-                          {isUploadOpen ? <ChevronUp className="h-4 w-4 text-foreground" /> : <ChevronDown className="h-4 w-4 text-foreground" />}
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <Upload className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">Audio Upload</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <AudioUpload
@@ -312,11 +333,12 @@ const Index = () => {
                     
                     {/* Tempo Control Section */}
                     <Collapsible open={isTempoOpen} onOpenChange={setIsTempoOpen}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">🎛️ Tempo Control</span>
-                          {isTempoOpen ? <ChevronUp className="h-4 w-4 text-foreground" /> : <ChevronDown className="h-4 w-4 text-foreground" />}
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <Timer className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">Tempo Control</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <TempoControl 
@@ -334,11 +356,12 @@ const Index = () => {
                     {/* Stem Editor Section - Only show when separated audio is available */}
                     {separatedAudio && (
                       <Collapsible open={isStemEditorOpen} onOpenChange={setIsStemEditorOpen}>
-                        <CollapsibleTrigger asChild>
-                          <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                            <span className="font-medium text-lg text-foreground">🎚️ Stem Editor</span>
-                            {isStemEditorOpen ? <ChevronUp className="h-4 w-4 text-foreground" /> : <ChevronDown className="h-4 w-4 text-foreground" />}
-                          </Button>
+                        <CollapsibleTrigger className="section-trigger group">
+                          <div className="flex items-center gap-2.5">
+                            <Scissors className="w-4 h-4 text-primary/70 shrink-0" />
+                            <span className="font-medium text-sm">Stem Editor</span>
+                          </div>
+                          <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                         </CollapsibleTrigger>
                         <CollapsibleContent className="mt-2">
                           <StemEditor
@@ -351,11 +374,12 @@ const Index = () => {
 
                     {/* Settings Section */}
                     <Collapsible open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">⚙️ Audio Settings</span>
-                          {isSettingsOpen ? <ChevronUp className="h-4 w-4 text-foreground" /> : <ChevronDown className="h-4 w-4 text-foreground" />}
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <SettingsIcon className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">Audio Settings</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <AudioOutputSelector onDeviceChange={setAudioOutputDevice} />
@@ -366,11 +390,12 @@ const Index = () => {
                   {/* Right Column - Sample Library */}
                   <div className="space-y-4">
                     <Collapsible open={isSampleLibraryOpen} onOpenChange={setIsSampleLibraryOpen}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">🎵 Sample Library</span>
-                          {isSampleLibraryOpen ? <ChevronUp className="h-4 w-4 text-foreground" /> : <ChevronDown className="h-4 w-4 text-foreground" />}
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <Music className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">Sample Library</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <SampleLibrary
@@ -396,16 +421,12 @@ const Index = () => {
               >
                 <StudioTabErrorBoundary tabLabel="Pitch & Speed">
                   <Collapsible defaultOpen={true}>
-                    <CollapsibleTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground"
-                      >
-                        <span className="font-medium text-lg text-foreground">
-                          🎚️ Pitch, tempo & reverse
-                        </span>
-                        <ChevronDown className="h-4 w-4 text-foreground" />
-                      </Button>
+                    <CollapsibleTrigger className="section-trigger group">
+                      <div className="flex items-center gap-2.5">
+                        <SlidersHorizontal className="w-4 h-4 text-primary/70 shrink-0" />
+                        <span className="font-medium text-sm">Pitch, Tempo & Reverse</span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                     </CollapsibleTrigger>
                     <CollapsibleContent className="mt-2">
                       <AudioEffectsQuickPanel
@@ -433,11 +454,12 @@ const Index = () => {
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                   <div className="space-y-6">
                     <Collapsible defaultOpen={true}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">🎹 Noir Melody Generator</span>
-                          <ChevronDown className="h-4 w-4 text-foreground" />
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <Music2 className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">Noir Melody Generator</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <MidiGenerator
@@ -450,11 +472,12 @@ const Index = () => {
                     </Collapsible>
 
                     <Collapsible defaultOpen={false}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">🟢 Public Domain Melody Bank</span>
-                          <ChevronDown className="h-4 w-4 text-foreground" />
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <BookOpen className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">Public Domain Melody Bank</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <PublicDomainMelodyBank
@@ -468,23 +491,25 @@ const Index = () => {
                     </Collapsible>
 
                     <Collapsible defaultOpen={false}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">🎯 Prompt Builder</span>
-                          <ChevronDown className="h-4 w-4 text-foreground" />
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <Wand2 className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">Prompt Builder</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <PromptBuilder onGenerate={handleGenerate} />
                       </CollapsibleContent>
                     </Collapsible>
-                    
+
                     <Collapsible defaultOpen={true}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">🎤 AI Audio Generator</span>
-                          <ChevronDown className="h-4 w-4 text-foreground" />
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <Mic2 className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">AI Audio Generator</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <AudioGenerator uploadedSamples={uploadedSamples} onAudioGenerated={(audio) => {
@@ -503,11 +528,12 @@ const Index = () => {
                     </Collapsible>
                     
                     <Collapsible defaultOpen={true}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">🎵 AI Music Generator</span>
-                          <ChevronDown className="h-4 w-4 text-foreground" />
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <Music2 className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">AI Music Generator</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <MusicGenerator
@@ -535,25 +561,27 @@ const Index = () => {
                     </Collapsible>
                     
                     <Collapsible defaultOpen={false}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">🥁 Drum Patterns</span>
-                          <ChevronDown className="h-4 w-4 text-foreground" />
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <Activity className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">Drum Patterns</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <DrumPatternGenerator />
                       </CollapsibleContent>
                     </Collapsible>
                   </div>
-                  
+
                   <div className="space-y-6">
                     <Collapsible defaultOpen={false}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">🎹 Counter Melody</span>
-                          <ChevronDown className="h-4 w-4 text-foreground" />
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <Music2 className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">Counter Melody</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <CounterMelodyGenerator />
@@ -561,11 +589,12 @@ const Index = () => {
                     </Collapsible>
                     
                     <Collapsible defaultOpen={true}>
-                      <CollapsibleTrigger asChild>
-                        <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                          <span className="font-medium text-lg text-foreground">📚 Generation History</span>
-                          <ChevronDown className="h-4 w-4 text-foreground" />
-                        </Button>
+                      <CollapsibleTrigger className="section-trigger group">
+                        <div className="flex items-center gap-2.5">
+                          <History className="w-4 h-4 text-primary/70 shrink-0" />
+                          <span className="font-medium text-sm">Generation History</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-2">
                         <GenerationHistory tracks={generationHistory} onTrackSelect={handleTrackSelect} />
@@ -584,11 +613,12 @@ const Index = () => {
               >
                 <StudioTabErrorBoundary tabLabel="Record">
                 <Collapsible defaultOpen={true}>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                      <span className="font-medium text-lg text-foreground">🎤 Recording Studio</span>
-                      <ChevronDown className="h-4 w-4 text-foreground" />
-                    </Button>
+                  <CollapsibleTrigger className="section-trigger group">
+                    <div className="flex items-center gap-2.5">
+                      <Mic className="w-4 h-4 text-primary/70 shrink-0" />
+                      <span className="font-medium text-sm">Recording Studio</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
                     <RecordingStudio />
@@ -605,11 +635,12 @@ const Index = () => {
               >
                 <StudioTabErrorBoundary tabLabel="Mix">
                 <Collapsible defaultOpen={true}>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                      <span className="font-medium text-lg text-foreground">🎛️ Mixing Console</span>
-                      <ChevronDown className="h-4 w-4 text-foreground" />
-                    </Button>
+                  <CollapsibleTrigger className="section-trigger group">
+                    <div className="flex items-center gap-2.5">
+                      <Sliders className="w-4 h-4 text-primary/70 shrink-0" />
+                      <span className="font-medium text-sm">Mixing Console</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
                     <MixingConsole />
@@ -626,11 +657,12 @@ const Index = () => {
               >
                 <StudioTabErrorBoundary tabLabel="Master">
                 <Collapsible defaultOpen={true}>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                      <span className="font-medium text-lg text-foreground">🎚️ Mastering Suite</span>
-                      <ChevronDown className="h-4 w-4 text-foreground" />
-                    </Button>
+                  <CollapsibleTrigger className="section-trigger group">
+                    <div className="flex items-center gap-2.5">
+                      <Zap className="w-4 h-4 text-primary/70 shrink-0" />
+                      <span className="font-medium text-sm">Mastering Suite</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
                     <MasteringSuite />
@@ -647,11 +679,12 @@ const Index = () => {
               >
                 <StudioTabErrorBoundary tabLabel="Workflow">
                 <Collapsible defaultOpen={true}>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                      <span className="font-medium text-lg text-foreground">⚡ Production Workflow</span>
-                      <ChevronDown className="h-4 w-4 text-foreground" />
-                    </Button>
+                  <CollapsibleTrigger className="section-trigger group">
+                    <div className="flex items-center gap-2.5">
+                      <Layers className="w-4 h-4 text-primary/70 shrink-0" />
+                      <span className="font-medium text-sm">Production Workflow</span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-2">
                     <MusicProductionWorkflow />
@@ -675,11 +708,12 @@ const Index = () => {
             {/* Mobile AI Chat — visible below tabs on phones */}
             <div className="lg:hidden">
               <Collapsible>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="flex w-full justify-between items-center p-4 h-auto bg-card/50 border border-border/30 rounded-lg hover:bg-card/70 text-foreground hover:text-foreground">
-                    <span className="font-medium text-foreground">🤖 Noir AI Assistant</span>
-                    <ChevronDown className="h-4 w-4 text-foreground" />
-                  </Button>
+                <CollapsibleTrigger className="section-trigger group">
+                  <div className="flex items-center gap-2.5">
+                    <Bot className="w-4 h-4 text-primary/70 shrink-0" />
+                    <span className="font-medium text-sm">Noir AI Assistant</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 section-chevron transition-transform duration-200 group-data-[state=open]:rotate-180" />
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-2">
                   <div className="bg-card/50 backdrop-blur-sm rounded-lg border border-border/30 h-80 overflow-hidden">

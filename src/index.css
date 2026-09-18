@@ -2,171 +2,223 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Professional AI Music Production Assistant Design System 
-Studio-grade dark theme with neon accents and waveform aesthetics
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    /* Balanced Orange & Black Theme */
-    --background: 0 0% 8%;
-    --foreground: 0 0% 98%;
+    /* ── Core surfaces ──────────────────────────────── */
+    --background:       0 0% 6%;
+    --foreground:       0 0% 95%;
+    --card:             0 0% 10%;
+    --card-foreground:  0 0% 95%;
+    --popover:          0 0% 9%;
+    --popover-foreground: 0 0% 95%;
 
-    /* Studio Cards & Surfaces */
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 98%;
-
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 98%;
-
-    /* Vibrant Orange Primary */
-    --primary: 20 100% 63%;
+    /* ── Orange primary (refined) ───────────────────── */
+    --primary:          24 95% 56%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 25 100% 70%;
+    --primary-glow:     28 100% 64%;
 
-    /* Dark Secondary */
-    --secondary: 0 0% 18%;
-    --secondary-foreground: 0 0% 98%;
-
-    /* Muted Dark Elements */
-    --muted: 0 0% 20%;
-    --muted-foreground: 0 0% 65%;
-
-    /* Orange Accent */
-    --accent: 20 100% 63%;
+    /* ── Supporting surfaces ────────────────────────── */
+    --secondary:        0 0% 16%;
+    --secondary-foreground: 0 0% 92%;
+    --muted:            0 0% 13%;
+    --muted-foreground: 0 0% 52%;
+    --accent:           24 95% 56%;
     --accent-foreground: 0 0% 100%;
-    --accent-glow: 25 100% 70%;
+    --accent-glow:      28 100% 64%;
 
-    /* Professional Controls */
-    --destructive: 0 84% 60%;
+    /* ── Functional ─────────────────────────────────── */
+    --destructive:      0 72% 51%;
     --destructive-foreground: 0 0% 98%;
+    --border:           0 0% 18%;
+    --input:            0 0% 12%;
+    --ring:             24 95% 56%;
+    --radius:           0.625rem;
 
-    --border: 0 0% 22%;
-    --input: 0 0% 15%;
-    --ring: 20 100% 63%;
+    /* ── Neon accent RGB channels (enables /opacity) ── */
+    --neon-green:  74 222 128;   /* #4ade80 */
+    --neon-blue:   96 165 250;   /* #60a5fa */
+    --neon-purple: 192 132 252;  /* #c084fc */
 
-    --radius: 0.75rem;
+    /* ── Gradients ──────────────────────────────────── */
+    --gradient-primary:  linear-gradient(135deg, hsl(24 95% 56%), hsl(28 100% 64%));
+    --gradient-studio:   linear-gradient(180deg, hsl(0 0% 10%), hsl(0 0% 6%));
+    --gradient-waveform: linear-gradient(90deg, hsl(24 95% 56%), hsl(28 100% 64%));
+    --gradient-glass:    linear-gradient(135deg, hsl(0 0% 13% / 0.85), hsl(0 0% 7% / 0.70));
 
-    /* Studio Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(20 100% 63%), hsl(25 100% 70%));
-    --gradient-studio: linear-gradient(180deg, hsl(0 0% 12%), hsl(0 0% 8%));
-    --gradient-waveform: linear-gradient(90deg, hsl(20 100% 63%), hsl(25 100% 70%));
-    --gradient-glass: linear-gradient(135deg, hsl(0 0% 15% / 0.8), hsl(0 0% 10% / 0.6));
+    /* ── Shadows ────────────────────────────────────── */
+    --shadow-studio: 0 24px 48px -12px hsl(0 0% 0% / 0.65);
+    --shadow-neon:   0 0 24px hsl(24 95% 56% / 0.35);
+    --shadow-cyan:   0 0 24px hsl(28 100% 64% / 0.3);
+    --shadow-card:   0 1px 2px hsl(0 0% 0% / 0.5), 0 4px 16px hsl(0 0% 0% / 0.25);
 
-    /* Studio Shadows & Glows */
-    --shadow-studio: 0 25px 50px -12px hsl(0 0% 0% / 0.5);
-    --shadow-neon: 0 0 30px hsl(20 100% 63% / 0.5);
-    --shadow-cyan: 0 0 30px hsl(25 100% 70% / 0.4);
+    /* ── Transitions ────────────────────────────────── */
+    --transition-studio: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    /* Professional Animations */
-    --transition-studio: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    /* ── Sidebar (unused but required by shadcn) ────── */
+    --sidebar-background: 0 0% 8%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 24 95% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 0 0% 14%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 24 95% 56%;
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  * { @apply border-border; }
 
   html, body {
     @apply bg-background text-foreground;
-    background-color: hsl(var(--background));
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
   }
 
+  /* Warm radial gradient background — subtle orange warmth at corners */
   #root {
     min-height: 100vh;
-    background-color: hsl(var(--background));
+    background:
+      radial-gradient(ellipse 70% 50% at 10% 0%,   hsl(24 70% 12% / 0.40) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 100%, hsl(24 50% 10% / 0.25) 0%, transparent 55%),
+      hsl(var(--background));
   }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar        { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { background: hsl(var(--border)); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
+  /* Horizontal scrollbar for tab bar — hide the track, keep functionality */
+  .tabs-scroll::-webkit-scrollbar        { height: 2px; }
+  .tabs-scroll::-webkit-scrollbar-thumb  { background: hsl(24 95% 56% / 0.4); border-radius: 2px; }
 }
 
 @layer utilities {
-  /* Studio-specific utility classes */
+  /* ── Glass cards ──────────────────────────────────── */
   .glass-card {
-    background: hsl(0 0% 12% / 0.8);
-    backdrop-filter: blur(12px);
-    border: 1px solid hsl(0 0% 22% / 0.5);
+    background: hsl(0 0% 10% / 0.80);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsl(0 0% 22% / 0.55);
+    box-shadow: var(--shadow-card);
   }
 
   .glass-card-subtle {
-    background: hsl(0 0% 12% / 0.6);
-    backdrop-filter: blur(8px);
-    border: 1px solid hsl(0 0% 22% / 0.3);
+    background: hsl(0 0% 10% / 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(0 0% 20% / 0.35);
   }
 
-  .bg-studio-surface {
-    background-color: hsl(0 0% 12%);
+  /* Glass with orange tint — for active / highlighted panels */
+  .glass-card-accent {
+    background: hsl(24 60% 8% / 0.75);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsl(24 95% 56% / 0.25);
+    box-shadow: 0 0 0 1px hsl(24 95% 56% / 0.08), var(--shadow-card);
   }
 
-  .bg-studio-surface-secondary {
-    background-color: hsl(0 0% 15%);
+  /* ── Neon glow helpers ────────────────────────────── */
+  .glow-orange  { box-shadow: 0 0 20px hsl(24 95% 56% / 0.30); }
+  .glow-green   { box-shadow: 0 0 16px rgb(74 222 128 / 0.30); }
+  .glow-purple  { box-shadow: 0 0 16px rgb(192 132 252 / 0.25); }
+
+  /* ── Surface utility ──────────────────────────────── */
+  .bg-studio-surface           { background-color: hsl(0 0% 10%); }
+  .bg-studio-surface-secondary { background-color: hsl(0 0% 14%); }
+  .text-studio-text-primary    { color: hsl(0 0% 95%); }
+  .text-studio-text-secondary  { color: hsl(0 0% 52%); }
+  .border-studio-border        { border-color: hsl(0 0% 18%); }
+
+  /* ── Orange gradient bg / text ────────────────────── */
+  .bg-gradient-glass { background: var(--gradient-glass); }
+  .text-gradient-orange {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
-  .text-studio-text-primary {
-    color: hsl(0 0% 98%);
+  /* ── Collapsible section headers ──────────────────── */
+  .section-trigger {
+    @apply flex w-full justify-between items-center px-4 py-3 h-auto rounded-xl
+           bg-card/40 border border-border/40 text-foreground
+           hover:bg-card/60 hover:border-border/60
+           transition-all duration-200 cursor-pointer
+           focus:outline-none focus-visible:ring-1 focus-visible:ring-ring/50;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .section-trigger:hover .section-chevron { color: hsl(var(--primary)); }
+
+  /* ── Premium button variant ───────────────────────── */
+  .btn-orange {
+    @apply bg-primary text-primary-foreground font-semibold rounded-lg px-4 py-2
+           hover:opacity-90 active:scale-[0.98] transition-all duration-150;
+    box-shadow: 0 0 20px hsl(24 95% 56% / 0.30);
   }
 
-  .text-studio-text-secondary {
-    color: hsl(0 0% 65%);
+  /* ── Tab bar active indicator ─────────────────────── */
+  .tab-active-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    border-radius: 1px;
+    background: hsl(var(--primary));
+    box-shadow: 0 0 8px hsl(24 95% 56% / 0.6);
+  }
+}
+
+@layer components {
+  /* ── Keyframe animations ──────────────────────────── */
+  @keyframes pulse-neon {
+    0%, 100% {
+      box-shadow: 0 0 16px hsl(24 95% 56% / 0.35);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow: 0 0 28px hsl(24 95% 56% / 0.70);
+      transform: scale(1.015);
+    }
   }
 
-  .border-studio-border {
-    border-color: hsl(0 0% 22%);
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-8px); }
+  }
+
+  @keyframes waveform {
+    0%, 100% { transform: scaleY(0.4); }
+    50%       { transform: scaleY(1); }
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+
+  .animate-pulse-neon { animation: pulse-neon 2.4s ease-in-out infinite; }
+  .animate-float      { animation: float 3.2s ease-in-out infinite; }
+  .animate-waveform   { animation: waveform 1.6s ease-in-out infinite; }
+
+  /* ── Shimmer loading skeleton ─────────────────────── */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(0 0% 14%) 25%,
+      hsl(0 0% 20%) 50%,
+      hsl(0 0% 14%) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
   }
 }
