@@ -365,9 +365,9 @@ export const VocalEditor: React.FC<VocalEditorProps> = ({ audioUrl, trackName, o
               <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">EQ</Label>
               <div className="space-y-3">
                 {([
-                  { key: 'eqLow'  as const, label: 'Low  (250 Hz)', color: 'text-blue-400' },
-                  { key: 'eqMid'  as const, label: 'Mid (1.5 kHz)', color: 'text-yellow-400' },
-                  { key: 'eqHigh' as const, label: 'High  (6 kHz)', color: 'text-neon-pink' },
+                  { key: 'eqLow'  as const, label: 'Low  (250 Hz)', color: 'text-muted-foreground' },
+                  { key: 'eqMid'  as const, label: 'Mid (1.5 kHz)', color: 'text-muted-foreground' },
+                  { key: 'eqHigh' as const, label: 'High  (6 kHz)', color: 'text-muted-foreground' },
                 ]).map(({ key, label, color }) => (
                   <div key={key} className="flex items-center gap-3">
                     <span className={`text-xs w-28 ${color}`}>{label}: {fx[key] > 0 ? '+' : ''}{fx[key]} dB</span>
@@ -416,7 +416,7 @@ export const VocalEditor: React.FC<VocalEditorProps> = ({ audioUrl, trackName, o
               <Button
                 variant="outline"
                 onClick={isPlaying ? stopPreview : startPreview}
-                className={isPlaying ? 'border-neon-green text-neon-green' : ''}
+                className={isPlaying ? 'border-primary text-primary' : ''}
               >
                 {isPlaying
                   ? <><Square className="w-4 h-4 mr-2 fill-current" />Stop</>

@@ -238,12 +238,12 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
 
   const getTypeColor = (type: string) => {
     const colors = {
-      'mixing': 'bg-neon-blue/20 text-neon-blue',
+      'mixing': 'bg-primary/20 text-primary',
       'arrangement': 'bg-primary/20 text-primary',
-      'sound-design': 'bg-neon-green/20 text-neon-green',
+      'sound-design': 'bg-primary/20 text-primary',
       'mastering': 'bg-neon-orange/20 text-neon-orange',
-      'instrumentation': 'bg-pink-500/20 text-pink-400',
-      'creative': 'bg-yellow-500/20 text-yellow-400'
+      'instrumentation': 'bg-primary/10 text-muted-foreground',
+      'creative': 'bg-border/30 text-muted-foreground'
     };
     return colors[type as keyof typeof colors] || 'bg-studio-surface-secondary text-studio-text-secondary';
   };
@@ -420,17 +420,17 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                     <Card className="glass-card-subtle">
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2 mb-2">
-                          <BarChart3 className="w-4 h-4 text-neon-blue" />
+                          <BarChart3 className="w-4 h-4 text-primary" />
                           <span className="font-medium">Musical Analysis</span>
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span>Tempo</span>
-                            <span className="text-neon-blue">{audioAnalysis.tempo} BPM</span>
+                            <span className="text-primary">{audioAnalysis.tempo} BPM</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>Key</span>
-                            <span className="text-neon-green">{audioAnalysis.key} {audioAnalysis.mode}</span>
+                            <span className="text-primary">{audioAnalysis.key} {audioAnalysis.mode}</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>Energy</span>
@@ -465,7 +465,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                           </div>
                           <div className="flex justify-between text-sm">
                             <span>Valence</span>
-                            <span className="text-neon-green">{Math.round(audioAnalysis.valence * 100)}%</span>
+                            <span className="text-primary">{Math.round(audioAnalysis.valence * 100)}%</span>
                           </div>
                         </div>
                       </CardContent>
@@ -504,7 +504,7 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
           <TabsContent value="reference" className="space-y-4">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <Headphones className="w-5 h-5 text-neon-green" />
+                <Headphones className="w-5 h-5 text-primary" />
                 <span className="font-medium">Reference Tracks</span>
                 <Button variant="outline" size="sm" className="ml-auto">
                   Add Reference
@@ -528,18 +528,18 @@ export const ProductionAssistant: React.FC<ProductionAssistantProps> = ({
                       <Label>Similarity</Label>
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex-1 bg-studio-surface-secondary rounded-full h-2">
-                          <div className="bg-neon-blue h-2 rounded-full" style={{ width: '76%' }}></div>
+                          <div className="bg-primary h-2 rounded-full" style={{ width: '76%' }}></div>
                         </div>
-                        <span className="text-neon-blue">76%</span>
+                        <span className="text-primary">76%</span>
                       </div>
                     </div>
                     <div>
                       <Label>Loudness Match</Label>
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex-1 bg-studio-surface-secondary rounded-full h-2">
-                          <div className="bg-neon-green h-2 rounded-full" style={{ width: '92%' }}></div>
+                          <div className="bg-primary h-2 rounded-full" style={{ width: '92%' }}></div>
                         </div>
-                        <span className="text-neon-green">92%</span>
+                        <span className="text-primary">92%</span>
                       </div>
                     </div>
                     <div>

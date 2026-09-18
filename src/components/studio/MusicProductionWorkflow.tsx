@@ -197,7 +197,7 @@ export const MusicProductionWorkflow: React.FC = () => {
   const TrackDisplay: React.FC<{ track: RecordingTrack }> = ({ track }) => (
     <div className="flex items-center gap-3 p-3 bg-studio-surface-secondary rounded-lg">
       <div className="flex items-center gap-2 min-w-32">
-        <div className={`w-3 h-3 rounded-full ${track.type === 'generated' ? 'bg-primary' : track.type === 'recorded' ? 'bg-red-500' : 'bg-neon-blue'}`} />
+        <div className="w-3 h-3 rounded-full bg-primary" />
         <span className="text-sm font-medium">{track.name}</span>
         <Badge variant="outline" className="text-xs">{track.type}</Badge>
       </div>
@@ -206,7 +206,7 @@ export const MusicProductionWorkflow: React.FC = () => {
         {track.waveformData.slice(0, 50).map((value, index) => (
           <div
             key={index}
-            className={`flex-1 rounded-sm ${track.isPlaying ? 'bg-neon-green' : 'bg-neon-blue'}`}
+            className={`flex-1 rounded-sm ${track.isPlaying ? 'bg-primary' : 'bg-primary'}`}
             style={{ height: `${Math.max(2, (value / 100) * 24)}px`, opacity: 0.7 }}
           />
         ))}
@@ -284,7 +284,7 @@ export const MusicProductionWorkflow: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-neon-blue" />
+            <Layers className="w-5 h-5 text-primary" />
             Music Production Workflow
             {session.isRecording && (
               <Badge variant="destructive" className="animate-pulse">

@@ -58,7 +58,7 @@ export const AudioPlayButton: React.FC<AudioPlayButtonProps> = ({
       variant={variant}
       size={size}
       onClick={handlePlay}
-      className={`${className} ${isCurrentlyPlaying ? 'text-neon-green' : ''}`}
+      className={`${className} ${isCurrentlyPlaying ? 'text-primary' : ''}`}
       disabled={disabled || !audioUrl}
     >
       {isCurrentlyPlaying ? (

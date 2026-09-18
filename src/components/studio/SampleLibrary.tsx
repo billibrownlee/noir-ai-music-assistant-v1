@@ -130,11 +130,11 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
   const getGenreColor = (genre: string) => {
     const colors = {
       'rnb': 'bg-primary/20 text-primary',
-      'pop': 'bg-neon-blue/20 text-neon-blue',
-      'trap': 'bg-neon-green/20 text-neon-green',
+      'pop': 'bg-primary/20 text-primary',
+      'trap': 'bg-primary/20 text-primary',
       'rap': 'bg-neon-orange/20 text-neon-orange',
-      'soul': 'bg-neon-pink/20 text-neon-pink',
-      'hip-hop': 'bg-yellow-500/20 text-yellow-400',
+      'soul': 'bg-primary/20 text-primary',
+      'hip-hop': 'bg-border/30 text-muted-foreground',
     };
     return colors[genre as keyof typeof colors] || 'bg-studio-surface-secondary text-studio-text-secondary';
   };
@@ -198,10 +198,10 @@ export const SampleLibrary: React.FC<SampleLibraryProps> = ({
                       <div className="flex-shrink-0 relative">
                         <Music2 className="w-8 h-8 text-primary p-1.5 bg-primary/20 rounded" />
                         {currentTrack?.id === sample.id && isPlaying && (
-                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-pulse"></div>
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse"></div>
                         )}
                         {sample.audioUrl && !SAMPLE_LIBRARY.some(s => s.id === sample.id) && (
-                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-neon-blue rounded-full"></div>
+                          <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-primary rounded-full"></div>
                         )}
                       </div>
                       

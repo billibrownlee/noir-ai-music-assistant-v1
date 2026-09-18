@@ -37,7 +37,7 @@ export const GlobalAudioPlayer: React.FC = () => {
 
   return (
     <Card 
-      className="fixed bottom-4 left-4 right-4 z-50 border-neon-blue/30 backdrop-blur-md" 
+      className="fixed bottom-4 left-4 right-4 z-50 border-primary/30 backdrop-blur-md" 
       style={{ 
         backgroundColor: 'hsl(0 0% 12% / 0.95)',
         borderColor: 'hsl(217.2 91.2% 59.8% / 0.3)'

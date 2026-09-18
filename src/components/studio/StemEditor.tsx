@@ -74,9 +74,9 @@ export const StemEditor: React.FC<StemEditorProps> = ({ separatedAudio, onStemUp
   const getStemColor = (type: AudioStem['type']) => {
     const colors = {
       vocals: 'border-primary bg-primary/10',
-      drums: 'border-neon-green bg-neon-green/10',
+      drums: 'border-primary bg-primary/10',
       bass: 'border-neon-orange bg-neon-orange/10',
-      melody: 'border-neon-blue bg-neon-blue/10',
+      melody: 'border-primary bg-primary/10',
       other: 'border-studio-border bg-studio-surface-secondary/50'
     };
     return colors[type] || colors.other;
@@ -92,8 +92,8 @@ export const StemEditor: React.FC<StemEditorProps> = ({ separatedAudio, onStemUp
           key={index}
           className={`flex-1 rounded-sm transition-all duration-150 ${
             isActive 
-              ? 'bg-neon-green animate-pulse' 
-              : 'bg-neon-blue'
+              ? 'bg-primary animate-pulse' 
+              : 'bg-primary'
           }`}
           style={{ 
             height: `${Math.max(2, (value / 100) * 48)}px`,
@@ -117,7 +117,7 @@ export const StemEditor: React.FC<StemEditorProps> = ({ separatedAudio, onStemUp
               <h4 className="font-medium flex items-center gap-2">
                 {stem.name}
                 {isStemPlaying && (
-                  <div className="w-2 h-2 bg-neon-green rounded-full animate-pulse"></div>
+                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
                 )}
               </h4>
               <Badge variant="outline" className="text-xs">
@@ -300,12 +300,12 @@ export const StemEditor: React.FC<StemEditorProps> = ({ separatedAudio, onStemUp
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Layers className="w-5 h-5 text-neon-blue" />
+            <Layers className="w-5 h-5 text-primary" />
             Stem Editor - Same AirPods Audio Routing
             <Badge variant="outline">
               {separatedAudio.stems.length} stems
             </Badge>
-            <Badge variant="outline" className="bg-neon-green/20 text-neon-green">
+            <Badge variant="outline" className="bg-primary/20 text-primary">
               {separatedAudio.separationQuality}% quality
             </Badge>
           </div>

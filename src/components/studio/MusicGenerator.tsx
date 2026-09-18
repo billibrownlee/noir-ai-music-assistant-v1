@@ -306,10 +306,10 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
     <Card className="w-full glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 flex-wrap">
-          <Music className="w-5 h-5 text-neon-blue" />
+          <Music className="w-5 h-5 text-primary" />
           Noir Generate
           {isConfigured ? (
-            <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30">
+            <Badge className="bg-primary/20 text-primary border-primary/30">
               <CheckCircle className="w-3 h-3 mr-1" /> Replicate AI
             </Badge>
           ) : (
@@ -333,8 +333,8 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
           </CollapsibleTrigger>
           <CollapsibleContent className="mt-3 space-y-3">
             {isConfigured ? (
-              <div className="p-3 bg-neon-green/10 border border-neon-green/30 rounded-lg space-y-2">
-                <p className="text-sm text-neon-green font-medium flex items-center gap-2">
+              <div className="p-3 bg-primary/10 border border-primary/30 rounded-lg space-y-2">
+                <p className="text-sm text-primary font-medium flex items-center gap-2">
                   <CheckCircle className="w-4 h-4" /> Connected — Meta MusicGen (Replicate)
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -350,7 +350,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
                   Enter your Replicate API key to generate real AI music. Without it, Noir uses the browser synthesizer.
                 </p>
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Go to <span className="text-neon-blue">replicate.com</span> → sign up (free)</li>
+                  <li>Go to <span className="text-primary">replicate.com</span> → sign up (free)</li>
                   <li>Account → API tokens → Create token</li>
                   <li>Paste your token below (starts with <code>r8_</code>)</li>
                 </ol>
@@ -401,11 +401,11 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
             </Select>
             {selectedReference && (
               <div className="flex flex-wrap gap-2 mt-1">
-                {selectedReference.bpm && <Badge variant="outline" className="text-xs text-neon-green">{selectedReference.bpm} BPM</Badge>}
+                {selectedReference.bpm && <Badge variant="outline" className="text-xs text-primary">{selectedReference.bpm} BPM</Badge>}
                 {selectedReference.key && <Badge variant="outline" className="text-xs text-primary">{selectedReference.key}{selectedReference.mode === 'minor' ? 'm' : ''}</Badge>}
                 {selectedReference.genre && <Badge variant="outline" className="text-xs">{selectedReference.genre}</Badge>}
                 {isConfigured && (
-                  <Badge className="text-xs bg-neon-blue/20 text-neon-blue border-neon-blue/30">
+                  <Badge className="text-xs bg-primary/20 text-primary border-primary/30">
                     Melody conditioning active
                   </Badge>
                 )}
@@ -422,7 +422,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-neon-blue h-auto py-0"
+                className="text-xs text-primary h-auto py-0"
                 onClick={() => setPrompt(autoPrompt)}
               >
                 <Wand2 className="w-3 h-3 mr-1" /> Use auto-prompt
@@ -545,7 +545,7 @@ export const MusicGenerator: React.FC<MusicGeneratorProps> = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        className={`flex-1 ${isCurrent && isPlaying ? 'border-neon-green text-neon-green' : ''}`}
+                        className={`flex-1 ${isCurrent && isPlaying ? 'border-primary text-primary' : ''}`}
                         onClick={() => playTrackById(track)}
                       >
                         {isCurrent && isPlaying

@@ -121,12 +121,12 @@ export function CustomSampleInstrument({ onSamplerChange }: CustomSampleInstrume
         </div>
         <div className="flex items-center gap-1.5">
           {isLoading && (
-            <Badge className="bg-neon-blue/20 text-neon-blue border-neon-blue/30 text-[10px] gap-1">
+            <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px] gap-1">
               <Loader2 className="w-2.5 h-2.5 animate-spin" />Loading
             </Badge>
           )}
           {!isLoading && samples.length > 0 && (
-            <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30 text-[10px]">
+            <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px]">
               Active
             </Badge>
           )}

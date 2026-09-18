@@ -360,11 +360,11 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
                 <div className="text-muted-foreground">Primary Style</div>
               </div>
               <div className="text-center p-2 bg-card/40 rounded">
-                <div className="text-neon-blue font-semibold">{styleProfile.primaryKey || '—'}</div>
+                <div className="text-primary font-semibold">{styleProfile.primaryKey || '—'}</div>
                 <div className="text-muted-foreground">Key Detected</div>
               </div>
               <div className="text-center p-2 bg-card/40 rounded">
-                <div className="text-neon-green font-semibold">{styleProfile.estimatedBpm} BPM</div>
+                <div className="text-primary font-semibold">{styleProfile.estimatedBpm} BPM</div>
                 <div className="text-muted-foreground">Avg Tempo</div>
               </div>
             </div>
@@ -526,7 +526,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
             <div className="flex gap-2">
               <Button
                 variant="outline" size="sm"
-                className={`flex-1 ${isPlaying ? 'border-neon-green text-neon-green' : ''}`}
+                className={`flex-1 ${isPlaying ? 'border-primary text-primary' : ''}`}
                 onClick={isPlaying ? stopPlayback : startPlayback}
               >
                 {isPlaying
@@ -535,7 +535,7 @@ export const MidiGenerator: React.FC<MidiGeneratorProps> = ({
               </Button>
               <Button
                 variant="outline" size="sm"
-                className="flex-1 border-neon-blue/40 text-neon-blue hover:bg-neon-blue/10"
+                className="flex-1 border-primary/40 text-primary hover:bg-primary/10"
                 onClick={exportMidi}
               >
                 <Download className="w-3 h-3 mr-1.5" /> Export .mid

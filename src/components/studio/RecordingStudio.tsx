@@ -242,8 +242,8 @@ export const RecordingStudio: React.FC = () => {
             key={index}
             className={`flex-1 rounded-sm transition-all duration-150 ${
               isRecording 
-                ? 'bg-red-500 animate-pulse' 
-                : 'bg-neon-blue'
+                ? 'bg-primary animate-pulse' 
+                : 'bg-primary'
             }`}
             style={{ 
               height: `${Math.max(2, (value / 100) * 48)}px`,
@@ -260,7 +260,7 @@ export const RecordingStudio: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Radio className="w-5 h-5 text-red-500" />
+            <Radio className="w-5 h-5 text-primary" />
             Recording Studio
             {session.isRecording && (
               <Badge variant="destructive" className="animate-pulse">

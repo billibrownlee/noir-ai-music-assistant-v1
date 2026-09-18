@@ -122,18 +122,18 @@ export const AudioOutputSelector: React.FC<AudioOutputSelectorProps> = ({ onDevi
 
   const getStatusColor = () => {
     switch (connectionStatus) {
-      case 'connected': return 'text-neon-green';
-      case 'connecting': return 'text-neon-blue';
-      case 'error': return 'text-red-400';
+      case 'connected': return 'text-primary';
+      case 'connecting': return 'text-primary';
+      case 'error': return 'text-destructive';
       default: return 'text-studio-text-secondary';
     }
   };
 
   const getStatusIcon = () => {
     switch (connectionStatus) {
-      case 'connected': return <Check className="w-4 h-4 text-neon-green" />;
-      case 'connecting': return <Volume2 className="w-4 h-4 text-neon-blue animate-pulse" />;
-      case 'error': return <AlertCircle className="w-4 h-4 text-red-400" />;
+      case 'connected': return <Check className="w-4 h-4 text-primary" />;
+      case 'connecting': return <Volume2 className="w-4 h-4 text-primary animate-pulse" />;
+      case 'error': return <AlertCircle className="w-4 h-4 text-destructive" />;
       default: return <Headphones className="w-4 h-4" />;
     }
   };
@@ -142,7 +142,7 @@ export const AudioOutputSelector: React.FC<AudioOutputSelectorProps> = ({ onDevi
     <Card className="glass-card-subtle">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <Headphones className="w-5 h-5 text-neon-blue" />
+          <Headphones className="w-5 h-5 text-primary" />
           Audio Output Device
           <Badge 
             variant="outline" 

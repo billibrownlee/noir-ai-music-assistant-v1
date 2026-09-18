@@ -160,13 +160,10 @@ export const TempoControl: React.FC<TempoControlProps> = ({
   };
 
   const getTempoColor = (bpm: number) => {
-    if (bpm < 60) return "text-blue-400";
-    if (bpm < 90) return "text-green-400";
-    if (bpm < 110) return "text-yellow-400";
-    if (bpm < 130) return "text-orange-400";
-    if (bpm < 150) return "text-red-400";
+    if (bpm < 60) return "text-muted-foreground";
+    if (bpm < 130) return "text-foreground";
     if (bpm < 180) return "text-primary";
-    return "text-pink-400";
+    return "text-primary";
   };
 
   return (
@@ -194,7 +191,7 @@ export const TempoControl: React.FC<TempoControlProps> = ({
       <CardContent className="space-y-6">
         {/* Current Status */}
         {uploadedSamples.length > 0 && (
-          <div className="bg-studio-surface-secondary/50 p-4 rounded-lg border border-neon-blue/30">
+          <div className="bg-studio-surface-secondary/50 p-4 rounded-lg border border-primary/30">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Current Track:</span>
               <span className="text-xs text-studio-text-secondary">
@@ -203,7 +200,7 @@ export const TempoControl: React.FC<TempoControlProps> = ({
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm">Original BPM:</span>
-              <Badge variant="outline" className="text-neon-blue">
+              <Badge variant="outline" className="text-primary">
                 {originalBPM} BPM
               </Badge>
             </div>
@@ -266,10 +263,10 @@ export const TempoControl: React.FC<TempoControlProps> = ({
 
         {/* Speed Factor Display */}
         {targetBPM !== originalBPM && (
-          <div className="bg-studio-surface/50 p-3 rounded-lg border border-neon-green/30">
+          <div className="bg-studio-surface/50 p-3 rounded-lg border border-primary/30">
             <div className="flex items-center justify-between">
               <span className="text-sm">Speed Factor:</span>
-              <Badge variant="outline" className="text-neon-green">
+              <Badge variant="outline" className="text-primary">
                 {(targetBPM / originalBPM).toFixed(2)}x
               </Badge>
             </div>

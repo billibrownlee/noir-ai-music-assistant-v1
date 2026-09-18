@@ -268,7 +268,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
     <Card className="w-full glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 flex-wrap">
-          <Mic className="w-5 h-5 text-neon-blue" />
+          <Mic className="w-5 h-5 text-primary" />
           Lyrics Voice Generator
         </CardTitle>
       </CardHeader>
@@ -279,7 +279,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
         <div className="grid grid-cols-2 gap-2">
           <Button
             variant={mode === 'preset' ? 'default' : 'outline'}
-            className={mode === 'preset' ? 'bg-neon-blue hover:bg-neon-blue/80 text-white' : ''}
+            className={mode === 'preset' ? 'bg-primary hover:bg-primary/80 text-white' : ''}
             onClick={() => setMode('preset')}
           >
             <Sparkles className="w-4 h-4 mr-2" /> AI Preset Voice
@@ -300,7 +300,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" className="w-full flex justify-between items-center p-3 h-auto bg-studio-surface/30 rounded-lg border border-border/30">
                   <span className="flex items-center gap-2 text-sm font-medium">
-                    <Key className="w-4 h-4 text-neon-blue" />
+                    <Key className="w-4 h-4 text-primary" />
                     {oaiKey ? 'OpenAI connected' : 'Connect OpenAI'}
                   </span>
                   {showOaiSettings ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -309,7 +309,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
               <CollapsibleContent className="mt-2 space-y-3 p-3 bg-studio-surface/20 rounded-lg border border-border/30">
                 {oaiKey ? (
                   <div className="flex items-center justify-between">
-                    <p className="text-sm text-neon-green flex items-center gap-1">
+                    <p className="text-sm text-primary flex items-center gap-1">
                       <CheckCircle className="w-4 h-4" /> Connected
                     </p>
                     <Button size="sm" variant="outline" className="text-red-400 border-red-400/30"
@@ -320,7 +320,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
                 ) : (
                   <>
                     <p className="text-xs text-muted-foreground">
-                      Get a key at <span className="text-neon-blue">platform.openai.com/api-keys</span> (starts with sk-)
+                      Get a key at <span className="text-primary">platform.openai.com/api-keys</span> (starts with sk-)
                     </p>
                     <div className="flex gap-2">
                       <Input type="password" placeholder="sk-••••••••••••" value={oaiKeyInput}
@@ -374,7 +374,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
                 Voice Reference
               </Label>
               {replicateReady
-                ? <Badge className="bg-neon-green/20 text-neon-green border-neon-green/30 text-xs"><CheckCircle className="w-3 h-3 mr-1" />Replicate ready</Badge>
+                ? <Badge className="bg-primary/20 text-primary border-primary/30 text-xs"><CheckCircle className="w-3 h-3 mr-1" />Replicate ready</Badge>
                 : <Badge variant="destructive" className="text-xs">No Replicate key — set up in Generate tab</Badge>
               }
             </div>
@@ -441,7 +441,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
             (mode === 'preset' && !oaiKey) ||
             (mode === 'clone' && (selectedSampleId === 'none' || !replicateReady))
           }
-          className={`w-full text-white ${mode === 'clone' ? 'bg-primary hover:bg-primary/80' : 'bg-neon-blue hover:bg-neon-blue/80'}`}
+          className={`w-full text-white ${mode === 'clone' ? 'bg-primary hover:bg-primary/80' : 'bg-primary hover:bg-primary/80'}`}
           size="lg"
         >
           {isGenerating
@@ -473,7 +473,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
                       <div className="flex gap-2">
                         <Button
                           variant="outline" size="sm"
-                          className={`flex-1 ${isCurrent && isPlaying ? 'border-neon-green text-neon-green' : ''}`}
+                          className={`flex-1 ${isCurrent && isPlaying ? 'border-primary text-primary' : ''}`}
                           onClick={() => playAudio(audio)}
                         >
                           {isCurrent && isPlaying
@@ -490,7 +490,7 @@ export const AudioGenerator: React.FC<AudioGeneratorProps> = ({
                         </Button>
                         <Button
                           variant="outline" size="sm"
-                          className={keptIds.has(audio.id) ? 'border-neon-green text-neon-green' : ''}
+                          className={keptIds.has(audio.id) ? 'border-primary text-primary' : ''}
                           onClick={() => keepAudio(audio)}
                           title={keptIds.has(audio.id) ? 'Saved to library' : 'Keep — save to library'}
                         >

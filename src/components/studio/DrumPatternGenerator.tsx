@@ -132,9 +132,9 @@ export const DrumPatternGenerator: React.FC = () => {
 
   const getGenreColor = (genre: string) => {
     const colors = {
-      'trap': 'bg-neon-green/20 text-neon-green',
+      'trap': 'bg-primary/20 text-primary',
       'rnb': 'bg-primary/20 text-primary',
-      'pop': 'bg-neon-blue/20 text-neon-blue',
+      'pop': 'bg-primary/20 text-primary',
       'hip-hop': 'bg-neon-orange/20 text-neon-orange'
     };
     return colors[genre as keyof typeof colors] || 'bg-studio-surface-secondary text-studio-text-secondary';
@@ -157,7 +157,7 @@ export const DrumPatternGenerator: React.FC = () => {
                   key={stepIndex}
                   className={`w-3 h-3 rounded-sm border ${
                     hit 
-                      ? 'bg-neon-green border-neon-green' 
+                      ? 'bg-primary border-primary' 
                       : 'bg-studio-surface-secondary border-studio-border'
                   } ${stepIndex % 4 === 0 ? 'ml-1' : ''}`}
                 />
@@ -173,7 +173,7 @@ export const DrumPatternGenerator: React.FC = () => {
     <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Drum className="w-5 h-5 text-neon-green" />
+          <Drum className="w-5 h-5 text-primary" />
           Drum Pattern Generator
         </CardTitle>
       </CardHeader>

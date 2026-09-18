@@ -34,9 +34,7 @@
     --ring:             24 95% 56%;
     --radius:           0.625rem;
 
-    /* ── Neon accent RGB channels (enables /opacity) ── */
-    --neon-green:  74 222 128;   /* #4ade80 */
-    --neon-blue:   96 165 250;   /* #60a5fa */
+    /* No neon channels — palette is black, orange, white only */
 
     /* ── Gradients ──────────────────────────────────── */
     --gradient-primary:  linear-gradient(135deg, hsl(24 95% 56%), hsl(28 100% 64%));
@@ -125,7 +123,6 @@
 
   /* ── Neon glow helpers ────────────────────────────── */
   .glow-orange  { box-shadow: 0 0 20px hsl(24 95% 56% / 0.30); }
-  .glow-green   { box-shadow: 0 0 16px rgb(74 222 128 / 0.30); }
 
   /* ── Surface utility ──────────────────────────────── */
   .bg-studio-surface           { background-color: hsl(0 0% 10%); }

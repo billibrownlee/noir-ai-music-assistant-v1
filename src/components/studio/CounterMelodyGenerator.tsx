@@ -130,9 +130,9 @@ export const CounterMelodyGenerator: React.FC = () => {
 
   const getRelationshipColor = (relationship: string) => {
     const colors = {
-      'harmony': 'bg-neon-blue/20 text-neon-blue',
+      'harmony': 'bg-primary/20 text-primary',
       'counter': 'bg-primary/20 text-primary',
-      'call-response': 'bg-neon-green/20 text-neon-green',
+      'call-response': 'bg-primary/20 text-primary',
       'rhythmic': 'bg-neon-orange/20 text-neon-orange'
     };
     return colors[relationship as keyof typeof colors] || 'bg-studio-surface-secondary text-studio-text-secondary';
@@ -152,7 +152,7 @@ export const CounterMelodyGenerator: React.FC = () => {
             className={`px-2 py-1 text-xs rounded ${
               note === 'rest' 
                 ? 'bg-studio-surface-secondary text-studio-text-secondary' 
-                : 'bg-neon-blue/20 text-neon-blue border border-neon-blue/30'
+                : 'bg-primary/20 text-primary border border-primary/30'
             }`}
           >
             {note === 'rest' ? '—' : note}
@@ -166,7 +166,7 @@ export const CounterMelodyGenerator: React.FC = () => {
     <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-neon-blue" />
+          <Layers className="w-5 h-5 text-primary" />
           Counter Melody Generator
         </CardTitle>
       </CardHeader>
@@ -260,8 +260,8 @@ export const CounterMelodyGenerator: React.FC = () => {
                     <div className="text-right text-sm">
                       <div className="text-studio-text-secondary">Compatibility</div>
                       <div className={`font-medium ${
-                        melody.compatibility > 90 ? 'text-neon-green' :
-                        melody.compatibility > 80 ? 'text-neon-blue' : 'text-neon-orange'
+                        melody.compatibility > 90 ? 'text-primary' :
+                        melody.compatibility > 80 ? 'text-primary' : 'text-neon-orange'
                       }`}>
                         {melody.compatibility}%
                       </div>

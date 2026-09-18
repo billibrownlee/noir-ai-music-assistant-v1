@@ -170,18 +170,18 @@ export const MasteringSuite: React.FC = () => {
 
   const getQualityColor = (value: number, type: 'lufs' | 'peak' | 'range') => {
     if (type === 'lufs') {
-      if (value >= -16 && value <= -12) return 'text-neon-green';
-      if (value >= -18 && value <= -10) return 'text-neon-blue';
+      if (value >= -16 && value <= -12) return 'text-primary';
+      if (value >= -18 && value <= -10) return 'text-primary';
       return 'text-neon-orange';
     }
     if (type === 'peak') {
-      if (value <= -1) return 'text-neon-green';
-      if (value <= -0.5) return 'text-neon-blue';
-      return 'text-red-500';
+      if (value <= -1) return 'text-primary';
+      if (value <= -0.5) return 'text-primary';
+      return 'text-destructive';
     }
     if (type === 'range') {
-      if (value >= 6) return 'text-neon-green';
-      if (value >= 4) return 'text-neon-blue';
+      if (value >= 6) return 'text-primary';
+      if (value >= 4) return 'text-primary';
       return 'text-neon-orange';
     }
     return 'text-studio-text-secondary';
@@ -192,9 +192,9 @@ export const MasteringSuite: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Award className="w-5 h-5 text-yellow-500" />
+            <Award className="w-5 h-5 text-muted-foreground" />
             Mastering Suite
-            <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400">
+            <Badge variant="outline" className="bg-border/30 text-muted-foreground">
               <Sparkles className="w-3 h-3 mr-1" />
               Professional
             </Badge>
@@ -216,16 +216,16 @@ export const MasteringSuite: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Coming Soon notice */}
-        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-sm">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-border/30 border border-border/50 text-muted-foreground text-sm">
           <span className="text-base">🚧</span>
           <span><strong>Coming Soon</strong> — DSP processing is not yet wired. Controls are visual previews of the planned interface.</span>
         </div>
         {/* Processing Status */}
         {isProcessing && (
-          <Card className="glass-card-subtle border-neon-blue border">
+          <Card className="glass-card-subtle border-primary border">
             <CardContent className="p-4">
               <div className="flex items-center gap-3 mb-2">
-                <Zap className="w-5 h-5 text-neon-blue animate-pulse" />
+                <Zap className="w-5 h-5 text-primary animate-pulse" />
                 <span className="font-medium">Processing Audio...</span>
               </div>
               <Progress value={processingProgress} className="w-full" />
@@ -243,7 +243,7 @@ export const MasteringSuite: React.FC = () => {
               <BarChart3 className="w-4 h-4" />
               Audio Analysis
               {analysis.readyForStreaming && (
-                <CheckCircle className="w-4 h-4 text-neon-green" />
+                <CheckCircle className="w-4 h-4 text-primary" />
               )}
             </CardTitle>
           </CardHeader>
@@ -278,7 +278,7 @@ export const MasteringSuite: React.FC = () => {
               </div>
               
               <div className="text-center">
-                <div className="text-2xl font-bold text-neon-blue">
+                <div className="text-2xl font-bold text-primary">
                   {analysis.stereoWidth}%
                 </div>
                 <div className="text-sm text-studio-text-secondary">Stereo Width</div>
@@ -515,12 +515,12 @@ export const MasteringSuite: React.FC = () => {
 
         {/* Streaming Ready Status */}
         {analysis.readyForStreaming && (
-          <Card className="glass-card-subtle border-neon-green border">
+          <Card className="glass-card-subtle border-primary border">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <CheckCircle className="w-6 h-6 text-neon-green" />
+                <CheckCircle className="w-6 h-6 text-primary" />
                 <div>
-                  <h4 className="font-medium text-neon-green">Ready for Streaming!</h4>
+                  <h4 className="font-medium text-primary">Ready for Streaming!</h4>
                   <p className="text-sm text-studio-text-secondary">
                     Your track meets {targetPlatform} quality standards and is ready for release.
                   </p>

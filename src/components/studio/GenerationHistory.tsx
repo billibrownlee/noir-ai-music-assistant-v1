@@ -124,7 +124,7 @@ export default function GenerationHistory({ tracks, onTrackSelect }: GenerationH
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <h4 className="font-medium text-foreground truncate">{track.title}</h4>
-                          {liked && <Heart className="w-4 h-4 text-red-500 fill-current flex-shrink-0" />}
+                          {liked && <Heart className="w-4 h-4 text-primary fill-current flex-shrink-0" />}
                           {isActive && <Badge variant="secondary" className="text-xs animate-pulse">Playing</Badge>}
                         </div>
 
@@ -165,7 +165,7 @@ export default function GenerationHistory({ tracks, onTrackSelect }: GenerationH
                               className="h-8 w-8 p-0"
                               onClick={(e) => toggleLike(track.id, e)}
                             >
-                              <Heart className={`w-3 h-3 ${liked ? 'fill-current text-red-500' : ''}`} />
+                              <Heart className={`w-3 h-3 ${liked ? 'fill-current text-primary' : ''}`} />
                             </Button>
                           </div>
                         </div>

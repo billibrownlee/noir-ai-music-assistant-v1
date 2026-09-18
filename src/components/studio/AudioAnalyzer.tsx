@@ -188,7 +188,7 @@ function GenreMap({ detected }: { detected: string[] }) {
             style={{ left:`${x*100}%`, top:`${(1-y)*100}%` }}
           >
             <span className={hit
-              ? 'text-neon-green font-bold text-[11px] drop-shadow-[0_0_6px_rgba(0,255,136,0.8)]'
+              ? 'text-primary font-bold text-[11px] drop-shadow-[0_0_6px_hsl(24_95%_56%_/_0.8)]'
               : 'text-muted-foreground/25 text-[9px]'
             }>
               {genre}
@@ -364,11 +364,11 @@ export function AudioAnalyzer() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-neon-blue" />
+            <Activity className="w-5 h-5 text-primary" />
             Audio Analyzer
           </div>
           <div className="flex gap-2">
-            <Badge className="bg-neon-blue/20 text-neon-blue border-neon-blue/40 text-xs">Key · BPM · Camelot</Badge>
+            <Badge className="bg-primary/20 text-primary border-primary/40 text-xs">Key · BPM · Camelot</Badge>
             <Badge className="bg-primary/20 text-primary border-primary/40 text-xs">Shazam-Style ID</Badge>
           </div>
         </CardTitle>
@@ -380,7 +380,7 @@ export function AudioAnalyzer() {
         <div
           className={[
             'relative rounded-lg border-2 border-dashed p-6 text-center transition-colors',
-            isDragging ? 'border-neon-blue bg-neon-blue/10' : 'border-border/30 hover:border-border/60',
+            isDragging ? 'border-primary bg-primary/10' : 'border-border/30 hover:border-border/60',
             isAnalyzing ? 'pointer-events-none opacity-60' : '',
           ].join(' ')}
           onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
@@ -391,7 +391,7 @@ export function AudioAnalyzer() {
             <div className="flex items-center gap-2 text-muted-foreground">
               <Upload className="w-5 h-5" />
               <span className="text-sm">Drop audio file or</span>
-              <label className="cursor-pointer text-neon-blue hover:underline text-sm">
+              <label className="cursor-pointer text-primary hover:underline text-sm">
                 click to upload
                 <input
                   type="file"
@@ -407,8 +407,8 @@ export function AudioAnalyzer() {
 
             {isRecording ? (
               <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-sm text-red-400">Recording {recordSeconds}s / 60s</span>
+                <div className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                <span className="text-sm text-destructive-foreground">Recording {recordSeconds}s / 60s</span>
                 <Button size="sm" variant="destructive" className="h-7 text-xs" onClick={stopRecording}>
                   <Square className="w-3 h-3 mr-1 fill-current" /> Stop & Analyze
                 </Button>
@@ -417,7 +417,7 @@ export function AudioAnalyzer() {
               <Button
                 size="sm"
                 variant="outline"
-                className="h-8 text-xs border-neon-blue/40 text-neon-blue hover:bg-neon-blue/10"
+                className="h-8 text-xs border-primary/40 text-primary hover:bg-primary/10"
                 onClick={startRecording}
                 disabled={isAnalyzing}
               >
@@ -440,13 +440,13 @@ export function AudioAnalyzer() {
             {logLines.map((line, i) => (
               <div
                 key={i}
-                className={line.includes('✓') ? 'text-neon-green' : line.startsWith('[') ? 'text-muted-foreground' : 'text-yellow-400'}
+                className={line.includes('✓') ? 'text-primary' : 'text-muted-foreground'}
               >
                 {line}
               </div>
             ))}
             {isAnalyzing && (
-              <div className="text-neon-blue animate-pulse">▋</div>
+              <div className="text-primary animate-pulse">▋</div>
             )}
           </div>
         )}
@@ -473,14 +473,14 @@ export function AudioAnalyzer() {
               {/* Key */}
               <div className="rounded-lg bg-card/40 border border-border/20 p-3 space-y-1">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Key</p>
-                <p className="text-xl font-bold text-neon-green">{result.key}</p>
+                <p className="text-xl font-bold text-primary">{result.key}</p>
                 <p className="text-[10px] text-muted-foreground capitalize">{result.mode}</p>
               </div>
 
               {/* Camelot */}
               <div className="rounded-lg bg-card/40 border border-border/20 p-3 space-y-1">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Camelot</p>
-                <p className="text-xl font-bold text-neon-blue">{result.camelot}</p>
+                <p className="text-xl font-bold text-primary">{result.camelot}</p>
                 <p className="text-[10px] text-muted-foreground">wheel position</p>
               </div>
 
@@ -503,15 +503,15 @@ export function AudioAnalyzer() {
             <div className="rounded-lg bg-card/40 border border-border/20 p-3 space-y-3">
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className="text-muted-foreground">Energy</span>
-                <span className="text-neon-green font-mono">{Math.round(result.energy*100)}%</span>
+                <span className="text-primary font-mono">{Math.round(result.energy*100)}%</span>
               </div>
               <MeterBar value={result.energy} color="hsl(142,76%,56%)" />
 
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Danceability</span>
-                <span className="text-neon-blue font-mono">{Math.round(result.danceability*100)}%</span>
+                <span className="text-primary font-mono">{Math.round(result.danceability*100)}%</span>
               </div>
-              <MeterBar value={result.danceability} color="hsl(210,100%,56%)" />
+              <MeterBar value={result.danceability} color="hsl(24,95%,56%)" />
             </div>
 
             {/* Genre tags */}
@@ -521,7 +521,7 @@ export function AudioAnalyzer() {
                 {result.genres.map(g => (
                   <Badge
                     key={g}
-                    className="bg-neon-green/15 text-neon-green border-neon-green/30 text-xs capitalize"
+                    className="bg-primary/15 text-primary border-primary/30 text-xs capitalize"
                   >
                     {g}
                   </Badge>

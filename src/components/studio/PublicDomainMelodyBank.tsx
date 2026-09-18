@@ -220,10 +220,10 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Music className="w-5 h-5 text-neon-green" />
+            <Music className="w-5 h-5 text-primary" />
             Public Domain Melody Bank
           </div>
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/40 text-xs">
+          <Badge className="bg-primary/15 text-primary border-primary/40 text-xs">
             CC0 · Copyright-Free
           </Badge>
         </CardTitle>
@@ -232,7 +232,7 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
       <CardContent className="space-y-4">
 
         {/* Attribution note */}
-        <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/25 text-xs text-green-300 leading-relaxed">
+        <div className="p-3 rounded-lg bg-primary/10 border border-primary/25 text-xs text-primary leading-relaxed">
           Inspired by <strong>All the Music LLC</strong> — every melody here is algorithmically
           generated from all possible note sequences in the chosen scale and released to the
           public domain (CC0). <strong>No copyright, no attribution required.</strong>
@@ -271,8 +271,8 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
                   className={[
                     'py-2 text-xs rounded border transition-colors',
                     bars === b
-                      ? 'border-neon-green bg-neon-green/20 text-neon-green font-semibold'
-                      : 'border-border/40 text-muted-foreground hover:border-neon-green/40',
+                      ? 'border-primary bg-primary/20 text-primary font-semibold'
+                      : 'border-border/40 text-muted-foreground hover:border-primary/40',
                   ].join(' ')}
                 >
                   {b}
@@ -287,7 +287,7 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
 
         {/* Stats bar */}
         <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
-          <span>Showing melodies {page * CARDS_PER_PAGE + 1}–{(page + 1) * CARDS_PER_PAGE} of <span className="text-green-400 font-medium">{displayTotal}</span> in {key} {scale}</span>
+          <span>Showing melodies {page * CARDS_PER_PAGE + 1}–{(page + 1) * CARDS_PER_PAGE} of <span className="text-primary font-medium">{displayTotal}</span> in {key} {scale}</span>
           <div className="flex gap-1">
             <Button
               variant="ghost" size="sm" className="h-7 w-7 p-0"
@@ -316,7 +316,7 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
                 className={[
                   'rounded-lg border p-3 space-y-2 transition-colors',
                   isPlaying
-                    ? 'border-neon-green/50 bg-neon-green/5'
+                    ? 'border-primary/50 bg-primary/5'
                     : 'border-border/30 bg-card/30 hover:bg-card/50',
                 ].join(' ')}
               >
@@ -326,7 +326,7 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
                     #{seed.toString().padStart(6, '0')}
                   </span>
                   <div className="flex items-center gap-1">
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-green-400 border-green-500/30">
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-primary border-primary/30">
                       CC0
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">{notes.length} notes</span>
@@ -341,7 +341,7 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
                   <Button
                     size="sm"
                     variant="ghost"
-                    className={`flex-1 h-7 text-xs ${isPlaying ? 'text-neon-green border border-neon-green/40' : ''}`}
+                    className={`flex-1 h-7 text-xs ${isPlaying ? 'text-primary border border-primary/40' : ''}`}
                     onClick={() => isPlaying ? stopPlayback() : playMelody(notes, seed)}
                   >
                     {isPlaying
@@ -351,7 +351,7 @@ export function PublicDomainMelodyBank({ onLoadMelody }: PublicDomainMelodyBankP
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 text-xs text-neon-blue hover:bg-neon-blue/10 px-2"
+                    className="h-7 text-xs text-primary hover:bg-primary/10 px-2"
                     onClick={() => handleExportMidi(notes, seed)}
                     title="Export as MIDI"
                   >

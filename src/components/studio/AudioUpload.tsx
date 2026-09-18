@@ -97,10 +97,10 @@ function SampleAnalysisCard({ analysis, songId }: { analysis: AudioAnalysis; son
 
       {/* Key metrics row */}
       <div className="flex flex-wrap gap-2">
-        <Badge className="bg-neon-green/15 text-neon-green border-neon-green/30 text-[10px] font-mono">
+        <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-mono">
           {analysis.key} {analysis.mode}
         </Badge>
-        <Badge className="bg-neon-blue/15 text-neon-blue border-neon-blue/30 text-[10px] font-mono">
+        <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-mono">
           {camelot}
         </Badge>
         <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] font-mono">
@@ -118,7 +118,7 @@ function SampleAnalysisCard({ analysis, songId }: { analysis: AudioAnalysis; son
             <span>Energy</span><span>{Math.round(analysis.energy * 100)}%</span>
           </div>
           <div className="h-1 bg-border/20 rounded-full overflow-hidden">
-            <div className="h-full bg-neon-green rounded-full" style={{ width:`${Math.round(analysis.energy*100)}%` }} />
+            <div className="h-full bg-primary rounded-full" style={{ width:`${Math.round(analysis.energy*100)}%` }} />
           </div>
         </div>
         <div className="space-y-0.5">
@@ -126,7 +126,7 @@ function SampleAnalysisCard({ analysis, songId }: { analysis: AudioAnalysis; son
             <span>Danceability</span><span>{Math.round(analysis.danceability * 100)}%</span>
           </div>
           <div className="h-1 bg-border/20 rounded-full overflow-hidden">
-            <div className="h-full bg-neon-blue rounded-full" style={{ width:`${Math.round(analysis.danceability*100)}%` }} />
+            <div className="h-full bg-primary rounded-full" style={{ width:`${Math.round(analysis.danceability*100)}%` }} />
           </div>
         </div>
       </div>
@@ -134,7 +134,7 @@ function SampleAnalysisCard({ analysis, songId }: { analysis: AudioAnalysis; son
       {/* Genre tags */}
       <div className="flex flex-wrap gap-1.5">
         {genres.map(g => (
-          <span key={g} className="text-[10px] text-neon-green/70 bg-neon-green/8 border border-neon-green/20 rounded px-1.5 py-0.5 capitalize">{g}</span>
+          <span key={g} className="text-[10px] text-primary/70 bg-primary/8 border border-primary/20 rounded px-1.5 py-0.5 capitalize">{g}</span>
         ))}
       </div>
     </div>
@@ -899,7 +899,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
       <CardHeader className="relative z-10">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Music className="w-5 h-5 text-neon-blue" />
+            <Music className="w-5 h-5 text-primary" />
             Upload Training Samples
           </div>
           {uploadedSamples.length > 0 && (
@@ -918,7 +918,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         {/* Auto STEM Separation Toggle */}
         <div className="flex items-center justify-between mt-4 p-3 bg-studio-surface/30 rounded-lg border border-studio-border/30">
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-neon-blue" />
+            <Layers className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium">Auto-separate stems on upload</span>
             <span className="text-xs text-studio-text-secondary">
               (Saves screen space when disabled)
@@ -935,8 +935,8 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
         <div
           className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
             isDragging 
-              ? 'border-neon-blue bg-neon-blue/10' 
-              : 'border-studio-border hover:border-neon-blue/50'
+              ? 'border-primary bg-primary/10' 
+              : 'border-studio-border hover:border-primary/50'
           }`}
           onDrop={handleDrop}
           onDragOver={(e) => {
@@ -996,7 +996,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               variant="outline"
               size="lg"
               onClick={() => (document.getElementById('folder-upload') as HTMLInputElement)?.click()}
-              className="border-neon-blue/50 text-neon-blue hover:bg-neon-blue/10 font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
+              className="border-primary/50 text-primary hover:bg-primary/10 font-medium px-6 py-3 cursor-pointer z-10 pointer-events-auto"
             >
               <FolderOpen className="w-4 h-4 mr-2" />
               Upload Folder
@@ -1006,10 +1006,10 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
         {/* Batch Folder Import Review */}
         {pendingBatch && (
-          <Card className="glass-card-subtle border-neon-blue border">
+          <Card className="glass-card-subtle border-primary border">
             <CardContent className="p-4 space-y-4">
               <div className="flex items-center gap-2">
-                <FolderOpen className="w-5 h-5 text-neon-blue" />
+                <FolderOpen className="w-5 h-5 text-primary" />
                 <span className="font-semibold">Folder Import — Confirm Genres</span>
                 <Badge variant="outline" className="text-xs">
                   {pendingBatch.reduce((n, g) => n + g.files.length, 0)} files
@@ -1054,7 +1054,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               <div className="flex gap-3">
                 <Button
                   onClick={confirmBatch}
-                  className="flex-1 bg-neon-blue hover:bg-neon-blue/80 text-white"
+                  className="flex-1 bg-primary hover:bg-primary/80 text-white"
                 >
                   <CheckCircle2 className="w-4 h-4 mr-2" />
                   Import All Samples
@@ -1073,10 +1073,10 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
         {/* Separation Progress */}
         {separationProgress && (
-          <Card className="glass-card-subtle border-neon-blue border">
+          <Card className="glass-card-subtle border-primary border">
             <CardContent className="p-4">
               <div className="flex items-center gap-3 mb-2">
-                <Layers className="w-5 h-5 text-neon-blue animate-pulse" />
+                <Layers className="w-5 h-5 text-primary animate-pulse" />
                 <span className="font-medium">Separating Audio Stems...</span>
               </div>
               <Progress value={separationProgress.progress} className="w-full mb-2" />
@@ -1099,7 +1099,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                       <div className="relative">
                         <FileAudio className="w-6 h-6 text-primary" />
                         {currentTrack?.id === sample.id && isPlaying && (
-                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-neon-green rounded-full animate-pulse" />
+                          <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse" />
                         )}
                       </div>
                       <div>
@@ -1113,11 +1113,11 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
                           {analyzingIds.has(sample.id) ? (
                             <>
                               <span>•</span>
-                              <span className="text-neon-blue animate-pulse">Detecting BPM &amp; key...</span>
+                              <span className="text-primary animate-pulse">Detecting BPM &amp; key...</span>
                             </>
                           ) : sample.bpm || sample.key ? (
                             <>
-                              {sample.bpm && <><span>•</span><span className="text-neon-green font-medium">{sample.bpm} BPM</span></>}
+                              {sample.bpm && <><span>•</span><span className="text-primary font-medium">{sample.bpm} BPM</span></>}
                               {sample.key && <><span>•</span><span className="text-primary font-medium">{sample.key}{sample.analysis?.mode === 'minor' ? 'm' : ''}</span></>}
                             </>
                           ) : null}
@@ -1172,10 +1172,10 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
 
                   {/* Complete Status */}
                   {sample.uploadProgress === 100 && (
-                    <div className="mb-3 p-2 bg-neon-green/10 border border-neon-green/30 rounded">
+                    <div className="mb-3 p-2 bg-primary/10 border border-primary/30 rounded">
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-neon-green rounded-full"></div>
-                        <span className="text-sm font-medium text-neon-green">✅ Saved Locally - Ready for AI Processing!</span>
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span className="text-sm font-medium text-primary">✅ Saved Locally - Ready for AI Processing!</span>
                       </div>
                     </div>
                   )}
@@ -1293,7 +1293,7 @@ export const AudioUpload: React.FC<AudioUploadProps> = ({
               </Button>
             </div>
             
-            <div className="bg-studio-surface/30 p-3 rounded-lg border border-neon-green/30">
+            <div className="bg-studio-surface/30 p-3 rounded-lg border border-primary/30">
               <p className="text-xs text-studio-text-secondary">
                 ✅ <strong>100% Local Storage:</strong> All uploads are saved locally instantly with no cloud dependency. Files are immediately available for tempo control and AI processing. No network required!
               </p>

@@ -725,7 +725,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
             {messages.map(message => (
               <div key={message.id} className={`flex gap-3 ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
                 <Avatar className="w-8 h-8 flex-shrink-0">
-                  <AvatarFallback className={message.type === 'user' ? 'bg-neon-blue text-black' : 'bg-primary text-black'}>
+                  <AvatarFallback className={message.type === 'user' ? 'bg-primary text-black' : 'bg-primary text-black'}>
                     {message.type === 'user' ? <User className="w-4 h-4" /> : <Brain className="w-4 h-4" />}
                   </AvatarFallback>
                 </Avatar>
@@ -733,7 +733,7 @@ Be conversational, helpful, and provide specific production advice. You can use 
                 <div className={`max-w-[80%] ${message.type === 'user' ? 'text-right' : ''}`}>
                   <div className={`rounded-lg p-3 ${
                     message.type === 'user' 
-                      ? 'bg-neon-blue/20 text-studio-text-primary ml-auto' 
+                      ? 'bg-primary/20 text-studio-text-primary ml-auto' 
                       : 'bg-studio-surface-secondary/50 text-studio-text-primary'
                   }`}>
                     <p className="text-sm leading-relaxed whitespace-pre-line">
